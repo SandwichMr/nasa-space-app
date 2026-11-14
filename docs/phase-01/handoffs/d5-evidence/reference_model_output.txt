@@ -1,0 +1,30 @@
+== S1_BalanceObjective
+   ('init', 0, 0, 'Ready', 0.0, 18000.0, 0.0, False, 60.0, 0.0, 0.0)
+   (('resume',), 0, 1, 'Running', 0.0, 18000.0, 0.0, False, 60.0, 0.0, 0.0)
+   (('tick', 60, None), 0, 2, 'Running', 60.0, 17400.0, 0.0, False, 60.0, 0.0, 0.0)
+   (('science', True), 0, 3, 'Running', 60.0, 17400.0, 0.0, True, 60.0, 0.0, 0.0)
+   (('tick', 30, None), 0, 4, 'Running', 90.0, 16500.0, 30.0, True, 60.0, 20.0, 20.0)
+   (('pause',), 0, 5, 'Paused', 90.0, 16500.0, 30.0, True, 60.0, 20.0, 20.0)
+   (('resume',), 0, 6, 'Running', 90.0, 16500.0, 30.0, True, 60.0, 20.0, 20.0)
+   (('tick', 40, 'ObjectiveAchieved'), 0, 7, 'Completed', 120.0, 15600.0, 60.0, True, 60.0, 20.0, 20.0)
+   (('restart',), 1, 0, 'Ready', 0.0, 18000.0, 0.0, False, 60.0, 0.0, 0.0)
+== S2_DepletionEssentialLost
+   ('init', 0, 0, 'Ready', 0.0, 600.0, 0.0, False, 60.0, 0.0, 0.0)
+   (('science', True), 0, 1, 'Ready', 0.0, 600.0, 0.0, True, 60.0, 0.0, 0.0)
+   (('resume',), 0, 2, 'Running', 0.0, 600.0, 0.0, True, 60.0, 0.0, 0.0)
+   (('tick', 50, 'EssentialServiceLost'), 0, 3, 'Interrupted', 20.0, 0.0, 20.0, True, 50.0, 20.0, 0.0)
+== S3_PartialScienceTimeExpired
+   ('init', 0, 0, 'Ready', 0.0, 0.0, 0.0, False, 60.0, 0.0, 0.0)
+   (('science', True), 0, 1, 'Ready', 0.0, 0.0, 0.0, True, 60.0, 0.0, 0.0)
+   (('resume',), 0, 2, 'Running', 0.0, 0.0, 0.0, True, 60.0, 0.0, 0.0)
+   (('tick', 45, 'TimeExpired'), 0, 3, 'Completed', 30.0, 0.0, 0.0, True, 60.0, 20.0, 10.0)
+== S4_ChargeToFullCurtailment
+   ('init', 0, 0, 'Ready', 0.0, 900.0, 0.0, False, 60.0, 0.0, 0.0)
+   (('resume',), 0, 1, 'Running', 0.0, 900.0, 0.0, False, 60.0, 0.0, 0.0)
+   (('tick', 10, None), 0, 2, 'Running', 10.0, 1000.0, 0.0, False, 60.0, 0.0, 0.0)
+   (('science', True), 0, 3, 'Running', 10.0, 1000.0, 0.0, True, 60.0, 0.0, 0.0)
+   (('tick', 10, None), 0, 4, 'Running', 20.0, 1000.0, 10.0, True, 60.0, 20.0, 20.0)
+== ScenarioDefinition defaults (main 0f05e38): E0 5000, cap 10000, gen 100, ess 60, sci 60, chg 100, dis 200; target 120 s, duration 300 s
+   science always on (('tick', 400, 'ObjectiveAchieved'), 0, 3, 'Completed', 120.0, 2600.0, 120.0, True, 60.0, 60.0, 60.0)
+   science never (('tick', 400, 'TimeExpired'), 0, 2, 'Completed', 300.0, 10000.0, 0.0, False, 60.0, 0.0, 0.0)
+   science from t=200 (('tick', 200, 'TimeExpired'), 0, 4, 'Completed', 300.0, 8000.0, 100.0, True, 60.0, 60.0, 60.0)
