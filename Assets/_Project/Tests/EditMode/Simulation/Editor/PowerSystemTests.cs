@@ -1,7 +1,3 @@
-// Disabled guard: this path compiles into Assembly-CSharp, which has no NUnit reference.
-// Remove the guard only after the team authorizes an Editor folder or a test .asmdef here
-// (see docs/phase-01/handoffs/01_SIMULATION_HANDOFF.md). Do not define the symbol globally.
-#if TRAINER_SIMULATION_TESTS
 using System;
 using NUnit.Framework;
 using Trainer.Simulation;
@@ -252,5 +248,146 @@ public sealed class PowerSystemTests
         Assert.That(s.EssentialServedWatts, Is.EqualTo(10d));
         Assert.That(s.ScienceServedWatts, Is.EqualTo(0d));
     }
+
+    // ---- IIntegratedPowerSimulation: service integrated inside the interval ----
+
+    [Test] public void SnapshotIsFinalInstantWhileIntegratedServiceCoversTheInterval()
+    {
+        // Demand 20 + 30 W, generation 10 W -> -40 W from 100 J empties at exactly 2.5 s.
+        // Snapshot shows the post-depletion operating point; integrated service keeps the 2.5 s.
+        var system = Started(Config(100, 10000, 10, 20, 30));
+        system.Advance(10d, true);
+        var s = system.Snapshot;
+        Assert.That(s.ScienceServedWatts, Is.EqualTo(0d));
+        Assert.That(s.EssentialServedWatts, Is.EqualTo(10d));
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(2.5d).Within(Exact));
+    }
+
+    [Test] public void IntegratedServiceIsIndependentOfStepSize()
+    {
+        var config = Config(100, 10000, 10, 20, 30);
+        var fine = Started(config);
+        double total = 0d;
+        for (int i = 0; i < 1000; i++)
+        {
+            fine.Advance(0.01, true);
+            total += fine.LastFullyServedScienceSeconds;
+        }
+        Assert.That(total, Is.EqualTo(2.5d).Within(1e-9));
+        Assert.That(fine.Snapshot.EnergyJoules, Is.EqualTo(0d));
+    }
+
+    [Test] public void PartialScienceServiceEarnsNoIntegratedTime()
+    {
+        // Discharge limit leaves science 10 W of 30 W: no full service at any instant.
+        var system = Started(Config(1000, 10000, 0, 50, 30, maxDischarge: 60));
+        system.Advance(5d, true);
+        Assert.That(system.Snapshot.ScienceServedWatts, Is.EqualTo(10d));
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(0d));
+    }
+
+    [Test] public void UnrequestedScienceEarnsNoIntegratedTime()
+    {
+        var system = Started(Config(1000, 10000, 100, 10, 30));
+        system.Advance(5d, false);
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(0d));
+    }
+
+    [Test] public void ReachingFullCapacityDoesNotInterruptScienceService()
+    {
+        // +50 W from 9900 J fills at 2 s; science stays fully served for the whole 10 s.
+        var system = Started(Config(9900, 10000, 100, 20, 30));
+        system.Advance(10d, true);
+        Assert.That(system.Snapshot.EnergyJoules, Is.EqualTo(10000d));
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(10d).Within(Exact));
+    }
+
+    [Test] public void IntegratedServiceDescribesOnlyTheLastNonzeroAdvance()
+    {
+        var system = Started(Config(1000, 10000, 100, 10, 30));
+        system.Advance(4d, true);
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(4d));
+        system.Advance(0d, false); // contract no-op
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(4d));
+        Assert.Throws<ArgumentOutOfRangeException>(() => system.Advance(-1d, true));
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(4d));
+        system.Advance(3d, false);
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(0d));
+        system.Advance(2d, true);
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(2d));
+        system.Reset(Config(1000, 10000, 100, 10, 30));
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(0d));
+    }
+
+    [Test] public void SecondsUntilServiceChangePredictsDepletionPerIntention()
+    {
+        // From 100 J: with science -40 W -> 2.5 s; without science 10 - 20 = -10 W -> 10 s.
+        var system = Started(Config(100, 10000, 10, 20, 30));
+        Assert.That(system.SecondsUntilServiceChange(true), Is.EqualTo(2.5d).Within(Exact));
+        Assert.That(system.SecondsUntilServiceChange(false), Is.EqualTo(10d).Within(Exact));
+    }
+
+    [Test] public void SecondsUntilServiceChangeDoesNotMutateTheModel()
+    {
+        var system = Started(Config(100, 10000, 10, 20, 30));
+        var before = system.Snapshot;
+        system.SecondsUntilServiceChange(true);
+        Assert.That(system.Snapshot, Is.SameAs(before));
+        system.Advance(1d, false); // last request false: science must not have been latched
+        Assert.That(system.Snapshot.ScienceRequestedWatts, Is.EqualTo(0d));
+        Assert.That(system.Snapshot.EnergyJoules, Is.EqualTo(90d).Within(Exact));
+    }
+
+    [Test] public void AdvancingExactlyToTheBoundaryLandsOnEmptyWithFullCredit()
+    {
+        var system = Started(Config(100, 10000, 10, 20, 30));
+        double boundary = system.SecondsUntilServiceChange(true);
+        system.Advance(boundary, true);
+        Assert.That(system.Snapshot.EnergyJoules, Is.EqualTo(0d));
+        Assert.That(system.LastFullyServedScienceSeconds, Is.EqualTo(boundary));
+        // After depletion essential is no longer fully served: no further steady segment to wait for.
+        Assert.That(system.SecondsUntilServiceChange(false), Is.EqualTo(0d));
+    }
+
+    [Test] public void SecondsUntilServiceChangeReportsSteadyAndChargingCases()
+    {
+        // Charging +50 W from 9900 J: dispatch changes when full, after 2 s.
+        var charging = Started(Config(9900, 10000, 100, 20, 30));
+        Assert.That(charging.SecondsUntilServiceChange(true), Is.EqualTo(2d).Within(Exact));
+        // Full battery with surplus: steady forever.
+        var full = Started(Config(10000, 10000, 100, 20, 30));
+        Assert.That(full.SecondsUntilServiceChange(true), Is.EqualTo(double.PositiveInfinity));
+        // Generation exactly matches demand: steady forever.
+        var balanced = Started(Config(500, 10000, 50, 20, 30));
+        Assert.That(balanced.SecondsUntilServiceChange(true), Is.EqualTo(double.PositiveInfinity));
+        // Essential not covered even at the start: zero.
+        var lost = Started(Config(1000, 10000, 0, 50, 0, maxDischarge: 40));
+        Assert.That(lost.SecondsUntilServiceChange(false), Is.EqualTo(0d));
+    }
+
+    [Test] public void SecondsUntilServiceChangeRequiresReset()
+    {
+        var system = new PowerSystem();
+        Assert.Throws<InvalidOperationException>(() => system.SecondsUntilServiceChange(true));
+    }
+
+    [Test] public void IntegratedServiceSplitsAcrossBoundariesLikeTheSessionLoop()
+    {
+        // Same consumption pattern as a session advancing up to each service change.
+        var config = Config(100, 10000, 10, 20, 30);
+        var stepped = Started(config);
+        double remaining = 10d, credited = 0d;
+        while (remaining > 0d)
+        {
+            double boundary = stepped.SecondsUntilServiceChange(true);
+            double step = boundary > 0d ? Math.Min(remaining, boundary) : remaining;
+            stepped.Advance(step, true);
+            credited += stepped.LastFullyServedScienceSeconds;
+            remaining -= step;
+        }
+        var single = Started(config);
+        single.Advance(10d, true);
+        Assert.That(credited, Is.EqualTo(single.LastFullyServedScienceSeconds).Within(Exact));
+        Assert.That(stepped.Snapshot.EnergyJoules, Is.EqualTo(single.Snapshot.EnergyJoules));
+    }
 }
-#endif

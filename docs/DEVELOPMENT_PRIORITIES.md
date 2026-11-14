@@ -1,44 +1,41 @@
-# Development Priorities
+# Development Priorities — Five Playable Phases
 
-This is the compact, updated delivery order. It supersedes the old roadmap's recommendation to postpone multiplayer: multiplayer is now required. It is a plan, not implemented functionality or a test report. Do not execute these phases unless the user requests implementation.
+**Current plan:** exactly five cumulative phases. Each closes with an integrated, visible, playable build and real multiplayer validation, not independent code alone. This replaces the old P0/P1/P2 delivery sequence and the historical six-plus-preparation phase numbering. SCOPE remains the scientific reference, not the current delivery calendar.
 
-## P0 — Small, complete cooperative prototype
+## 1 — Playable cooperative power room
 
-1. **Scenario and tooling contract:** confirm the playable trade-off and necessary assumptions. Inspect/pin the actual existing Editor/project before choosing packages. Make a smoke build on the approved target early.
-2. **Shared-session proof:** two clients join one session, request a load change and observe one consistent result. Choose the backend only with approval. Prove real connectivity before final art or large maps.
-3. **Authoritative physical core:** one clock, resource ledger, capacities, electrical bus/battery, stable event ordering and explicit units. Views and clients cannot debit independent copies.
-4. **Power plus life support:** connect essential/optional loads and a bounded crew/O2/CO2 service model. Optional science should change the reserve trajectory. Demand is applied once.
-5. **Playable loop now:** start, inspect, act, see consequences, finish/cancel, debrief and retry. Use placeholders; keep two or three decisions visible at once.
-6. **Supplies and tasks:** potable versus untreated water, food stock, explicit modeled outputs and exclusive crew/equipment assignments. Add only the processes the scenario needs.
-7. **Bounded EVA and contingency:** a return route, ingress time, limiting services/reserve and one understandable authored event or repair. No operational/medical safety claim.
-8. **Submission hardening:** source/assumption labels, readable alerts and controls, disconnect behavior, target build, reset flow, demo instructions and regression checks.
+A simple visible 2D base room, battery, essential/science loads, station selection, two connected clients, objective, result and retry. Basic sprites/prefabs and a working scene are required now. No avatar movement or physiology is required yet. Reuse the five existing implementation branches; review and integrate them inside this phase before calling it complete.
 
-Networking and physics are dependencies, not a reason to delay the first playable loop indefinitely. Build one thin cooperative slice before expanding.
+## 2 — Playable base management
 
-## Multiplayer contract
+Simple controllable 2D crew, interior stations, exclusive tasks, bounded air services, water quality and food stocks. Players divide time and power while completing an interior mission. No instant harvest or clinical claims.
 
-- One authority owns physical state/time. Clients submit commands; the authority validates resources, ownership and applicability.
-- Stable action IDs/handling prevent duplicate consumption. Exclusive work/equipment cannot be claimed twice.
-- Shared pause/speed/restart policy; no independent client clock advancement.
-- Handle client loss deliberately; for an initial host-based prototype, host loss can end/interrupt the session with an explanation. Do not promise host migration/reconnect recovery before implementation.
-- Private room codes, temporary names and quick pings are recommendations. Voice, public matchmaking and cross-platform support are not implied requirements.
-- NASA datasets can be packaged while multiplayer still needs connectivity. A local fallback does not prove online networking works.
-- Earth-to-base delay is a simulated domain property, not general lag imposed on teammates.
+## 3 — Playable exterior mission
 
-## P1 — Improve a working slice
+Small exterior, airlock, task, optional science objective, return margin and effective protection. Add a clearly labeled authored or contextualized archived particle alert, not unsupported human dose or forecasting.
 
-Coupled thermal behavior; better sensing/diagnosis; site-based lighting; contamination/airlock accounting; richer activity/rest planning; contact windows; source-availability-aware replay; additional debrief alternatives. If a P0 claim already depends on a service, model/bound it there rather than pretending its dependency does not exist until P1.
+## 4 — Playable mission operations
 
-## P2 — Later depth
+One understandable contingency, inspection/repair/test, dated observations and deferred Earth support. Add bounded food-production planning with actual resource/time cost; yields require valid data and biological time. Keep a short mission honest if no harvest occurs.
 
-Separate Mars calibration, crop cohorts, industrial ISRU, detailed chemical recovery, long logistics, complex rescue, free expansion and advanced generation. None is needed to prove the first trade-off.
+## 5 — Playable release candidate
 
-## Evidence-gated, regardless of available coding time
+Polish the already-working game: tutorial, visual/audio consistency, accessibility, readable debrief, sources/licenses, target build, actual multiplayer group/topology testing and demo. This is not when graphics or integration begin.
 
-Human dose/shielding numbers require valid response/transport data and geometry. Clinical risk prediction is outside scope. Solar forecasting needs a defined target, sufficient data, temporal validation and calibration. Authored events/replay must not be labeled operational forecasts.
+## Five parallel workstreams in every phase
 
-## Acceptance checks when code exists
+D1 simulation; D2 gameplay/composition and sole shared-scene integrator; D3 multiplayer; D4 2D art/UI/prefabs; D5 validators, tests and builds. Use one frozen base commit/API and separate owned files. Roles can build against agreed contracts/fakes, but fakes do not prove the integrated mission.
 
-Write and run focused tests for conservation; nonnegative/capacity-limited resources; battery power versus energy; no double demand; pause/event timing; step-refinement behavior; command idempotence; conflicting multiplayer actions; restart; and the complete mission flow. Test two actual clients and the built target, not only the Editor.
+Review and merge the five parts into `integration/phase-NN`, wire the scene in a separately authorized integration task, remove production fakes and test the same build. Integration is part of the current phase, not a sixth phase. Contracts/global dependencies change only through a coordinated approved update.
 
-Record actual commands/results or execution blockers. Numeric repeatability is not scientific validation; same seed does not guarantee bitwise cross-platform identity. Exact Unity test/build commands depend on the installed Editor, license, modules and packages and must be discovered, not invented.
+## Existing strict assignments
+
+They remain valid isolated implementation tasks until explicitly replaced. This new roadmap does not grant running agents permission to edit protected files/scenes. Finish/review their scoped outputs, then authorize the integration and missing visual work needed to close phase 1. Do not throw away correct code or rewrite the shared base without inspection.
+
+## Non-negotiable validation
+
+Conservation, explicit units/capacities, no duplicate resource consumption, one clock/authority, stable epochs/revisions, command idempotence, permitted actions, coherent restart and visible disconnection behavior. Compare steps/tolerances where relevant; test the actual player target and real clients. Report blockers and real commands/results. No fabricated test output or cross-platform guarantees.
+
+No timeline estimate, final camera, final player count, network SDK or deployment target is settled by this plan. The owner reports matching LTS/modules; inspect actual versions. Scientific gates for human dose, clinical risk, unvalidated forecasting and industrial technology remain in force.
+
+The expanded plan is `docs/DEVELOPMENT_ROADMAP.md`, with five team handoffs under `docs/roadmap/` when the new roadmap pack is installed. Read only the phase/role needed. This documentation update does not implement, merge or publish game code.
