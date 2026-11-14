@@ -34,7 +34,10 @@ namespace Trainer.Application
         /// <summary>Duration elapsed without reaching the objective. Maps to Completed.</summary>
         TimeExpired,
         /// <summary>Essential demand was not fully served. Maps to Interrupted.</summary>
-        EssentialServiceLost
+        EssentialServiceLost,
+        /// <summary>The injected simulation failed (threw or returned no snapshot). Maps to Interrupted;
+        /// only Restart is accepted afterwards.</summary>
+        SimulationFault
     }
 
     /// <summary>Pure evaluation of served science work and mission end conditions.
@@ -43,6 +46,9 @@ namespace Trainer.Application
     {
         /// <summary>Relative tolerance used when comparing served with requested watts.</summary>
         public const double ServiceTolerance = 1e-9;
+        /// <summary>Absolute tolerance (simulated seconds) for reaching the duration and the objective,
+        /// so a simulation that lands a rounding error short of a limit still ends the mission.</summary>
+        public const double TimeToleranceSeconds = 1e-6;
 
         /// <summary>True when the load has positive demand and that demand is fully served.</summary>
         public static bool IsFullyServed(double requestedWatts, double servedWatts)
@@ -79,8 +85,10 @@ namespace Trainer.Application
             bool essentialServed = power.EssentialRequestedWatts <= 0
                 || IsFullyServed(power.EssentialRequestedWatts, power.EssentialServedWatts);
             if (!essentialServed) return MissionOutcome.EssentialServiceLost;
-            if (scienceWorkSeconds >= rules.ScienceWorkTargetSeconds) return MissionOutcome.ObjectiveAchieved;
-            if (power.SimulatedTimeSeconds >= rules.MissionDurationSeconds) return MissionOutcome.TimeExpired;
+            if (scienceWorkSeconds >= rules.ScienceWorkTargetSeconds - TimeToleranceSeconds)
+                return MissionOutcome.ObjectiveAchieved;
+            if (power.SimulatedTimeSeconds >= rules.MissionDurationSeconds - TimeToleranceSeconds)
+                return MissionOutcome.TimeExpired;
             return MissionOutcome.InProgress;
         }
 
@@ -92,6 +100,7 @@ namespace Trainer.Application
                 case MissionOutcome.TimeExpired:
                     return SessionState.Completed;
                 case MissionOutcome.EssentialServiceLost:
+                case MissionOutcome.SimulationFault:
                     return SessionState.Interrupted;
                 case MissionOutcome.InProgress:
                     return SessionState.Running;

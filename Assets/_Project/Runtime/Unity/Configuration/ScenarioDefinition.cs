@@ -35,6 +35,24 @@ namespace Trainer.Unity.Configuration
         public double TimeScale => timeScale;
         public double MaxStepSeconds => maxStepSeconds;
 
+        /// <summary>Returns null when the values can build a session, otherwise the first problem found.
+        /// Never modifies the asset.</summary>
+        public string Validate()
+        {
+            double[] power = { initialEnergyJoules, capacityJoules, generationWatts, essentialConsumptionWatts,
+                scienceConsumptionWatts, maxChargeWatts, maxDischargeWatts };
+            foreach (double value in power)
+                if (!IsFinite(value) || value < 0) return "Power values must be finite and nonnegative.";
+            if (initialEnergyJoules > capacityJoules) return "Initial energy exceeds capacity.";
+            if (!(scienceConsumptionWatts > 0))
+                return "Science consumption must be positive to evaluate served science work.";
+            if (!IsPositive(scienceWorkTargetSeconds)) return "Science work target must be positive.";
+            if (!IsPositive(missionDurationSeconds)) return "Mission duration must be positive.";
+            if (!IsPositive(maxStepSeconds)) return "Max step must be positive.";
+            if (!IsPositive(timeScale)) return "Time scale must be positive (0 would freeze the mission clock).";
+            return null;
+        }
+
         /// <summary>Throws if values violate the PowerConfiguration contract.</summary>
         public PowerConfiguration ToPowerConfiguration()
         {
@@ -48,7 +66,23 @@ namespace Trainer.Unity.Configuration
         public MissionRules ToMissionRules() => new MissionRules(scienceWorkTargetSeconds, missionDurationSeconds);
 
         /// <summary>Creates the authoritative session for this scenario over the given simulation.</summary>
-        public MissionSession CreateSession(IPowerSimulation simulation) =>
-            new MissionSession(simulation, ToPowerConfiguration(), ToMissionRules(), maxStepSeconds);
+        public MissionSession CreateSession(IPowerSimulation simulation)
+        {
+            string problem = Validate();
+            if (problem != null) throw new System.InvalidOperationException($"ScenarioDefinition '{name}': {problem}");
+            return new MissionSession(simulation, ToPowerConfiguration(), ToMissionRules(), maxStepSeconds);
+        }
+
+#if UNITY_EDITOR
+        // Authoring feedback only: reports, never clamps or rewrites the values.
+        private void OnValidate()
+        {
+            string problem = Validate();
+            if (problem != null) Debug.LogWarning($"ScenarioDefinition '{name}': {problem}", this);
+        }
+#endif
+
+        private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
+        private static bool IsPositive(double value) => IsFinite(value) && value > 0;
     }
 }

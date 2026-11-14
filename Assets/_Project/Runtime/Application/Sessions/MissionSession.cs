@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using Trainer.Simulation;
 
 namespace Trainer.Application
@@ -18,6 +19,8 @@ namespace Trainer.Application
     public sealed class MissionSession : ISessionPort
     {
         public const double DefaultMaxStepSeconds = 1.0;
+        /// <summary>Shortest step used when trimming to the remaining science work (bounds overshoot).</summary>
+        public const double MinimumWorkStepSeconds = 1e-3;
 
         private readonly IPowerSimulation simulation;
         private readonly PowerConfiguration configuration;
@@ -70,22 +73,40 @@ namespace Trainer.Application
 
             string rejection = Validate(command);
             MissionSnapshot next = snapshot;
-            if (rejection == null) next = Apply(command);
+            Exception fault = null;
+            if (rejection == null)
+            {
+                try { next = Apply(command); }
+                catch (Exception e)
+                {
+                    // Only Restart touches the simulation. Record the command so a replay does not reset
+                    // again, and end the session so nothing advances a simulation in an unknown state.
+                    fault = e;
+                    rejection = "SimulationFault";
+                    Outcome = MissionOutcome.SimulationFault;
+                    next = With(SessionState.Interrupted, snapshot.ScienceEnabled);
+                }
+            }
 
             var result = new CommandResult(command.Id, command.Epoch, rejection == null, rejection ?? "Accepted");
             commands.Add(command.Id, command);
             results.Add(command.Id, result);
+            bool changed = next != snapshot;
             snapshot = next;
             try
             {
-                if (result.Accepted) SnapshotChanged?.Invoke(next);
+                if (changed) SnapshotChanged?.Invoke(next);
             }
             finally { CommandCompleted?.Invoke(result); }
+            if (fault != null) ExceptionDispatchInfo.Capture(fault).Throw();
         }
 
         /// <summary>
         /// Advances the mission by simulated seconds. Only the authority's runner calls this.
         /// Does nothing unless Running. Publishes at most one snapshot per call.
+        /// If the simulation throws, progress from completed sub-steps is kept, the session becomes
+        /// Interrupted (Outcome = SimulationFault) and the exception is rethrown.
+        /// If the simulation stops advancing its clock, the rest of this call is skipped.
         /// </summary>
         public void Tick(double elapsedSimulatedSeconds)
         {
@@ -98,27 +119,54 @@ namespace Trainer.Application
             double work = snapshot.ScienceWorkSeconds;
             double remaining = elapsedSimulatedSeconds;
             MissionOutcome outcome = MissionOutcome.InProgress;
-            PowerSnapshot after = snapshot.Power;
+            PowerSnapshot last = snapshot.Power;
+            bool progressed = false;
 
-            while (remaining > 0 && outcome == MissionOutcome.InProgress)
+            try
             {
-                PowerSnapshot before = RequireSnapshot();
-                double step = Math.Min(remaining, maxStepSeconds);
-                // Do not run past the mission duration inside a single step.
-                double timeLeft = Rules.MissionDurationSeconds - before.SimulatedTimeSeconds;
-                if (timeLeft > 0) step = Math.Min(step, timeLeft);
+                while (remaining > 0 && outcome == MissionOutcome.InProgress)
+                {
+                    PowerSnapshot before = RequireSnapshot();
+                    double step = NextStep(remaining, before.SimulatedTimeSeconds, science, work);
+                    simulation.Advance(step, science);
+                    PowerSnapshot after = RequireSnapshot();
+                    // A simulation whose clock does not move would otherwise loop for every remaining step.
+                    if (!(after.SimulatedTimeSeconds > before.SimulatedTimeSeconds)) break;
 
-                simulation.Advance(step, science);
-                after = RequireSnapshot();
-                work += MissionOutcomeEvaluator.ServedScienceSeconds(before, after, science);
-                remaining -= step;
-                outcome = MissionOutcomeEvaluator.Evaluate(Rules, after, work);
+                    work += MissionOutcomeEvaluator.ServedScienceSeconds(before, after, science);
+                    remaining -= step;
+                    outcome = MissionOutcomeEvaluator.Evaluate(Rules, after, work);
+                    last = after;
+                    progressed = true;
+                }
+            }
+            catch
+            {
+                Outcome = MissionOutcome.SimulationFault;
+                snapshot = new MissionSnapshot(snapshot.Epoch, checked(snapshot.Revision + 1),
+                    SessionState.Interrupted, last, work, science);
+                try { SnapshotChanged?.Invoke(snapshot); }
+                catch { /* the simulation failure is the error reported to the caller */ }
+                throw;
             }
 
+            if (!progressed) return;
             Outcome = outcome;
             snapshot = new MissionSnapshot(snapshot.Epoch, checked(snapshot.Revision + 1),
-                MissionOutcomeEvaluator.ToSessionState(outcome), after, work, science);
+                MissionOutcomeEvaluator.ToSessionState(outcome), last, work, science);
             SnapshotChanged?.Invoke(snapshot);
+        }
+
+        /// <summary>Sub-step length: at most maxStepSeconds, never past the mission duration, and trimmed
+        /// to the science work still needed (not below MinimumWorkStepSeconds) to avoid overshooting.</summary>
+        private double NextStep(double remaining, double simulatedTime, bool science, double work)
+        {
+            double step = Math.Min(remaining, maxStepSeconds);
+            double timeLeft = Rules.MissionDurationSeconds - simulatedTime;
+            if (timeLeft > 0) step = Math.Min(step, timeLeft);
+            if (science)
+                step = Math.Min(step, Math.Max(Rules.ScienceWorkTargetSeconds - work, MinimumWorkStepSeconds));
+            return step;
         }
 
         private string Validate(SessionCommand command)

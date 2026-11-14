@@ -26,6 +26,10 @@ namespace Trainer.Unity.Bootstrap
         /// <summary>Raised once per successful Compose.</summary>
         public event Action<MissionSession> Composed;
 
+        /// <summary>Raised once when a composed session is released. Consumers holding Port must drop it:
+        /// the session is no longer ticked.</summary>
+        public event Action<MissionSession> ShutDown;
+
         /// <summary>Creates the single authoritative session and starts its clock.</summary>
         public MissionSession Compose(IPowerSimulation simulation)
         {
@@ -41,11 +45,13 @@ namespace Trainer.Unity.Bootstrap
             return session;
         }
 
-        /// <summary>Stops the clock and releases the session.</summary>
+        /// <summary>Stops the clock and releases the session. Safe to call more than once.</summary>
         public void Shutdown()
         {
             if (runner != null) runner.Unbind();
+            MissionSession released = Session;
             Session = null;
+            if (released != null) ShutDown?.Invoke(released);
         }
 
         /// <summary>Composition without runner or scene, usable from tests or another composition root.</summary>

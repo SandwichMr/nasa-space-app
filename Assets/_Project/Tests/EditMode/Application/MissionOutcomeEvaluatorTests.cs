@@ -60,7 +60,18 @@ public sealed class MissionOutcomeEvaluatorTests
         Assert.That(MissionOutcomeEvaluator.ToSessionState(MissionOutcome.ObjectiveAchieved), Is.EqualTo(SessionState.Completed));
         Assert.That(MissionOutcomeEvaluator.ToSessionState(MissionOutcome.TimeExpired), Is.EqualTo(SessionState.Completed));
         Assert.That(MissionOutcomeEvaluator.ToSessionState(MissionOutcome.EssentialServiceLost), Is.EqualTo(SessionState.Interrupted));
+        Assert.That(MissionOutcomeEvaluator.ToSessionState(MissionOutcome.SimulationFault), Is.EqualTo(SessionState.Interrupted));
         Assert.Throws<ArgumentOutOfRangeException>(() => MissionOutcomeEvaluator.ToSessionState((MissionOutcome)99));
+    }
+
+    [Test] public void LimitsAreReachedWithinRoundingTolerance()
+    {
+        Assert.That(MissionOutcomeEvaluator.Evaluate(Rules, Power(100 - 1e-9, 60, 60, 0, 0), 0),
+            Is.EqualTo(MissionOutcome.TimeExpired));
+        Assert.That(MissionOutcomeEvaluator.Evaluate(Rules, Power(50, 60, 60, 0, 0), 10 - 1e-9),
+            Is.EqualTo(MissionOutcome.ObjectiveAchieved));
+        Assert.That(MissionOutcomeEvaluator.Evaluate(Rules, Power(100 - 1e-3, 60, 60, 0, 0), 10 - 1e-3),
+            Is.EqualTo(MissionOutcome.InProgress));
     }
 }
 #endif

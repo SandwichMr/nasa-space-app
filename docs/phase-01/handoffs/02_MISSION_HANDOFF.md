@@ -3,7 +3,7 @@
 ## Base y rama
 
 - Commit de base: `4850e1d128ca1c1666d6cdd13e0a4de05d4f6687` (`main`, "docs 2"), con los contratos de `SESSION_CONTRACT.md`.
-- Rama: `phase1/mission-integration`. Cambios **sin commit**, pendientes de revisión. Sin merge, rebase ni push.
+- Rama: `phase1/mission-integration`. Entrega inicial en el commit `83604bc`; las correcciones de la revisión de código van en un commit posterior. Revisar con `git diff 4850e1d...phase1/mission-integration`. Sin merge a `main`.
 - Contratos protegidos, `FakeSessionPort`, escenas, paquetes, ajustes y archivos de otros roles: **sin cambios**.
 
 ## Archivos creados
@@ -15,8 +15,8 @@
 | `Assets/_Project/Runtime/Unity/Configuration/ScenarioDefinition.cs` | `ScriptableObject` de authoring y conversión a objetos en memoria. |
 | `Assets/_Project/Runtime/Unity/Bootstrap/SimulationRunner.cs` | El único reloj: `Update` llama a `MissionSession.Tick`. |
 | `Assets/_Project/Runtime/Unity/Bootstrap/MissionBootstrap.cs` | Raíz de composición del lado autoridad. Sin conectar a ninguna escena. |
-| `Assets/_Project/Tests/EditMode/Application/MissionSessionTests.cs` | 16 tests (protegidos por `#if`, ver abajo). |
-| `Assets/_Project/Tests/EditMode/Application/MissionOutcomeEvaluatorTests.cs` | 5 tests (protegidos por `#if`). |
+| `Assets/_Project/Tests/EditMode/Application/MissionSessionTests.cs` | 21 tests (protegidos por `#if`, ver abajo). |
+| `Assets/_Project/Tests/EditMode/Application/MissionOutcomeEvaluatorTests.cs` | 6 tests (protegidos por `#if`). |
 | `docs/phase-01/handoffs/02_MISSION_HANDOFF.md` | Este documento. |
 
 No hay `.meta`: el proyecto nunca se abrió en Unity en esta máquina (no existe `Library/`). Unity los generará; versionar solo los de estos archivos.
@@ -27,13 +27,15 @@ No hay `.meta`: el proyecto nunca se abrió en Unity en esta máquina (no existe
 - **Resultados asíncronos:** se publican solo por `CommandCompleted`, con `CommandId` y la época original del comando. Si el comando se acepta, `SnapshotChanged` se emite antes que el resultado. Los consumidores no deben depender de ese orden.
 - **Deduplicación:** cada ID guarda su comando y su resultado (también los rechazos) durante toda la vida de la instancia, incluso tras un Restart. Repetir el mismo comando devuelve el resultado guardado sin reaplicarlo y sin emitir un snapshot. Un contenido distinto con el mismo ID se rechaza.
 - **Épocas:** un comando nuevo de una época anterior o futura se rechaza. Restart incrementa la época, pone la revisión a 0, llama a `IPowerSimulation.Reset(config)`, desactiva la ciencia, pone el trabajo a 0 y deja la sesión en Ready.
-- **Reloj:** `Tick(segundosSimulados)` solo avanza en Running. Divide el tiempo en subpasos de como máximo `maxStepSeconds` (1 s por defecto), no se pasa de la duración de la misión, deja de avanzar en cuanto hay un resultado y publica **un** snapshot por Tick con `revision + 1`.
+- **Reloj:** `Tick(segundosSimulados)` solo avanza en Running. Divide el tiempo en subpasos de como máximo `maxStepSeconds` (1 s por defecto), no se pasa de la duración de la misión, recorta el último paso a lo que falta del objetivo (mínimo `MinimumWorkStepSeconds` = 1 ms, así que el exceso queda acotado a 1 ms), deja de avanzar en cuanto hay un resultado y publica **un** snapshot por Tick con `revision + 1`. Si el reloj de la simulación no avanza, se descarta el resto de ese Tick (no hay bucle infinito). La duración y el objetivo se consideran alcanzados con una tolerancia de 1e-6 s, para absorber errores de redondeo de la simulación.
 - **Trabajo científico servido:** por cada subpaso se acredita el tiempo simulado que avanzó la simulación (`after.SimulatedTimeSeconds - before.SimulatedTimeSeconds`), pero solo si la ciencia estaba solicitada y el snapshot posterior muestra `ScienceServedWatts >= ScienceRequestedWatts > 0`. Un servicio parcial no acredita nada. No se usa el tiempo transcurrido a ciegas.
 - **Resultado** (`MissionOutcomeEvaluator.Evaluate`, por orden de prioridad):
   1. Carga esencial no servida por completo → `Interrupted` (`EssentialServiceLost`).
   2. Trabajo ≥ objetivo → `Completed` (`ObjectiveAchieved`).
   3. Tiempo simulado ≥ duración → `Completed` (`TimeExpired`).
-- **Hilos y reentrada:** un solo hilo. El estado y la deduplicación se confirman antes de emitir eventos, así que un suscriptor puede volver a llamar a `Submit`. Las excepciones de los suscriptores y de la simulación se propagan.
+  4. La simulación lanza una excepción o devuelve un snapshot null → `Interrupted` (`SimulationFault`).
+- **Fallos de la simulación:** si `Advance` falla a mitad de un Tick, se conserva lo avanzado en los subpasos completos, la sesión pasa a `Interrupted` (`SimulationFault`) y se relanza la excepción. Si falla el `Reset` de un Restart, el comando queda registrado como rechazado (`SimulationFault`), de modo que repetirlo no vuelve a reiniciar; la sesión pasa a `Interrupted` en la misma época (con el último `Power` conocido) y se relanza la excepción. En ambos casos solo se acepta un nuevo Restart.
+- **Hilos y reentrada:** un solo hilo. El estado y la deduplicación se confirman antes de emitir eventos, así que un suscriptor puede volver a llamar a `Submit`. Las excepciones de los suscriptores se propagan, salvo en la ruta de fallo de la simulación, donde la excepción relanzada es la de la simulación.
 
 ## Uso / API de composición
 
@@ -47,14 +49,14 @@ var s = new MissionSession(sim, powerConfiguration, new MissionRules(targetSecon
 s.Tick(simulatedSeconds);
 ```
 
-`ScenarioDefinition` expone `ToPowerConfiguration()`, `ToMissionRules()`, `CreateSession(sim)`, `TimeScale` y `MaxStepSeconds`. La conversión crea objetos nuevos y nunca muta el asset. Sus valores por defecto (5000/10000 J, 100 W de generación, 60 W esenciales, 60 W de ciencia, 120 s de objetivo, 300 s de duración) son **ilustrativos**, no datos aprobados. No se creó ningún asset `.asset`.
+`ScenarioDefinition` expone `Validate()`, `ToPowerConfiguration()`, `ToMissionRules()`, `CreateSession(sim)`, `TimeScale` y `MaxStepSeconds`. La conversión crea objetos nuevos y nunca muta el asset. En el Editor, `OnValidate` avisa con un warning si hay valores que no permitirían crear la sesión (por ejemplo, 0 en duración, objetivo, paso máximo o `timeScale`), sin corregirlos. `CreateSession` lanza una excepción con el mismo mensaje. `MissionBootstrap` emite `Composed` al crear la sesión y `ShutDown` al liberarla. Sus valores por defecto (5000/10000 J, 100 W de generación, 60 W esenciales, 60 W de ciencia, 120 s de objetivo, 300 s de duración) son **ilustrativos**, no datos aprobados. No se creó ningún asset `.asset`.
 
 ## Pruebas realmente ejecutadas
 
 Unity no se ejecutó: el proyecto nunca se ha importado aquí y no quise generar `Library/` ni `.meta` de archivos ajenos. En su lugar, con las herramientas que trae el propio Editor 6000.3.28f1 (Roslyn `csc.dll` y .NET 6.0.21 de `Editor/Data`):
 
-1. **Tests**: compilé `Runtime/Simulation` + `Runtime/Application` + los dos archivos de tests + `FakeSessionPortTests` (con `-define:TRAINER_MISSION_TESTS`) usando un **shim mínimo de NUnit** (Test, SetUp, `Assert.That` con Is.True/False/EqualTo/SameAs, `Assert.Throws`) y un runner por reflection, todo en un scratchpad fuera del repo. Resultado: `Passed 27, Failed 0` (16 de sesión, 5 del evaluador y 6 del fake existente). **No es una ejecución con el Unity Test Runner ni con NUnit real.**
-2. **Compilación Unity**: compilé todo `Assets/_Project/Runtime` contra `netstandard 2.1` + `UnityEngine.CoreModule.dll` del Editor. Compila; solo aparecen los avisos CS0649 propios de `[SerializeField]`.
+1. **Tests**: compilé `Runtime/Simulation` + `Runtime/Application` + los dos archivos de tests + `FakeSessionPortTests` (con `-define:TRAINER_MISSION_TESTS`) usando un **shim mínimo de NUnit** (Test, SetUp, `Assert.That` con Is.True/False/EqualTo/SameAs, `Assert.Throws`) y un runner por reflection, todo en un scratchpad fuera del repo. Resultado tras las correcciones de la revisión: `Passed 33, Failed 0` (21 de sesión, 6 del evaluador y 6 del fake existente). **No es una ejecución con el Unity Test Runner ni con NUnit real.**
+2. **Compilación Unity**: compilé todo `Assets/_Project/Runtime` contra `netstandard 2.1` + `UnityEngine.CoreModule.dll` del Editor, con y sin `UNITY_EDITOR`. Compila; solo aparecen los avisos CS0649 propios de `[SerializeField]`.
 
 No verificado: la compilación dentro del Editor, la serialización de `double` en el Inspector, el runner en Play Mode, la red ni las escenas.
 
@@ -68,11 +70,13 @@ No verificado: la compilación dentro del Editor, la serialización de `double` 
 4. **Precisión del trabajo servido.** `PowerSnapshot` es instantáneo y no trae energía servida acumulada. Si el servicio cambia dentro de un subpaso, no se ve, y la evaluación usa el estado al final del subpaso (error acotado por `maxStepSeconds`). Lo mismo vale para detectar la pérdida de carga esencial. Propuesta: un acumulado de energía servida por carga en `PowerSnapshot`.
 5. **Política de misión provisional.** Que la misión termine al alcanzar el objetivo, que se interrumpa ante cualquier déficit esencial y que el servicio parcial de ciencia no acredite trabajo son decisiones mías para que el flujo funcione. Las debe confirmar el equipo.
 6. **Memoria.** Los IDs se guardan durante toda la vida de la instancia (lo exige el contrato), así que el consumo crece con el número de comandos.
+7. **Frecuencia de snapshots.** `SimulationRunner` llama a `Tick` en cada frame, así que la sesión publica un snapshot por frame (unos 60/s). El adaptador de red (D3) debe limitar el reenvío (por intervalo, o al cambiar estado/época) en lugar de difundir cada snapshot.
+8. **Duplicación con el fake.** La validación de comandos repite la de `FakeSessionPort` a propósito, para que la UI se comporte igual con el fake y con la sesión real. Como el fake está protegido, unificarlas en un validador común requeriría un cambio de base coordinado.
 
 ## Pasos de conexión (integración posterior, no realizados)
 
 1. **D1:** instanciar su `IPowerSimulation` **solo en la autoridad** y pasarla a `MissionBootstrap.Compose(sim)`. `MissionSession` llama a `Reset`; D1 no debe avanzarse desde ningún otro sitio.
-2. **Escena (autoridad):** un GameObject con `MissionBootstrap` y `SimulationRunner`, y un `ScenarioDefinition` asset (crearlo con *Create → Trainer → Scenario Definition*) asignado. Debe existir un único runner por sesión compartida. Llamar a `Compose` cuando la red confirme el rol de autoridad y a `Shutdown` al terminar o al perder el host.
+2. **Escena (autoridad):** un GameObject con `MissionBootstrap` y `SimulationRunner`, y un `ScenarioDefinition` asset (crearlo con *Create → Trainer → Scenario Definition*) asignado. Debe existir un único runner por sesión compartida. Llamar a `Compose` cuando la red confirme el rol de autoridad y a `Shutdown` al terminar o al perder el host; los consumidores del `Port` deben soltarlo al recibir `ShutDown`.
 3. **D3 (adaptador de red):** en el host, envolver `bootstrap.Port`, reenviar los comandos remotos ya autenticados y autorizados a `Submit`, y difundir `SnapshotChanged`/`CommandCompleted`. Hacerlo en el hilo principal (`MissionSession` no es thread-safe). En los clientes, exponer un `ISessionPort` remoto: los clientes no crean `MissionSession` ni `SimulationRunner`. No duplicar la deduplicación: la de `MissionSession` es la autoritativa.
 4. **D4 (prefab UI):** consumir solo `ISessionPort` (el del host o el remoto), sin referenciar `MissionSession`.
 5. Resolver el bloqueo 1 para que los tests corran en el Unity Test Runner y ejecutarlos allí, junto con la prueba de dos clientes de D5.

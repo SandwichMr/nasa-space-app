@@ -19,6 +19,10 @@ public sealed class MissionSessionTests
         public readonly List<bool> ScienceFlags = new List<bool>();
         public double ScienceServedFraction = 1;
         public bool EssentialServed = true;
+        public bool FreezeTime;          // clock does not move (contract violation)
+        public double TimeDrift;         // each step lands this many seconds short (rounding error)
+        public int ThrowOnAdvanceCall;   // 1-based Advance call that throws; 0 = never
+        public bool ThrowOnReset;
         private PowerConfiguration config;
         private PowerSnapshot snapshot;
 
@@ -27,6 +31,7 @@ public sealed class MissionSessionTests
         public void Reset(PowerConfiguration configuration)
         {
             config = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            if (ThrowOnReset) throw new InvalidOperationException("Scripted reset failure.");
             ResetCount++;
             snapshot = Make(0, false);
         }
@@ -36,8 +41,9 @@ public sealed class MissionSessionTests
             if (config == null) throw new InvalidOperationException("Reset first.");
             Steps.Add(elapsedSeconds);
             ScienceFlags.Add(scienceRequested);
-            if (elapsedSeconds == 0) return;
-            snapshot = Make(snapshot.SimulatedTimeSeconds + elapsedSeconds, scienceRequested);
+            if (Steps.Count == ThrowOnAdvanceCall) throw new InvalidOperationException("Scripted advance failure.");
+            if (elapsedSeconds == 0 || FreezeTime) return;
+            snapshot = Make(snapshot.SimulatedTimeSeconds + elapsedSeconds - TimeDrift, scienceRequested);
         }
 
         private PowerSnapshot Make(double time, bool science)
@@ -313,6 +319,78 @@ public sealed class MissionSessionTests
         Send(SessionAction.Resume);
         Assert.That(Current().State, Is.EqualTo(SessionState.Paused));
         Assert.That(results.TrueForAll(r => r.Accepted), Is.True);
+    }
+    [Test] public void LastStepIsTrimmedToRemainingScienceWork()
+    {
+        var local = new ScriptedPowerSimulation();
+        var s = new MissionSession(local, Config, new MissionRules(2.5, 100), 1.0);
+        s.Submit(new SessionCommand(Guid.NewGuid(), 0, SessionAction.SetScienceEnabled, true));
+        s.Submit(new SessionCommand(Guid.NewGuid(), 0, SessionAction.Resume));
+        s.Tick(5);
+        Assert.That(local.Steps, Is.EqualTo(new List<double> { 1, 1, 0.5 }));
+        Assert.That(s.TryGetSnapshot(out MissionSnapshot snap), Is.True);
+        Assert.That(snap.ScienceWorkSeconds, Is.EqualTo(2.5));
+        Assert.That(snap.State, Is.EqualTo(SessionState.Completed));
+    }
+
+    [Test] public void FrozenSimulationClockDoesNotLoopOrPublish()
+    {
+        Send(SessionAction.Resume);
+        int published = snapshots.Count;
+        sim.FreezeTime = true;
+        session.Tick(1000);
+        Assert.That(sim.Steps.Count, Is.EqualTo(1));
+        Assert.That(snapshots.Count, Is.EqualTo(published));
+        Assert.That(Current().State, Is.EqualTo(SessionState.Running));
+    }
+
+    [Test] public void SimulationLandingJustShortOfDurationStillEndsMission()
+    {
+        Send(SessionAction.Resume);
+        sim.TimeDrift = 1e-9;
+        session.Tick(150);
+        Assert.That(Current().State, Is.EqualTo(SessionState.Completed));
+        Assert.That(session.Outcome, Is.EqualTo(MissionOutcome.TimeExpired));
+        Assert.That(sim.Steps.Count < 110, Is.True);
+    }
+
+    [Test] public void AdvanceFailureKeepsCompletedProgressAndInterrupts()
+    {
+        Send(SessionAction.SetScienceEnabled, true);
+        Send(SessionAction.Resume);
+        sim.ThrowOnAdvanceCall = 3;
+        int published = snapshots.Count;
+        Assert.Throws<InvalidOperationException>(() => session.Tick(5));
+        MissionSnapshot s = Current();
+        Assert.That(s.State, Is.EqualTo(SessionState.Interrupted));
+        Assert.That(s.ScienceWorkSeconds, Is.EqualTo(2.0));
+        Assert.That(s.Power.SimulatedTimeSeconds, Is.EqualTo(2.0));
+        Assert.That(session.Outcome, Is.EqualTo(MissionOutcome.SimulationFault));
+        Assert.That(snapshots.Count, Is.EqualTo(published + 1));
+        Assert.That(Send(SessionAction.Resume).Reason, Is.EqualTo("SessionEnded"));
+        sim.ThrowOnAdvanceCall = 0;
+        Assert.That(Send(SessionAction.Restart).Accepted, Is.True);
+        Assert.That(Current().State, Is.EqualTo(SessionState.Ready));
+    }
+
+    [Test] public void RestartFailureIsRecordedAndReplayDoesNotResetAgain()
+    {
+        Send(SessionAction.Resume);
+        sim.ThrowOnReset = true;
+        var restart = new SessionCommand(Guid.NewGuid(), 0, SessionAction.Restart);
+        Assert.Throws<InvalidOperationException>(() => session.Submit(restart));
+        Assert.That(results[results.Count - 1].Reason, Is.EqualTo("SimulationFault"));
+        Assert.That(Current().Epoch, Is.EqualTo(0L));
+        Assert.That(Current().State, Is.EqualTo(SessionState.Interrupted));
+        Assert.That(session.Outcome, Is.EqualTo(MissionOutcome.SimulationFault));
+
+        sim.ThrowOnReset = false;
+        session.Submit(restart); // replay: stored rejection, no second reset
+        Assert.That(results[results.Count - 1].Reason, Is.EqualTo("SimulationFault"));
+        Assert.That(sim.ResetCount, Is.EqualTo(1));
+        Assert.That(Send(SessionAction.Restart).Accepted, Is.True);
+        Assert.That(Current().Epoch, Is.EqualTo(1L));
+        Assert.That(sim.ResetCount, Is.EqualTo(2));
     }
 }
 #endif
