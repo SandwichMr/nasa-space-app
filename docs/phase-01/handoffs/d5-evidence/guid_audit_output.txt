@@ -1,0 +1,31 @@
+# git inspection copy of the user's .git; refs main=0f05e38, d04=df0bb12
+### main
+  ok   Assets/_Project/Prefabs/UI/MissionHUD.prefab -> Assets/_Project/Runtime/Unity/Presentation/MissionHUD.cs
+main: 1 guid refs, 0 unresolved
+### origin/feature/phase-01/d04-room-visuals
+  MISS Assets/_Project/Art/Sprites/Phase01/Phase01Sprite.mat -> 13c02b14c4d048fa9653293d54f6e0e1 (not in repo .meta; may be package/builtin)
+  ok   Assets/_Project/Prefabs/UI/MissionHUD.prefab -> Assets/_Project/Runtime/Unity/Presentation/MissionHUD.cs
+  ok   Assets/_Project/Prefabs/World/BatteryStation.prefab -> Assets/_Project/Art/Sprites/Phase01/Phase01Sprite.mat
+  ok   Assets/_Project/Prefabs/World/BatteryStation.prefab -> Assets/_Project/Art/Sprites/Phase01/battery.png
+  ok   Assets/_Project/Prefabs/World/BatteryStation.prefab -> Assets/_Project/Art/Sprites/Phase01/station-selection.png
+  ok   Assets/_Project/Prefabs/World/BatteryStation.prefab -> Assets/_Project/Art/Sprites/Phase01/battery-charge.png
+  ok   Assets/_Project/Prefabs/World/BatteryStation.prefab -> Assets/_Project/Runtime/Unity/World/PowerStationView.cs
+  ok   Assets/_Project/Prefabs/World/BatteryStation.prefab -> Assets/_Project/Art/Icons/Phase01/battery-icon.png
+  ok   Assets/_Project/Prefabs/World/EssentialStation.prefab -> Assets/_Project/Art/Sprites/Phase01/Phase01Sprite.mat
+  ok   Assets/_Project/Prefabs/World/EssentialStation.prefab -> Assets/_Project/Art/Sprites/Phase01/essential-service.png
+  ok   Assets/_Project/Prefabs/World/EssentialStation.prefab -> Assets/_Project/Art/Sprites/Phase01/station-selection.png
+  ok   Assets/_Project/Prefabs/World/EssentialStation.prefab -> Assets/_Project/Runtime/Unity/World/PowerStationView.cs
+  ok   Assets/_Project/Prefabs/World/EssentialStation.prefab -> Assets/_Project/Art/Icons/Phase01/essential-icon.png
+  ok   Assets/_Project/Prefabs/World/PowerRoom.prefab -> Assets/_Project/Art/Sprites/Phase01/Phase01Sprite.mat
+  ok   Assets/_Project/Prefabs/World/PowerRoom.prefab -> Assets/_Project/Runtime/Unity/World/PowerRoomView.cs
+  ok   Assets/_Project/Prefabs/World/PowerRoom.prefab -> Assets/_Project/Prefabs/World/BatteryStation.prefab
+  ok   Assets/_Project/Prefabs/World/PowerRoom.prefab -> Assets/_Project/Art/Sprites/Phase01/power-room.png
+  ok   Assets/_Project/Prefabs/World/PowerRoom.prefab -> Assets/_Project/Prefabs/World/ScienceStation.prefab
+  ok   Assets/_Project/Prefabs/World/PowerRoom.prefab -> Assets/_Project/Runtime/Unity/World/PowerStationView.cs
+  ok   Assets/_Project/Prefabs/World/PowerRoom.prefab -> Assets/_Project/Prefabs/World/EssentialStation.prefab
+  ok   Assets/_Project/Prefabs/World/ScienceStation.prefab -> Assets/_Project/Art/Sprites/Phase01/Phase01Sprite.mat
+  ok   Assets/_Project/Prefabs/World/ScienceStation.prefab -> Assets/_Project/Art/Icons/Phase01/science-icon.png
+  ok   Assets/_Project/Prefabs/World/ScienceStation.prefab -> Assets/_Project/Art/Sprites/Phase01/science-instrument.png
+  ok   Assets/_Project/Prefabs/World/ScienceStation.prefab -> Assets/_Project/Art/Sprites/Phase01/station-selection.png
+  ok   Assets/_Project/Prefabs/World/ScienceStation.prefab -> Assets/_Project/Runtime/Unity/World/PowerStationView.cs
+origin/feature/phase-01/d04-room-visuals: 25 guid refs, 1 unresolved

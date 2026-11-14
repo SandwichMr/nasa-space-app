@@ -35,17 +35,24 @@ namespace Trainer.Tooling.BuildChecks
 
     /// <summary>
     /// Phase 1 checks that run with the current project configuration (no test assemblies, packages or
-    /// settings changes). Everything here only reads settings; the build entry point writes to the
-    /// git-ignored Builds/ folder and uses the scenes already enabled in Build Settings.
+    /// settings changes). Everything here only reads settings and assets; scenes and prefabs are opened
+    /// without saving. The build uses an explicit list of MISSION scenes (never SampleScene/templates) and
+    /// writes to the git-ignored Builds/ folder; Build Settings are not modified.
     /// Batch usage (Unity closed for this project):
     ///   Unity.exe -batchmode -nographics -projectPath &lt;repo&gt; -executeMethod Trainer.Tooling.BuildChecks.PhaseOneBuildChecks.RunChecksFromCommandLine -logFile Logs/phase1-checks.log
-    ///   Unity.exe -batchmode -nographics -projectPath &lt;repo&gt; -executeMethod Trainer.Tooling.BuildChecks.PhaseOneBuildChecks.BuildFromCommandLine -logFile Logs/phase1-build.log
+    ///   Unity.exe -batchmode -nographics -projectPath &lt;repo&gt; -executeMethod Trainer.Tooling.BuildChecks.PhaseOneBuildChecks.BuildFromCommandLine -phase1Scenes "Assets/_Project/Scenes/&lt;Mission&gt;.unity" -logFile Logs/phase1-build.log
+    /// Without -phase1Scenes the single scene under Assets/_Project/Scenes is used; zero or several is an error.
     /// </summary>
     public static class PhaseOneBuildChecks
     {
         public const string OutputRoot = "Builds/Phase1Check";
+        public const string MissionBuildRoot = "Builds/Phase1Mission";
         public const string ReportFile = "phase1-checks.txt";
         public const string NUnitGateDefine = "TRAINER_PHASE1_VALIDATION_TESTS";
+        public const string SceneArgument = "-phase1Scenes";
+        public const string MissionScenesFolder = "Assets/_Project/Scenes";
+        /// <summary>Template scenes that must never be presented as the game.</summary>
+        public static readonly string[] TemplateScenes = { "Assets/Scenes/SampleScene.unity", "Assets/Settings/Scenes/URP2DSceneTemplate.unity" };
 
         [MenuItem("Tools/Trainer/Phase 1/Run validation checks")]
         public static void RunChecksMenu()
@@ -69,11 +76,11 @@ namespace Trainer.Tooling.BuildChecks
             EditorApplication.Exit(code);
         }
 
-        [MenuItem("Tools/Trainer/Phase 1/Build active target with current settings")]
+        [MenuItem("Tools/Trainer/Phase 1/Build mission scene (explicit list, Build Settings untouched)")]
         public static void BuildMenu()
         {
-            BuildReport report = BuildActiveTarget();
-            UnityEngine.Debug.Log("Phase 1 build: " + report.summary.result + " -> " + report.summary.outputPath);
+            BuildReport report = BuildMissionScenes(null);
+            UnityEngine.Debug.Log("Phase 1 mission build: " + report.summary.result + " -> " + report.summary.outputPath);
         }
 
         public static void BuildFromCommandLine()
@@ -81,8 +88,8 @@ namespace Trainer.Tooling.BuildChecks
             int code = 1;
             try
             {
-                BuildReport report = BuildActiveTarget();
-                UnityEngine.Debug.Log("Phase 1 build: " + report.summary.result + ", errors " + report.summary.totalErrors
+                BuildReport report = BuildMissionScenes(ReadSceneArgument());
+                UnityEngine.Debug.Log("Phase 1 mission build: " + report.summary.result + ", errors " + report.summary.totalErrors
                     + ", output " + report.summary.outputPath);
                 code = report.summary.result == BuildResult.Succeeded ? 0 : 1;
             }
@@ -96,25 +103,68 @@ namespace Trainer.Tooling.BuildChecks
             outcomes.AddRange(CollectEnvironment());
             outcomes.AddRange(PhaseOneContractChecks.RunValidatorChecks());
             outcomes.AddRange(PhaseOneContractChecks.RunFakeSessionChecks(() => new FakeSessionPort()));
+            outcomes.AddRange(PhaseOneIntegrationChecks.RunRealSessionChecks());
+            outcomes.AddRange(PhaseOneIntegrationChecks.RunLoopbackChecks());
+            outcomes.AddRange(PhaseOneIntegrationChecks.RunDesignReview());
+            outcomes.AddRange(PhaseOneAssetAudit.AuditMissionScenes(ReadSceneArgument()));
+            outcomes.AddRange(PhaseOneAssetAudit.AuditPrefabs());
+            outcomes.Add(PhaseOneAssetAudit.ScanProductionFakeUsage());
+            outcomes.AddRange(PhaseOneAssetAudit.InventoryDisabledTests());
             outcomes.AddRange(PhaseOneContractChecks.PendingIntegrationChecks());
             return outcomes;
         }
 
-        /// <summary>Uses only the build scenes, target and settings already configured; never switches target.</summary>
-        public static BuildReport BuildActiveTarget()
+        /// <summary>Scenes from -phase1Scenes "a.unity;b.unity", or null when the argument is absent.</summary>
+        public static string[] ReadSceneArgument()
         {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+                if (args[i] == SceneArgument)
+                    return args[i + 1].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
+            return null;
+        }
+
+        /// <summary>Explicit scenes, or the only scene under Assets/_Project/Scenes. Never SampleScene or templates.
+        /// Returns null and a reason when no valid mission scene can be chosen.</summary>
+        public static string[] ResolveMissionScenes(string[] explicitScenes, out string problem)
+        {
+            problem = null;
+            string[] scenes = explicitScenes;
+            if (scenes == null)
+            {
+                scenes = Directory.Exists(MissionScenesFolder)
+                    ? AssetDatabase.FindAssets("t:Scene", new[] { MissionScenesFolder }).Select(g => AssetDatabase.GUIDToAssetPath(g))
+                        .Distinct().OrderBy(p => p, StringComparer.Ordinal).ToArray()
+                    : new string[0];
+                if (scenes.Length == 0) { problem = "No mission scene under " + MissionScenesFolder + " (scene composition is D2's)."; return null; }
+                if (scenes.Length > 1) { problem = "Several scenes under " + MissionScenesFolder + "; pass " + SceneArgument + " explicitly: " + string.Join(", ", scenes); return null; }
+            }
+            if (scenes.Length == 0) { problem = SceneArgument + " is empty."; return null; }
+            foreach (string scene in scenes)
+            {
+                if (TemplateScenes.Any(t => string.Equals(t, scene, StringComparison.OrdinalIgnoreCase)))
+                { problem = scene + " is a template scene, not the mission."; return null; }
+                if (!File.Exists(scene)) { problem = scene + " does not exist."; return null; }
+            }
+            return scenes;
+        }
+
+        /// <summary>Builds the active target from an explicit scene list; Build Settings and the target stay as they are.</summary>
+        public static BuildReport BuildMissionScenes(string[] explicitScenes)
+        {
+            string problem;
+            string[] scenes = ResolveMissionScenes(explicitScenes, out problem);
+            if (scenes == null) throw new InvalidOperationException("Mission build refused: " + problem);
             BuildTarget target = EditorUserBuildSettings.activeBuildTarget;
             BuildTargetGroup group = BuildPipeline.GetBuildTargetGroup(target);
             if (!BuildPipeline.IsBuildTargetSupported(group, target))
                 throw new InvalidOperationException("Active build target " + target + " has no installed module. Install nothing automatically; report it.");
-            string[] scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
-            if (scenes.Length == 0) throw new InvalidOperationException("No enabled scenes in Build Settings.");
             var options = new BuildPlayerOptions
             {
                 scenes = scenes,
                 target = target,
                 targetGroup = group,
-                locationPathName = Path.Combine(OutputRoot, target.ToString(), PlayerName(target)),
+                locationPathName = Path.Combine(MissionBuildRoot, target.ToString(), PlayerName(target)),
                 options = BuildOptions.None
             };
             return BuildPipeline.BuildPlayer(options);
@@ -153,8 +203,12 @@ namespace Trainer.Tooling.BuildChecks
                 scenes.Count(s => s.enabled) == 0 || missing.Length > 0 ? CheckStatus.Failed : CheckStatus.Passed,
                 "enabled: " + string.Join(", ", scenes.Where(s => s.enabled).Select(s => s.path).ToArray())
                 + (missing.Length > 0 ? "; missing: " + string.Join(", ", missing) : "")));
-            outcomes.Add(new CheckOutcome("PhaseOneSceneInBuild", "real-pending", CheckStatus.Pending,
-                "Build Settings still list the template scene; connecting phase 1 scenes is part of the authorized integration."));
+            string sceneProblem;
+            string[] missionScenes = ResolveMissionScenes(ReadSceneArgument(), out sceneProblem);
+            outcomes.Add(new CheckOutcome("MissionSceneForBuild", "build",
+                missionScenes == null ? CheckStatus.Pending : CheckStatus.Info,
+                missionScenes == null ? sceneProblem : "explicit build list: " + string.Join(", ", missionScenes)
+                    + " (Build Settings are not modified)"));
 
             string manifest = ReadText("Packages/manifest.json");
             outcomes.Add(new CheckOutcome("TestFrameworkPackage", kind,
@@ -594,13 +648,12 @@ namespace Trainer.Tooling.BuildChecks
             const string kind = "real-pending";
             return new List<CheckOutcome>
             {
-                new CheckOutcome("RealPowerSimulationBalance", kind, CheckStatus.Pending, "Needs IPowerSimulation implementation (dev 1). Run ValidatePowerTransition over its snapshots."),
-                new CheckOutcome("OneAuthorityTwoClientsSameState", kind, CheckStatus.Pending, "Needs session authority + network adapter (dev 3) and an approved backend."),
-                new CheckOutcome("IdentityNotTrustedFromPayload", kind, CheckStatus.Pending, "Needs real authority; the fake validates no permissions."),
-                new CheckOutcome("SharedPauseStopsRealClock", kind, CheckStatus.Pending, "Fake never advances time; needs authority + simulation."),
-                new CheckOutcome("ObjectiveFromPoweredWork", kind, CheckStatus.Pending, "Needs mission evaluation (dev 2) over ScienceServedWatts."),
-                new CheckOutcome("ConnectionFailureMessages", kind, CheckStatus.Pending, "Needs network adapter (dev 3) and UI (dev 4)."),
-                new CheckOutcome("RealBuildTwoInstances", kind, CheckStatus.Pending, "Needs integrated scene in Build Settings and chosen topology.")
+                // Balance, pause, objective, epochs and two-client consistency are now exercised by the
+                // real-session and loopback checks; what remains needs pieces that do not exist yet.
+                new CheckOutcome("PermissionPolicyPerRole", kind, CheckStatus.Pending, "No team policy for who may pause/restart/toggle science; bridge has connectionId but no roles."),
+                new CheckOutcome("ConnectionFailureMessagesInHud", kind, CheckStatus.Pending, "Needs scene wiring (D2) of SessionConnectionController state into MissionHUD.SetConnectionStatus (D4)."),
+                new CheckOutcome("MissionSceneClicksAndLegibility", kind, CheckStatus.Pending, "Needs the mission scene (D2); then manual run at target resolution with two players."),
+                new CheckOutcome("RealBuildTwoInstances", kind, CheckStatus.Pending, "Needs mission scene, approved SDK binding and chosen topology; then BuildFromCommandLine and two running instances.")
             };
         }
 
@@ -608,6 +661,239 @@ namespace Trainer.Tooling.BuildChecks
         {
             try { action(); return false; }
             catch (ArgumentException) { return true; }
+        }
+    }
+
+    /// <summary>
+    /// Read-only audits of mission scenes, prefabs, runtime sources and test files. Scenes are opened
+    /// additively and closed without saving; prefabs are loaded into an isolated stage and unloaded.
+    /// Broken references are detected by resolving every serialized GUID through the AssetDatabase.
+    /// </summary>
+    public static class PhaseOneAssetAudit
+    {
+        public const string Kind = "static-audit";
+        public const string InventoryKind = "test-inventory";
+        public const string PrefabsFolder = "Assets/_Project/Prefabs";
+        private static readonly System.Text.RegularExpressions.Regex GuidPattern =
+            new System.Text.RegularExpressions.Regex(@"guid: ([0-9a-f]{32})");
+
+        public static List<CheckOutcome> AuditMissionScenes(string[] explicitScenes)
+        {
+            var outcomes = new List<CheckOutcome>();
+            string problem;
+            string[] scenes = PhaseOneBuildChecks.ResolveMissionScenes(explicitScenes, out problem);
+            if (scenes == null)
+            {
+                outcomes.Add(new CheckOutcome("MissionSceneAudit", Kind, CheckStatus.Pending, problem));
+                return outcomes;
+            }
+            foreach (string path in scenes)
+            {
+                try { outcomes.AddRange(AuditScene(path)); }
+                catch (Exception exception)
+                {
+                    outcomes.Add(new CheckOutcome("MissionSceneAudit " + path, Kind, CheckStatus.Failed,
+                        exception.GetType().Name + ": " + exception.Message));
+                }
+            }
+            return outcomes;
+        }
+
+        private static List<CheckOutcome> AuditScene(string path)
+        {
+            var outcomes = new List<CheckOutcome>();
+            UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneByPath(path);
+            bool openedHere = !scene.IsValid() || !scene.isLoaded;
+            if (openedHere)
+                scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(path, UnityEditor.SceneManagement.OpenSceneMode.Additive);
+            try
+            {
+                var objects = new List<UnityEngine.GameObject>();
+                foreach (UnityEngine.GameObject root in scene.GetRootGameObjects())
+                    foreach (UnityEngine.Transform child in root.GetComponentsInChildren<UnityEngine.Transform>(true))
+                        objects.Add(child.gameObject);
+                string label = "Scene " + path;
+                outcomes.Add(BrokenReferences(label, path, objects));
+
+                var bootstraps = Components<Trainer.Unity.Bootstrap.MissionBootstrap>(objects);
+                var runners = Components<Trainer.Unity.Bootstrap.SimulationRunner>(objects);
+                var huds = Components<Trainer.Unity.Presentation.MissionHUD>(objects);
+                var cameras = Components<UnityEngine.Camera>(objects);
+
+                Trainer.Unity.Configuration.ScenarioDefinition scenario = null;
+                string wiring;
+                bool wired = false;
+                if (bootstraps.Count != 1) wiring = bootstraps.Count + " MissionBootstrap (expected exactly 1 authority composition root)";
+                else
+                {
+                    var serialized = new SerializedObject(bootstraps[0]);
+                    SerializedProperty scenarioProperty = serialized.FindProperty("scenario");
+                    SerializedProperty runnerProperty = serialized.FindProperty("runner");
+                    scenario = scenarioProperty == null ? null
+                        : scenarioProperty.objectReferenceValue as Trainer.Unity.Configuration.ScenarioDefinition;
+                    bool hasRunner = runnerProperty != null && runnerProperty.objectReferenceValue != null;
+                    wired = scenario != null && hasRunner;
+                    wiring = "scenario " + (scenario != null ? AssetDatabase.GetAssetPath(scenario) : "UNASSIGNED")
+                        + ", runner " + (hasRunner ? "assigned" : "UNASSIGNED");
+                }
+                outcomes.Add(new CheckOutcome("MissionBootstrapWired " + path, Kind, wired ? CheckStatus.Passed : CheckStatus.Failed, wiring));
+                outcomes.Add(new CheckOutcome("SingleSimulationRunner " + path, Kind,
+                    runners.Count == 1 ? CheckStatus.Passed : CheckStatus.Failed, runners.Count + " SimulationRunner"));
+                outcomes.Add(new CheckOutcome("MissionHudInScene " + path, Kind,
+                    huds.Count >= 1 ? CheckStatus.Passed : CheckStatus.Failed, huds.Count + " MissionHUD"));
+                outcomes.Add(new CheckOutcome("CameraInScene " + path, Kind,
+                    cameras.Count >= 1 ? CheckStatus.Passed : CheckStatus.Failed, cameras.Count + " Camera"));
+
+                Type roomType = FindType("Trainer.Unity.World.PowerRoomView");
+                if (roomType == null)
+                    outcomes.Add(new CheckOutcome("PowerRoomInScene " + path, Kind, CheckStatus.Pending,
+                        "PowerRoomView is not compiled in this checkout (D4 room visuals not integrated)."));
+                else
+                {
+                    int rooms = objects.Sum(o => o.GetComponents(roomType).Length);
+                    outcomes.Add(new CheckOutcome("PowerRoomInScene " + path, Kind,
+                        rooms >= 1 ? CheckStatus.Passed : CheckStatus.Failed, rooms + " PowerRoomView"));
+                }
+
+                if (scenario != null)
+                {
+                    string problem = scenario.Validate();
+                    if (problem != null)
+                        outcomes.Add(new CheckOutcome("SceneScenarioValid " + path, Kind, CheckStatus.Failed, problem));
+                    else
+                    {
+                        PowerConfiguration configuration = scenario.ToPowerConfiguration();
+                        ValidationReport report = PhaseOneScenarioValidator.ValidateConfiguration(configuration);
+                        outcomes.Add(new CheckOutcome("SceneScenarioValid " + path, Kind,
+                            report.HasErrors ? CheckStatus.Failed : CheckStatus.Passed, report.ToString().Trim()));
+                        outcomes.Add(PhaseOneIntegrationChecks.ReviewScenarioDecision("Scene " + path, configuration, scenario.ToMissionRules()));
+                    }
+                }
+                return outcomes;
+            }
+            finally
+            {
+                if (openedHere && scene.IsValid())
+                    UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        public static List<CheckOutcome> AuditPrefabs()
+        {
+            var outcomes = new List<CheckOutcome>();
+            if (!Directory.Exists(PrefabsFolder))
+            {
+                outcomes.Add(new CheckOutcome("PrefabAudit", Kind, CheckStatus.Pending, PrefabsFolder + " not found."));
+                return outcomes;
+            }
+            string[] prefabs = AssetDatabase.FindAssets("t:Prefab", new[] { PrefabsFolder })
+                .Select(g => AssetDatabase.GUIDToAssetPath(g)).Distinct().OrderBy(p => p, StringComparer.Ordinal).ToArray();
+            if (prefabs.Length == 0)
+                outcomes.Add(new CheckOutcome("PrefabAudit", Kind, CheckStatus.Pending, "No prefabs under " + PrefabsFolder + "."));
+            foreach (string path in prefabs)
+            {
+                UnityEngine.GameObject root = null;
+                try
+                {
+                    root = PrefabUtility.LoadPrefabContents(path);
+                    var objects = root.GetComponentsInChildren<UnityEngine.Transform>(true).Select(t => t.gameObject).ToList();
+                    outcomes.Add(BrokenReferences("Prefab " + path, path, objects));
+                }
+                catch (Exception exception)
+                {
+                    outcomes.Add(new CheckOutcome("Prefab " + path, Kind, CheckStatus.Failed, exception.GetType().Name + ": " + exception.Message));
+                }
+                finally
+                {
+                    if (root != null) PrefabUtility.UnloadPrefabContents(root);
+                }
+            }
+            return outcomes;
+        }
+
+        /// <summary>FakeSessionPort must not appear in runtime code outside its own file and editor-only folders.</summary>
+        public static CheckOutcome ScanProductionFakeUsage()
+        {
+            const string root = "Assets/_Project/Runtime";
+            if (!Directory.Exists(root)) return new CheckOutcome("NoFakeInProductionCode", Kind, CheckStatus.Pending, root + " not found.");
+            var offenders = new List<string>();
+            foreach (string file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
+            {
+                string normalized = file.Replace('\\', '/');
+                if (normalized.EndsWith("/Sessions/FakeSessionPort.cs", StringComparison.Ordinal)) continue;
+                if (normalized.Contains("/Editor/")) continue;
+                if (File.ReadAllText(file).Contains("FakeSessionPort")) offenders.Add(normalized);
+            }
+            return new CheckOutcome("NoFakeInProductionCode", Kind, offenders.Count == 0 ? CheckStatus.Passed : CheckStatus.Failed,
+                offenders.Count == 0 ? "no runtime file references FakeSessionPort" : "referenced by: " + string.Join(", ", offenders));
+        }
+
+        /// <summary>Which test files Unity compiles today, and which only exercise the fake.</summary>
+        public static List<CheckOutcome> InventoryDisabledTests()
+        {
+            const string root = "Assets/_Project/Tests";
+            var outcomes = new List<CheckOutcome>();
+            if (!Directory.Exists(root)) return outcomes;
+            foreach (string file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal))
+            {
+                string normalized = file.Replace('\\', '/');
+                string text = File.ReadAllText(file);
+                string guard = null;
+                foreach (string line in text.Split('\n'))
+                {
+                    string trimmed = line.Trim();
+                    if (trimmed.StartsWith("#if ", StringComparison.Ordinal)) { guard = trimmed.Substring(4).Trim(); break; }
+                    if (trimmed.StartsWith("namespace", StringComparison.Ordinal) || trimmed.StartsWith("public ", StringComparison.Ordinal)) break;
+                }
+                bool fake = text.Contains("FakeSessionPort");
+                bool disabled = guard != null && guard.Contains("TRAINER_");
+                string where = guard == null ? (normalized.Contains("/Editor/") ? "Assembly-CSharp-Editor, compiled" : "no guard")
+                    : disabled ? "compiled out until define " + guard
+                    : guard.Contains("UNITY_INCLUDE_TESTS") ? "compiled in the Editor (Test Runner)"
+                    : "guard " + guard;
+                outcomes.Add(new CheckOutcome("Tests " + normalized.Substring(root.Length + 1), InventoryKind,
+                    disabled ? CheckStatus.Pending : CheckStatus.Info, where + (fake ? "; uses FakeSessionPort" : "")));
+            }
+            return outcomes;
+        }
+
+        private static CheckOutcome BrokenReferences(string label, string assetPath, List<UnityEngine.GameObject> objects)
+        {
+            int missingScripts = 0;
+            foreach (UnityEngine.GameObject gameObject in objects)
+                missingScripts += GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(gameObject);
+            var unresolved = new List<string>();
+            int references = 0;
+            if (File.Exists(assetPath))
+            {
+                foreach (System.Text.RegularExpressions.Match match in GuidPattern.Matches(File.ReadAllText(assetPath)))
+                {
+                    string guid = match.Groups[1].Value;
+                    references++;
+                    if (string.IsNullOrEmpty(AssetDatabase.GUIDToAssetPath(guid)) && !unresolved.Contains(guid)) unresolved.Add(guid);
+                }
+            }
+            bool ok = missingScripts == 0 && unresolved.Count == 0;
+            return new CheckOutcome(label, Kind, ok ? CheckStatus.Passed : CheckStatus.Failed,
+                objects.Count + " objects, " + missingScripts + " missing scripts, " + references + " GUID references, "
+                + unresolved.Count + " unresolved" + (unresolved.Count > 0 ? ": " + string.Join(", ", unresolved) : ""));
+        }
+
+        private static List<T> Components<T>(List<UnityEngine.GameObject> objects) where T : UnityEngine.Component
+        {
+            var found = new List<T>();
+            foreach (UnityEngine.GameObject gameObject in objects) found.AddRange(gameObject.GetComponents<T>());
+            return found;
+        }
+
+        private static Type FindType(string fullName)
+        {
+            foreach (System.Reflection.Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type type = assembly.GetType(fullName, false);
+                if (type != null) return type;
+            }
+            return null;
         }
     }
 }
