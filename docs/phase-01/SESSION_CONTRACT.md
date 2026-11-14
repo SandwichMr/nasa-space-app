@@ -1,7 +1,7 @@
 # Contratos de sesión — fase 1
 
 C# puro. Namespaces: `Trainer.Simulation`, `Trainer.Application` y, solo para desarrollo,
-`Trainer.Application.Development`. Sin física implementada, transporte ni autorización real.
+`Trainer.Application.Development`. Los contratos base no implementan física, transporte ni autorización real.
 Los snapshots son clases selladas con propiedades de solo lectura y sin colecciones mutables.
 
 ## Simulación
@@ -16,6 +16,19 @@ Los snapshots son clases selladas con propiedades de solo lectura y sin coleccio
 - `PowerSnapshot`: tiempo simulado en segundos, energía y capacidad en joules, generación y
   potencia solicitada/servida de carga esencial y científica en watts instantáneos.
   El futuro implementador debe mantener energía dentro de capacidad y servicio dentro de demanda.
+
+### Servicio integrado (extensión compatible)
+
+`PowerSystem` implementa también `IIntegratedPowerSimulation`, sin cambiar `IPowerSimulation`
+ni los snapshots base. `LastFullyServedScienceSeconds` indica segundos de servicio científico
+completo del último Advance no nulo (cero tras Reset). `SecondsUntilServiceChange(bool)` consulta,
+sin mutar estado, los segundos hasta el siguiente cambio de despacho para esa intención; infinito
+significa régimen constante y cero indica servicio esencial ya insuficiente.
+
+`MissionSession` recorta el paso al evento, acumula el servicio integrado y evalúa allí el fin.
+En un empate conserva la prioridad existente: pérdida esencial, objetivo, duración. Una
+implementación que solo exponga IPowerSimulation conserva la evaluación aproximada al final del
+subpaso por compatibilidad; para contabilidad exacta debe implementar la extensión.
 
 ## Sesión
 
@@ -76,3 +89,16 @@ Los cinco desarrolladores pueden consumir estos contratos para simulación, auto
 presentación, integración y pruebas, sin implementar esas capas en esta fase.
 Las pruebas NUnit están en Tests/EditMode/Application/Editor para usar el ensamblado Editor
 predefinido existente sin crear asmdef. Unity genera los .meta.
+
+## Recuperación de transporte y reloj
+
+`ISessionHostTransport.DisconnectClient(connectionId, reason)` es obligatorio para el binding:
+debe cerrar idempotentemente la conexión y notificar pérdida de enlace al cliente (además de
+ClientDisconnected al host). Ante SendToClient fallido, el bridge elimina esa conexión del broadcast,
+solicita su cierre con SendFailed y publica el diagnóstico. El cliente abandona pendientes como
+resultado desconocido; el snapshot de la próxima conexión es la referencia. No reintentar con ID nuevo
+para asumir que un comando no se aplicó. No hay SDK seleccionado ni escena conectada.
+
+El HUD libera el pendiente ante excepción de Submit sin inventar CommandResult ni revertir snapshots.
+La composición aún debe notificar desconexión/reconexión al HUD. Cada MissionSession admite un solo
+SimulationRunner vinculado; Unbind/Destroy liberan esa propiedad para volver a componer.

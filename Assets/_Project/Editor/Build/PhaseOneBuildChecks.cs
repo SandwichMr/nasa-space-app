@@ -320,12 +320,12 @@ namespace Trainer.Tooling.BuildChecks
                 return "essential and science warnings";
             }));
 
-            outcomes.Add(Run("UnrepresentableMagnitudeIsError", kind, () =>
+            outcomes.Add(Run("LargeMagnitudeIsPrecisionWarning", kind, () =>
             {
                 ValidationReport report = PhaseOneScenarioValidator.ValidateConfiguration(new PowerConfiguration(0, 1e16, 0, 0, 0, 0, 0));
                 RequireCode(report, "ExceedsExactRange");
-                Require(report.HasErrors, "should be an error");
-                return "1e16 J > 2^53";
+                Require(!report.HasErrors, "Finite magnitudes must remain valid.");
+                return "1e16 J > 2^53: precision warning only";
             }));
 
             outcomes.Add(Run("SyntheticSequenceBalances", kind, () =>

@@ -157,6 +157,13 @@ namespace Trainer.Tests.UI
             Check(hud.Snapshot == null && !hud.IsPending && hud.CommandStatus == "Sin solicitudes.", "rebind invalidates pending results");
             delivery.ExposeSnapshot = true;
             hud.Bind(delivery);
+            delivery.ThrowOnSubmit = true;
+            hud.Resume();
+            Check(!hud.IsPending && hud.CommandStatus.Contains("Resultado desconocido"), "send failure clears pending without invented result");
+            delivery.ThrowOnSubmit = false;
+            hud.Resume();
+            delivery.Flush();
+            Check(!hud.IsPending && hud.CommandStatus.Contains("aceptada"), "action can be retried after send failure");
         }
 
         private sealed class DeliveryFixture : ISessionPort
@@ -165,6 +172,7 @@ namespace Trainer.Tests.UI
             internal MissionSnapshot Initial;
             internal bool ExposeSnapshot = true;
             internal int Submissions;
+            internal bool ThrowOnSubmit;
             private Action<MissionSnapshot> snapshots;
             private Action<CommandResult> results;
             private readonly List<MissionSnapshot> snapshotQueue = new List<MissionSnapshot>();
@@ -185,7 +193,7 @@ namespace Trainer.Tests.UI
                 snapshot = null;
                 return false;
             }
-            public void Submit(SessionCommand command) { Submissions++; Fake.Submit(command); }
+            public void Submit(SessionCommand command) { Submissions++; if (ThrowOnSubmit) throw new InvalidOperationException("Send failed"); Fake.Submit(command); }
             internal void Emit(MissionSnapshot snapshot) { snapshots?.Invoke(snapshot); }
             internal void FlushSnapshots() { var queue = snapshotQueue.ToArray(); snapshotQueue.Clear(); foreach (var item in queue) Emit(item); }
             internal void FlushResults() { var queue = resultQueue.ToArray(); resultQueue.Clear(); foreach (var item in queue) results?.Invoke(item); }

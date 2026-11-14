@@ -12,6 +12,8 @@ namespace Trainer.Unity.Bootstrap
     [DisallowMultipleComponent]
     public sealed class SimulationRunner : MonoBehaviour
     {
+        private static readonly System.Collections.Generic.Dictionary<MissionSession, SimulationRunner> owners =
+            new System.Collections.Generic.Dictionary<MissionSession, SimulationRunner>();
         private MissionSession session;
         private double timeScale;
 
@@ -26,11 +28,19 @@ namespace Trainer.Unity.Bootstrap
                 throw new ArgumentOutOfRangeException(nameof(simulatedSecondsPerRealSecond));
             if (session != null && session != missionSession)
                 throw new InvalidOperationException("Runner already bound to another session.");
+            if (owners.TryGetValue(missionSession, out SimulationRunner owner) && owner != null && owner != this)
+                throw new InvalidOperationException("Session already has a runner.");
+            owners[missionSession] = this;
             session = missionSession;
             timeScale = simulatedSecondsPerRealSecond;
         }
 
-        public void Unbind() => session = null;
+        public void Unbind()
+        {
+            if (session != null && owners.TryGetValue(session, out SimulationRunner owner) && owner == this)
+                owners.Remove(session);
+            session = null;
+        }
 
         private void Update()
         {

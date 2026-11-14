@@ -327,7 +327,7 @@ namespace Trainer.Tooling.Validation
         {
             if (double.IsNaN(value) || double.IsInfinity(value)) report.Error("NotFinite", name + " is not finite.");
             else if (value < 0) report.Error("Negative", name + " is negative (" + value + " " + unit + ").");
-            else if (value > MaxExactDouble) report.Error("ExceedsExactRange", name + " (" + value + " " + unit + ") exceeds 2^53; integer precision is lost.");
+            else if (value > MaxExactDouble) report.Warning("ExceedsExactRange", name + " (" + value + " " + unit + ") exceeds 2^53; integer precision is lost.");
         }
 
         private static bool Near(double a, double b, double tolerance) { return Math.Abs(a - b) <= tolerance; }

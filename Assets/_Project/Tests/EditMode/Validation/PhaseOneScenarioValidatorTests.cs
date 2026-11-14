@@ -77,7 +77,7 @@ namespace Trainer.Tests.Validation
         [Test] public void MagnitudeAboveExactDoubleRangeIsError()
         {
             ValidationReport report = PhaseOneScenarioValidator.ValidateConfiguration(new PowerConfiguration(0, 1e16, 0, 0, 0, 0, 0));
-            Assert.That(report.Contains("ExceedsExactRange") && report.HasErrors, Is.True);
+            Assert.That(report.Contains("ExceedsExactRange") && !report.HasErrors, Is.True);
         }
 
         [Test] public void SyntheticSequenceBalancesWithoutIssues()

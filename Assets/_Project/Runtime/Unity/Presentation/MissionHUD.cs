@@ -132,7 +132,17 @@ namespace Trainer.Unity.Presentation
             pending = command;
             CommandStatus = "Solicitud pendiente: " + action;
             // Set pending before Submit: the shared fake may complete synchronously.
-            port.Submit(command);
+            try { port.Submit(command); }
+            catch (Exception)
+            {
+                // Delivery may have happened before the transport threw. Do not invent a rejection
+                // or erase a synchronous result/newer request raised during Submit.
+                if (pending == command)
+                {
+                    pending = null;
+                    CommandStatus = "Error de envío. Resultado desconocido; consulta el estado confirmado.";
+                }
+            }
         }
 
         private void OnGUI()

@@ -16,7 +16,7 @@ namespace Trainer.Simulation
     /// rounding) and independent of step size. Snapshot power values describe the operating point
     /// at SimulatedTimeSeconds given the current energy and the latest science request.
     /// </summary>
-    public sealed class PowerSystem : IPowerSimulation
+    public sealed class PowerSystem : IIntegratedPowerSimulation
     {
         private readonly SimulationClock clock = new SimulationClock();
         private PowerState state;
@@ -31,11 +31,32 @@ namespace Trainer.Simulation
             }
         }
 
+        public double LastFullyServedScienceSeconds { get; private set; }
+
+        public double SecondsUntilServiceChange(bool scienceRequested)
+        {
+            RequireReset();
+            OperatingPoint point = Evaluate(scienceRequested);
+            if (point.EssentialServedWatts < state.Configuration.EssentialConsumptionWatts)
+                return 0d;
+            if (point.BatteryWatts > 0d)
+                return (state.Configuration.CapacityJoules - state.EnergyJoules) / point.BatteryWatts;
+            if (point.BatteryWatts < 0d) return state.EnergyJoules / -point.BatteryWatts;
+            return double.PositiveInfinity;
+        }
+
+        private void RecordService(OperatingPoint point, double seconds)
+        {
+            if (point.ScienceRequestedWatts > 0d && point.ScienceServedWatts >= point.ScienceRequestedWatts)
+                LastFullyServedScienceSeconds += seconds;
+        }
+
         public void Reset(PowerConfiguration configuration)
         {
             if (configuration == null)
                 throw new ArgumentNullException(nameof(configuration));
             clock.Reset();
+            LastFullyServedScienceSeconds = 0d;
             state = new PowerState(configuration);
             snapshot = BuildSnapshot();
         }
@@ -47,6 +68,7 @@ namespace Trainer.Simulation
             if (elapsedSeconds == 0d)
                 return; // Contract: zero is a no-op, including the science request.
 
+            LastFullyServedScienceSeconds = 0d;
             state.ScienceRequested = scienceRequested;
             double capacity = state.Configuration.CapacityJoules;
             double remaining = elapsedSeconds;
@@ -57,7 +79,10 @@ namespace Trainer.Simulation
                 OperatingPoint point = Evaluate();
                 double rate = point.BatteryWatts;
                 if (rate == 0d)
+                {
+                    RecordService(point, remaining);
                     break;
+                }
 
                 double secondsToBoundary = rate > 0d
                     ? (capacity - state.EnergyJoules) / rate
@@ -66,11 +91,13 @@ namespace Trainer.Simulation
                 if (secondsToBoundary <= remaining)
                 {
                     // Event inside (or at the end of) the interval: land exactly on the boundary.
+                    RecordService(point, secondsToBoundary);
                     state.EnergyJoules = rate > 0d ? capacity : 0d;
                     remaining -= secondsToBoundary;
                 }
                 else
                 {
+                    RecordService(point, remaining);
                     double next = state.EnergyJoules + rate * remaining;
                     // remaining < secondsToBoundary, so mathematically next stays inside [0, capacity];
                     // only last-bit rounding could cross it, which would be the boundary itself.
@@ -107,12 +134,14 @@ namespace Trainer.Simulation
         }
 
         /// <summary>Instantaneous dispatch for the current energy and science request.</summary>
-        private OperatingPoint Evaluate()
+        private OperatingPoint Evaluate() => Evaluate(state.ScienceRequested);
+
+        private OperatingPoint Evaluate(bool scienceRequested)
         {
             PowerConfiguration config = state.Configuration;
             double generation = config.GenerationWatts;
             double essentialDemand = config.EssentialConsumptionWatts;
-            double scienceDemand = state.ScienceRequested ? config.ScienceConsumptionWatts : 0d;
+            double scienceDemand = scienceRequested ? config.ScienceConsumptionWatts : 0d;
 
             double dischargeLimit = state.EnergyJoules > 0d ? config.MaxDischargeWatts : 0d;
             double chargeLimit = state.EnergyJoules < config.CapacityJoules ? config.MaxChargeWatts : 0d;

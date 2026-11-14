@@ -42,6 +42,7 @@ public sealed class NetworkSessionAdapterTests
         private readonly Loopback net;
         private readonly Dictionary<ulong, ClientEnd> clients = new Dictionary<ulong, ClientEnd>();
         public readonly List<(ulong To, byte[] Payload)> Sent = new List<(ulong, byte[])>();
+        public bool FailResults;
         public readonly HashSet<ulong> FailSendsTo = new HashSet<ulong>();
         public event Action<ulong> ClientConnected;
         public event Action<ulong> ClientDisconnected;
@@ -51,6 +52,7 @@ public sealed class NetworkSessionAdapterTests
 
         public void SendToClient(ulong connectionId, byte[] payload)
         {
+            if (FailResults && payload[3] == 3) throw new InvalidOperationException("Result send failure.");
             if (FailSendsTo.Contains(connectionId)) throw new InvalidOperationException("Simulated send failure.");
             Sent.Add((connectionId, payload));
             if (clients.TryGetValue(connectionId, out ClientEnd client))
@@ -58,6 +60,12 @@ public sealed class NetworkSessionAdapterTests
                 byte[] copy = (byte[])payload.Clone();
                 net.Enqueue(() => client.Deliver(connectionId, copy));
             }
+        }
+
+        public void DisconnectClient(ulong connectionId, string reason)
+        {
+            if (clients.TryGetValue(connectionId, out ClientEnd client)) client.SimulateLinkLoss(reason);
+            Drop(connectionId);
         }
 
         public void Accept(ClientEnd client, ulong connectionId)
@@ -884,6 +892,59 @@ public sealed class NetworkSessionAdapterTests
         Assert.That(client.Abandoned[1].Reason, Is.EqualTo(SessionNetworkCodes.NotConnected));
         Assert.That(client.Transport.Sent.Count, Is.EqualTo(sent), "Nothing is sent after leaving.");
         Assert.That(client.Results, Is.Empty, "Late results on the still-open link are ignored.");
+    }
+
+    [Test]
+    public void FailedHostResultClosesLinkAndAbandonsPending()
+    {
+        var rig = new Rig();
+        Client client = rig.Join();
+        rig.Net.Host.FailResults = true;
+        client.Session.Submit(Make(0, SessionAction.Resume));
+        rig.Net.Pump();
+        Assert.That(rig.AuthoritySnapshot().State, Is.EqualTo(SessionState.Running));
+        Assert.That(client.Controller.State, Is.EqualTo(SessionConnectionState.ConnectionLost));
+        Assert.That(client.Session.PendingCommandCount, Is.EqualTo(0));
+        Assert.That(client.Abandoned.Count, Is.EqualTo(1));
+        Assert.That(client.Results, Is.Empty);
+    }
+
+    [Test]
+    public void FailedInitialSnapshotEndsSynchronization()
+    {
+        var rig = new Rig();
+        Client client = rig.NewClient();
+        rig.Net.Host.FailSendsTo.Add(1);
+        client.Controller.Connect();
+        rig.Net.Pump();
+        Assert.That(client.Controller.State, Is.EqualTo(SessionConnectionState.ConnectionLost));
+        Assert.That(client.Controller.LastDisconnectReason, Is.EqualTo(SessionNetworkCodes.SendFailed));
+    }
+
+    [Test]
+    public void InvalidSnapshotNumbersNeverConnectOrReplaceState()
+    {
+        var rig = new Rig();
+        Client client = rig.Join();
+        MissionSnapshot initial = Current(client);
+        foreach (double bad in new[] { double.NaN, double.PositiveInfinity, -1d })
+        {
+            var invalid = new MissionSnapshot(0, 99, SessionState.Running,
+                new PowerSnapshot(bad, 1, 1, 0, 0, 0, 0, 0), 0, false);
+            client.Transport.Inject(SessionWireProtocol.EncodeSnapshot(invalid));
+            Assert.That(Current(client), Is.SameAs(initial));
+        }
+        foreach (var invalid in new[] {
+            new MissionSnapshot(-1, 0, SessionState.Ready, initial.Power, 0, false),
+            new MissionSnapshot(0, -1, SessionState.Ready, initial.Power, 0, false),
+            new MissionSnapshot(0, 99, SessionState.Ready, initial.Power, double.NaN, false),
+            new MissionSnapshot(0, 99, SessionState.Ready, new PowerSnapshot(0, 2, 1, 0, 0, 0, 0, 0), 0, false),
+            new MissionSnapshot(0, 99, SessionState.Ready, new PowerSnapshot(0, 1, 1, 0, 0, 1, 0, 0), 0, false) })
+        {
+            client.Transport.Inject(SessionWireProtocol.EncodeSnapshot(invalid));
+            Assert.That(Current(client), Is.SameAs(initial));
+        }
+        Assert.That(client.ProtocolErrors.Count, Is.EqualTo(8));
     }
 
     [Test]

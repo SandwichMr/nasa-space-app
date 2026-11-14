@@ -18,6 +18,9 @@ namespace Trainer.Unity.Networking
         /// <summary>Ownership of <paramref name="payload"/> passes to the transport (each call gets its own
         /// array). Should not throw for closed connections; if it throws, the bridge reports SendFailed.</summary>
         void SendToClient(ulong connectionId, byte[] payload);
+        /// <summary>Close a failed connection and notify the remote client of link loss.
+        /// Must be idempotent. The binding must eventually emit ClientDisconnected.</summary>
+        void DisconnectClient(ulong connectionId, string reason);
         event Action<ulong> ClientConnected;
         event Action<ulong> ClientDisconnected;
         event Action<ulong, byte[]> MessageReceived;
@@ -169,7 +172,10 @@ namespace Trainer.Unity.Networking
             catch (Exception)
             {
                 // Runs inside the authority's events: a failing link must not break other subscribers/clients.
-                ProtocolError?.Invoke(target, SessionNetworkCodes.SendFailed);
+                connected.Remove(target);
+                try { transport.DisconnectClient(target, SessionNetworkCodes.SendFailed); }
+                catch (Exception) { /* Binding must still report link loss when close fails. */ }
+                finally { ProtocolError?.Invoke(target, SessionNetworkCodes.SendFailed); }
             }
         }
     }
@@ -347,6 +353,8 @@ namespace Trainer.Unity.Networking
                             reader.ReadDouble(), reader.ReadDouble(), reader.ReadDouble());
                         double scienceWorkSeconds = reader.ReadDouble();
                         if (!TryReadBool(reader, out bool scienceEnabled)) return Malformed(out error);
+                        if (epoch < 0 || revision < 0 || !ValidPower(power)
+                            || !NonnegativeFinite(scienceWorkSeconds)) return Malformed(out error);
                         message.Snapshot = new MissionSnapshot(epoch, revision, state, power,
                             scienceWorkSeconds, scienceEnabled);
                     }
@@ -356,6 +364,17 @@ namespace Trainer.Unity.Networking
             catch (EndOfStreamException) { return Malformed(out error); }
             catch (ArgumentException) { return Malformed(out error); } // invalid UTF-8 reason
         }
+
+        private static bool NonnegativeFinite(double value) => value >= 0d && !double.IsInfinity(value);
+
+        private static bool ValidPower(PowerSnapshot p) =>
+            NonnegativeFinite(p.SimulatedTimeSeconds) && NonnegativeFinite(p.EnergyJoules)
+            && NonnegativeFinite(p.CapacityJoules) && NonnegativeFinite(p.GenerationWatts)
+            && NonnegativeFinite(p.EssentialRequestedWatts) && NonnegativeFinite(p.EssentialServedWatts)
+            && NonnegativeFinite(p.ScienceRequestedWatts) && NonnegativeFinite(p.ScienceServedWatts)
+            && p.EnergyJoules <= p.CapacityJoules
+            && p.EssentialServedWatts <= p.EssentialRequestedWatts
+            && p.ScienceServedWatts <= p.ScienceRequestedWatts;
 
         private static byte[] Encode(byte kind, Action<BinaryWriter> body)
         {

@@ -38,8 +38,8 @@ namespace Trainer.Application
         public MissionOutcome Outcome { get; private set; } = MissionOutcome.InProgress;
 
         /// <param name="simulation">Any IPowerSimulation implementation; this session calls Reset on it.</param>
-        /// <param name="maxStepSeconds">Longest simulated sub-step per Advance call. Shorter steps reduce
-        /// the error of evaluating served work from instantaneous snapshots.</param>
+        /// <param name="maxStepSeconds">Longest simulated sub-step per Advance call. Integrated
+        /// simulations additionally stop at dispatch events; legacy implementations use endpoint estimates.</param>
         public MissionSession(IPowerSimulation simulation, PowerConfiguration configuration, MissionRules rules,
             double maxStepSeconds = DefaultMaxStepSeconds)
         {
@@ -128,12 +128,32 @@ namespace Trainer.Application
                 {
                     PowerSnapshot before = RequireSnapshot();
                     double step = NextStep(remaining, before.SimulatedTimeSeconds, science, work);
+                    var integrated = simulation as IIntegratedPowerSimulation;
+                    if (integrated != null)
+                    {
+                        double boundary = integrated.SecondsUntilServiceChange(science);
+                        if (boundary == 0d)
+                        {
+                            outcome = MissionOutcomeEvaluator.Evaluate(Rules, before, work);
+                            if (outcome != MissionOutcome.InProgress)
+                            {
+                                last = before;
+                                progressed = true;
+                                break;
+                            }
+                        }
+                        else step = Math.Min(step, boundary);
+                    }
                     simulation.Advance(step, science);
                     PowerSnapshot after = RequireSnapshot();
                     // A simulation whose clock does not move would otherwise loop for every remaining step.
-                    if (!(after.SimulatedTimeSeconds > before.SimulatedTimeSeconds)) break;
+                    if (!(after.SimulatedTimeSeconds > before.SimulatedTimeSeconds)
+                        && !(integrated != null && after.EnergyJoules != before.EnergyJoules)) break;
+                    // A very short boundary segment can change energy while its duration rounds
+                    // away in the clock. Commit that event, then continue with the new dispatch.
 
-                    work += MissionOutcomeEvaluator.ServedScienceSeconds(before, after, science);
+                    work += integrated != null ? integrated.LastFullyServedScienceSeconds
+                        : MissionOutcomeEvaluator.ServedScienceSeconds(before, after, science);
                     remaining -= step;
                     outcome = MissionOutcomeEvaluator.Evaluate(Rules, after, work);
                     last = after;
@@ -158,14 +178,15 @@ namespace Trainer.Application
         }
 
         /// <summary>Sub-step length: at most maxStepSeconds, never past the mission duration, and trimmed
-        /// to the science work still needed (not below MinimumWorkStepSeconds) to avoid overshooting.</summary>
+        /// to science work still needed. Only legacy simulations use MinimumWorkStepSeconds.</summary>
         private double NextStep(double remaining, double simulatedTime, bool science, double work)
         {
             double step = Math.Min(remaining, maxStepSeconds);
             double timeLeft = Rules.MissionDurationSeconds - simulatedTime;
             if (timeLeft > 0) step = Math.Min(step, timeLeft);
             if (science)
-                step = Math.Min(step, Math.Max(Rules.ScienceWorkTargetSeconds - work, MinimumWorkStepSeconds));
+                step = Math.Min(step, Math.Max(Rules.ScienceWorkTargetSeconds - work,
+                    simulation is IIntegratedPowerSimulation ? double.Epsilon : MinimumWorkStepSeconds));
             return step;
         }
 
