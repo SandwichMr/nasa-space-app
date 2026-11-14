@@ -17,7 +17,7 @@ namespace Trainer.Unity.Presentation
 
         public void Draw(MissionSnapshot snapshot, bool available, Action<SessionAction, bool?> submit)
         {
-            GUILayout.Label(Text);
+            GUILayout.Label(Text, new GUIStyle(GUI.skin.label) { wordWrap = true });
             bool previous = GUI.enabled;
             bool active = snapshot != null && (snapshot.State == SessionState.Ready ||
                 snapshot.State == SessionState.Running || snapshot.State == SessionState.Paused);

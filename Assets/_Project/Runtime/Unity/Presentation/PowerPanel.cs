@@ -20,6 +20,6 @@ namespace Trainer.Unity.Presentation
                 power.ScienceRequestedWatts, power.ScienceServedWatts);
         }
 
-        public void Draw() { GUILayout.Label(Text); }
+        public void Draw() { GUILayout.Label(Text, new GUIStyle(GUI.skin.label) { wordWrap = true }); }
     }
 }

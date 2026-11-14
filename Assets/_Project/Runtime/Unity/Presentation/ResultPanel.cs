@@ -27,6 +27,6 @@ namespace Trainer.Unity.Presentation
                 snapshot.Epoch, snapshot.Revision);
         }
 
-        public void Draw() { GUILayout.Label(Text); }
+        public void Draw() { GUILayout.Label(Text, new GUIStyle(GUI.skin.label) { wordWrap = true }); }
     }
 }
