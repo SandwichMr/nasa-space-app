@@ -8,7 +8,8 @@ using Trainer.Simulation;
 namespace Trainer.Unity.Networking
 {
     /// <summary>
-    /// SDK-neutral host transport seam. No networking SDK is approved yet; a future binding implements this.
+    /// SDK-neutral host transport seam. Production binding: <see cref="UnityTransportHost"/> (Unity Transport
+    /// over WebSocket). Tests may use an in-memory loopback.
     /// Requirements: reliable, ordered delivery per connection; every callback on the Unity main thread;
     /// <c>connectionId</c> assigned by the transport from the real connection, never read from a payload;
     /// ClientConnected(id) before any MessageReceived(id, ...) (earlier messages are dropped as UnknownConnection).
@@ -43,6 +44,14 @@ namespace Trainer.Unity.Networking
         public const string UnknownMessageKind = "UnknownMessageKind";
         public const string UnexpectedMessageKind = "UnexpectedMessageKind";
         public const string MalformedPayload = "MalformedPayload";
+        /// <summary>Client: the link came up but the authority's initial state did not arrive in time.</summary>
+        public const string SyncTimeout = "SyncTimeout";
+        /// <summary>Host diagnostics only (the wire carries no reason text; the client sees the transport's
+        /// own reason, e.g. ClosedByRemote).</summary>
+        public const string AuthorityUnavailable = "AuthorityUnavailable";
+        public const string AuthorityReplaced = "AuthorityReplaced";
+        public const string ProtocolViolation = "ProtocolViolation";
+        public const string HostStopped = "HostStopped";
     }
 
     /// <summary>

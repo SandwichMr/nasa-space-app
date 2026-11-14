@@ -5,7 +5,8 @@ using Trainer.Application;
 namespace Trainer.Unity.Networking
 {
     /// <summary>
-    /// SDK-neutral client transport seam. No networking SDK is approved yet; a future binding implements this.
+    /// SDK-neutral client transport seam. Production binding: <see cref="UnityTransportClient"/> (Unity Transport
+    /// over WebSocket, also in WebGL). Tests may use an in-memory loopback.
     /// Each connection attempt carries a <c>link</c> id chosen by the controller; the binding echoes it on every
     /// event of that attempt, so late events from an earlier attempt can be recognised and ignored.
     /// Requirements: reliable, ordered delivery on a link; every callback on the Unity main thread.
@@ -97,6 +98,19 @@ namespace Trainer.Unity.Networking
                 Session.NotifyAbandoned(abandoned, SessionNetworkCodes.LocalDisconnect);
                 StateChanged?.Invoke(SessionConnectionState.Disconnected);
             }
+        }
+
+        /// <summary>Ends the current link as lost with <paramref name="reason"/>, e.g. <see
+        /// cref="SessionNetworkCodes.SyncTimeout"/> detected by a composition that owns a clock. No-op when
+        /// already Disconnected or ConnectionLost. Pending commands are abandoned with ConnectionLost (result
+        /// unknown). State is committed before the transport is asked to close the link.</summary>
+        public void AbortLink(string reason)
+        {
+            if (State == SessionConnectionState.Disconnected || State == SessionConnectionState.ConnectionLost)
+                return;
+            long id = link;
+            LoseLink(string.IsNullOrEmpty(reason) ? SessionNetworkCodes.ConnectionLost : reason);
+            transport.Disconnect(id);
         }
 
         public void Dispose()
