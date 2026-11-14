@@ -92,6 +92,34 @@ namespace Trainer.Application
             return MissionOutcome.InProgress;
         }
 
+        /// <summary>
+        /// Recovers the outcome from a published MissionSnapshot plus the same MissionRules the authority
+        /// used, for processes that only see snapshots (clients). MissionSnapshot does not carry the outcome,
+        /// so this relies on Evaluate's priority: Completed with the objective's work is ObjectiveAchieved,
+        /// otherwise TimeExpired; Interrupted whose power shows unserved essential demand is
+        /// EssentialServiceLost, otherwise SimulationFault (best effort: a failed Restart keeps the last power
+        /// observation, which may itself show the earlier essential loss). Ready, Running and Paused are
+        /// InProgress. On the authority, prefer MissionSession.Outcome.
+        /// </summary>
+        public static MissionOutcome Classify(MissionRules rules, MissionSnapshot snapshot)
+        {
+            if (rules == null) throw new ArgumentNullException(nameof(rules));
+            if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+            switch (snapshot.State)
+            {
+                case SessionState.Completed:
+                    return snapshot.ScienceWorkSeconds >= rules.ScienceWorkTargetSeconds - TimeToleranceSeconds
+                        ? MissionOutcome.ObjectiveAchieved : MissionOutcome.TimeExpired;
+                case SessionState.Interrupted:
+                    PowerSnapshot power = snapshot.Power;
+                    bool essentialServed = power == null || power.EssentialRequestedWatts <= 0
+                        || IsFullyServed(power.EssentialRequestedWatts, power.EssentialServedWatts);
+                    return essentialServed ? MissionOutcome.SimulationFault : MissionOutcome.EssentialServiceLost;
+                default:
+                    return MissionOutcome.InProgress;
+            }
+        }
+
         public static SessionState ToSessionState(MissionOutcome outcome)
         {
             switch (outcome)

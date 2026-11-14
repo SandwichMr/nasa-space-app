@@ -7,15 +7,18 @@ using UnityEngine;
 namespace Trainer.Unity.Bootstrap
 {
     /// <summary>
-    /// Authority-side composition root. NOT wired to any scene yet and does not compose itself:
-    /// the IPowerSimulation implementation (D1) is supplied by the later integration step via
-    /// Compose. Clients do not use this component; they obtain an ISessionPort from the network adapter.
+    /// Authority-side composition root. It does not compose itself: <see cref="MissionSceneComposition"/>
+    /// supplies the IPowerSimulation implementation (D1) via Compose, only in the authority process.
+    /// Clients never compose it; they obtain an ISessionPort from the network adapter.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MissionBootstrap : MonoBehaviour
     {
         [SerializeField] private ScenarioDefinition scenario;
         [SerializeField] private SimulationRunner runner;
+
+        /// <summary>Scenario this bootstrap composes from (may be null if unassigned).</summary>
+        public ScenarioDefinition Scenario => scenario;
 
         /// <summary>The authoritative session, or null before Compose / after Shutdown.</summary>
         public MissionSession Session { get; private set; }

@@ -1,5 +1,3 @@
-// Compiled only when TRAINER_MISSION_TESTS is defined (see MissionSessionTests.cs and the D2 HANDOFF).
-#if TRAINER_MISSION_TESTS
 using System;
 using NUnit.Framework;
 using Trainer.Application;
@@ -64,6 +62,29 @@ public sealed class MissionOutcomeEvaluatorTests
         Assert.Throws<ArgumentOutOfRangeException>(() => MissionOutcomeEvaluator.ToSessionState((MissionOutcome)99));
     }
 
+    private static MissionSnapshot Published(SessionState state, double work, PowerSnapshot power) =>
+        new MissionSnapshot(0, 1, state, power, work, false);
+
+    [Test] public void ClassifyRecoversOutcomeFromPublishedSnapshot()
+    {
+        PowerSnapshot served = Power(100, 60, 60, 0, 0);
+        Assert.That(MissionOutcomeEvaluator.Classify(Rules, Published(SessionState.Completed, 10, served)),
+            Is.EqualTo(MissionOutcome.ObjectiveAchieved));
+        Assert.That(MissionOutcomeEvaluator.Classify(Rules, Published(SessionState.Completed, 10 - 1e-9, served)),
+            Is.EqualTo(MissionOutcome.ObjectiveAchieved));
+        Assert.That(MissionOutcomeEvaluator.Classify(Rules, Published(SessionState.Completed, 9.9, served)),
+            Is.EqualTo(MissionOutcome.TimeExpired));
+        Assert.That(MissionOutcomeEvaluator.Classify(Rules, Published(SessionState.Interrupted, 3, Power(40, 60, 30, 0, 0))),
+            Is.EqualTo(MissionOutcome.EssentialServiceLost));
+        Assert.That(MissionOutcomeEvaluator.Classify(Rules, Published(SessionState.Interrupted, 3, served)),
+            Is.EqualTo(MissionOutcome.SimulationFault));
+        foreach (SessionState state in new[] { SessionState.Ready, SessionState.Running, SessionState.Paused })
+            Assert.That(MissionOutcomeEvaluator.Classify(Rules, Published(state, 50, served)),
+                Is.EqualTo(MissionOutcome.InProgress));
+        Assert.Throws<ArgumentNullException>(() => MissionOutcomeEvaluator.Classify(null, Published(SessionState.Ready, 0, served)));
+        Assert.Throws<ArgumentNullException>(() => MissionOutcomeEvaluator.Classify(Rules, null));
+    }
+
     [Test] public void LimitsAreReachedWithinRoundingTolerance()
     {
         Assert.That(MissionOutcomeEvaluator.Evaluate(Rules, Power(100 - 1e-9, 60, 60, 0, 0), 0),
@@ -74,4 +95,3 @@ public sealed class MissionOutcomeEvaluatorTests
             Is.EqualTo(MissionOutcome.InProgress));
     }
 }
-#endif

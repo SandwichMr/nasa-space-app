@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1c1621536064520b2a267954ab742dc, type: 3}
+  m_Name: Phase01_PowerCoop_Synthetic
+  m_EditorClassIdentifier: 
+  displayName: "Fase 1 \xB7 Sala de energ\xEDa (escenario sint\xE9tico)"
+  provenance: "Valores ilustrativos para ense\xF1ar el compromiso energ\xEDa/ciencia.
+    No representan hardware ni datos de la NASA. Con ciencia activa la bater\xEDa
+    baja 40 W; sin ciencia se recarga a 40 W. Dejar la ciencia encendida agota la
+    bater\xEDa a los 60 s y luego el instrumento ya no trabaja; para lograr 120 s
+    de trabajo hay que pausarla y recargar."
+  initialEnergyJoules: 2400
+  capacityJoules: 6000
+  generationWatts: 100
+  essentialConsumptionWatts: 60
+  scienceConsumptionWatts: 80
+  maxChargeWatts: 100
+  maxDischargeWatts: 200
+  scienceWorkTargetSeconds: 120
+  missionDurationSeconds: 240
+  timeScale: 2
+  maxStepSeconds: 1
