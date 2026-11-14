@@ -1,7 +1,3 @@
-// Compiled only when TRAINER_MISSION_TESTS is defined. This allowed path is outside an Editor folder
-// and there is no test .asmdef, so without the guard NUnit would break Assembly-CSharp.
-// See docs/phase-01/handoffs/02_MISSION_HANDOFF.md for activation options.
-#if TRAINER_MISSION_TESTS
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -393,4 +389,3 @@ public sealed class MissionSessionTests
         Assert.That(sim.ResetCount, Is.EqualTo(2));
     }
 }
-#endif

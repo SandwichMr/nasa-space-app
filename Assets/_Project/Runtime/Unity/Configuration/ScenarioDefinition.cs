@@ -12,6 +12,13 @@ namespace Trainer.Unity.Configuration
     [CreateAssetMenu(menuName = "Trainer/Scenario Definition", fileName = "ScenarioDefinition")]
     public sealed class ScenarioDefinition : ScriptableObject
     {
+        [Header("Label — shown to players and testers")]
+        [SerializeField, Tooltip("Short scenario name.")]
+        private string displayName = "Escenario sintético";
+        [SerializeField, TextArea(2, 6), Tooltip("Where the values come from. Say plainly when they are illustrative.")]
+        private string provenance = "Valores ilustrativos para enseñar el compromiso energía/ciencia. " +
+            "No representan hardware ni datos de la NASA.";
+
         [Header("Power (joules / watts) — illustrative")]
         [SerializeField, Min(0)] private double initialEnergyJoules = 5000;
         [SerializeField, Min(0)] private double capacityJoules = 10000;
@@ -32,6 +39,8 @@ namespace Trainer.Unity.Configuration
         [SerializeField, Min(0), Tooltip("Longest simulated sub-step per Advance call.")]
         private double maxStepSeconds = MissionSession.DefaultMaxStepSeconds;
 
+        public string DisplayName => displayName;
+        public string Provenance => provenance;
         public double TimeScale => timeScale;
         public double MaxStepSeconds => maxStepSeconds;
 
