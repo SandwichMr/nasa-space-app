@@ -7,6 +7,7 @@ namespace Trainer.Unity.Presentation
     /// <summary>Passive IMGUI view. Inject a main-thread port; no transport or authority is created here.</summary>
     public sealed class MissionHUD : MonoBehaviour
     {
+        [SerializeField, Min(260)] private float panelWidth = 430;
         private ISessionPort port;
         private Action<MissionSnapshot> snapshotListener;
         private Action<CommandResult> resultListener;
@@ -25,6 +26,10 @@ namespace Trainer.Unity.Presentation
         public string PowerText => power.Text;
         public string ScienceText => science.Text;
         public string ResultText => result.Text;
+        // Shared presentation state: world views reuse this binding and its single pending command.
+        public event Action PresentationChanged;
+        public Rect PanelRect => new Rect(12, 12, Mathf.Min(panelWidth, Mathf.Max(200, Screen.width - 24)),
+            Mathf.Max(100, Screen.height - 24));
 
         /// <summary>Also use Bind(null) on transport loss. Rebinding invalidates all retained observations.</summary>
         public void Bind(ISessionPort sessionPort)
@@ -43,11 +48,12 @@ namespace Trainer.Unity.Presentation
             if (!connected) { Bind(null); return; }
             connectionDetail = string.IsNullOrWhiteSpace(detail) ? "Conexión confirmada externamente" : detail;
             connection.Show(isActiveAndEnabled && port != null, connectionDetail);
+            PresentationChanged?.Invoke();
         }
 
         private void OnEnable() { Clear(); Attach(); }
         private void OnDisable() { Detach(); Clear(); connectionDetail = "Transporte sin verificar"; }
-        private void OnDestroy() { Detach(); port = null; }
+        private void OnDestroy() { Detach(); port = null; PresentationChanged = null; }
 
         private void Attach()
         {
@@ -64,6 +70,7 @@ namespace Trainer.Unity.Presentation
             source.CommandCompleted += onResult;
             connection.Show(true, connectionDetail);
             if (source.TryGetSnapshot(out MissionSnapshot current)) onSnapshot(current);
+            PresentationChanged?.Invoke();
         }
 
         private void Detach()
@@ -86,6 +93,7 @@ namespace Trainer.Unity.Presentation
             power.Show(null);
             science.Show(null);
             result.Show(null);
+            PresentationChanged?.Invoke();
         }
 
         private void ReceiveSnapshot(MissionSnapshot value)
@@ -110,6 +118,7 @@ namespace Trainer.Unity.Presentation
             power.Show(value.Power);
             science.Show(value);
             result.Show(value);
+            PresentationChanged?.Invoke();
         }
 
         private void ReceiveResult(CommandResult value)
@@ -118,6 +127,7 @@ namespace Trainer.Unity.Presentation
                 return;
             pending = null;
             CommandStatus = (value.Accepted ? "Solicitud aceptada: " : "Solicitud rechazada: ") + value.Reason;
+            PresentationChanged?.Invoke();
         }
 
         public void SetScienceEnabled(bool enabled) { Request(SessionAction.SetScienceEnabled, enabled); }
@@ -131,8 +141,11 @@ namespace Trainer.Unity.Presentation
             var command = new SessionCommand(Guid.NewGuid(), Snapshot.Epoch, action, scienceEnabled);
             pending = command;
             CommandStatus = "Solicitud pendiente: " + action;
+            ISessionPort source = port;
+            PresentationChanged?.Invoke();
+            if (pending != command || port != source) return;
             // Set pending before Submit: the shared fake may complete synchronously.
-            try { port.Submit(command); }
+            try { source.Submit(command); }
             catch (Exception)
             {
                 // Delivery may have happened before the transport threw. Do not invent a rejection
@@ -141,14 +154,14 @@ namespace Trainer.Unity.Presentation
                 {
                     pending = null;
                     CommandStatus = "Error de envío. Resultado desconocido; consulta el estado confirmado.";
+                    PresentationChanged?.Invoke();
                 }
             }
         }
 
         private void OnGUI()
         {
-            float width = Mathf.Min(740, Mathf.Max(200, Screen.width - 24));
-            GUILayout.BeginArea(new Rect(12, 12, width, Mathf.Max(100, Screen.height - 24)), GUI.skin.box);
+            GUILayout.BeginArea(PanelRect, GUI.skin.box);
             scroll = GUILayout.BeginScrollView(scroll);
             GUILayout.Label("ENTRENADOR DE MISIÓN · Energía y ciencia");
             connection.Draw();
@@ -158,8 +171,9 @@ namespace Trainer.Unity.Presentation
             power.Draw();
             GUILayout.Space(12);
             science.Draw(Snapshot, !IsPending, (action, value) => Request(action, value));
-            GUILayout.Label(CommandStatus);
-            GUILayout.Label("Las solicitudes esperan a la sesión. J = energía · W = potencia · s = tiempo.");
+            var wrap = new GUIStyle(GUI.skin.label) { wordWrap = true };
+            GUILayout.Label(CommandStatus, wrap);
+            GUILayout.Label("Las solicitudes esperan a la sesión. J = energía · W = potencia · s = tiempo.", wrap);
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
