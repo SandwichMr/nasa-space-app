@@ -1,0 +1,21 @@
+== compile Pure (Runtime/Simulation + Runtime/Application, netstandard only)
+== compile D5Phase02Tests (Editor/Validation/Phase02 + NUnit tests)
+warning CS2023: Omitiendo la opción /noconfig porque se especificó en un archivo de respuesta
+== run
+INCONCLUSIVE Phase02IntegrationGateTests.RealImplementationsConformToTheContracts :: Real phase 2 implementations missing or incomplete in this build: | == discovery: Passed 0, Failed 0, Pending 3, Info 0 |   [Pending] (discovery) ICrewRoster (D3) - No production implementation in the loaded assemblies. |   [Pending] (discovery) IOutpostSimulation (D1) - No production implementation in the loaded assemblies. |   [Pending] (discovery) IOutpostAuthority (D2) - No production implementation in the loaded assemblies. | == conformance-authority: Passed 0, Failed 0, Pending 1, Info 0 |   [Pending] (conformance-authority) authority: authority conformance - No D2 authority / D1 simulation factory in this build (expected before integration/phase-02). | 
+---- NUnit (reflection runner, not Unity Test Runner) ----
+FakeOutpostSessionPortTests: pass 9, fail 0, inconclusive 0, ignored 0
+FakeSessionPortTests: pass 6, fail 0, inconclusive 0, ignored 0
+MissionOutcomeEvaluatorTests: pass 7, fail 0, inconclusive 0, ignored 0
+MissionSessionTests: pass 21, fail 0, inconclusive 0, ignored 0
+OutpostContractExamplesTests: pass 6, fail 0, inconclusive 0, ignored 0
+OutpostSnapshotContractTests: pass 8, fail 0, inconclusive 0, ignored 0
+OutpostValueContractTests: pass 11, fail 0, inconclusive 0, ignored 0
+Phase02ConformanceSelfTests: pass 12, fail 0, inconclusive 0, ignored 0
+Phase02IntegrationGateTests: pass 0, fail 0, inconclusive 1, ignored 0
+Phase02ScenarioValidatorTests: pass 8, fail 0, inconclusive 0, ignored 0
+Phase02SnapshotStreamValidatorTests: pass 16, fail 0, inconclusive 0, ignored 0
+PowerSystemTests: pass 30, fail 0, inconclusive 0, ignored 0
+SimulationClockTests: pass 5, fail 0, inconclusive 0, ignored 0
+TOTAL pass 139, fail 0, inconclusive 1, ignored 0
+runner exit 0

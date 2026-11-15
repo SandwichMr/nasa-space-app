@@ -51,6 +51,7 @@ namespace Trainer.Tooling.BuildChecks
         public const string NUnitGateDefine = "TRAINER_PHASE1_VALIDATION_TESTS";
         public const string SceneArgument = "-phase1Scenes";
         public const string MissionScenesFolder = "Assets/_Project/Scenes";
+        public const string PhaseOneScenePrefix = "Phase01_";
         /// <summary>Template scenes that must never be presented as the game.</summary>
         public static readonly string[] TemplateScenes = { "Assets/Scenes/SampleScene.unity", "Assets/Settings/Scenes/URP2DSceneTemplate.unity" };
 
@@ -134,6 +135,8 @@ namespace Trainer.Tooling.BuildChecks
             {
                 scenes = Directory.Exists(MissionScenesFolder)
                     ? AssetDatabase.FindAssets("t:Scene", new[] { MissionScenesFolder }).Select(g => AssetDatabase.GUIDToAssetPath(g))
+                        // Phase 2 adds its own scene to the same folder; the phase 1 default only considers Phase01_*.
+                        .Where(p => Path.GetFileName(p).StartsWith(PhaseOneScenePrefix, StringComparison.Ordinal))
                         .Distinct().OrderBy(p => p, StringComparer.Ordinal).ToArray()
                     : new string[0];
                 if (scenes.Length == 0) { problem = "No mission scene under " + MissionScenesFolder + " (scene composition is D2's)."; return null; }

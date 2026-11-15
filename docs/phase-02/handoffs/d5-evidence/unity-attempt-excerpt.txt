@@ -1,0 +1,17 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-<user>" at "2026-11-15T01:45:55.1929993Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 33960, path: "C:/Program Files/Unity/Hub/Editor/6000.3.28f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-<user>" (connect: 0.00s, validation: 0.01s, handshake: 0.08s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-<user>-notifications" at "2026-11-15T01:45:55.2782849Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+The project is on case sensitive file system.
+Case sensitive file systems are not supported at the moment.
+Fatal Error! The project is on case sensitive file system.
+Case sensitive file systems are not supported at the moment.
+[Licensing::Client] Successfully updated license, isAsync: False, time: 0.26
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Module] Error: 'com.unity.editor.headless' was not found.
+[Licensing::Module] Licensing Background thread has ended after 0.35s

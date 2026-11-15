@@ -1,0 +1,39 @@
+== conformance-roster: Passed 16, Failed 0, Pending 0, Info 0
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: join assigns new ids, lowest slots, spawn pose
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: join beyond MaxCrew is rejected with SessionFull
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: ids never reused, freed slot reused, leave idempotent
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: movement ordering: stale, duplicate, epoch, not joined
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: straight speed = MaxSpeed
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: diagonal is not faster (FromAxes(1,1))
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: analog magnitude scales speed
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: bounds: walking into the outer wall stays admissible and close
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: obstacle blocks and is never crossed
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: one large step does not tunnel through a thin wall
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: Advance(0) is still; invalid elapsed rejected without change
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: facing and motion follow confirmed walking
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: crew members do not collide with each other
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: restart: spawn, idle, default facing, direction cleared, ids/slots/sequences kept
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: published member list is immutable / replaced on change
+  [Passed] (conformance-roster) D3 CrewRoster @a76ae73: leave forgets the held direction
+
+== conformance-simulation: Passed 10, Failed 0, Pending 0, Info 0
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: Reset publishes the configured stocks, energy and t = 0
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: Apply changes stocks by the effect exactly once
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: same id with another effect is IdConflict without change
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: insufficient stock is all-or-nothing
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: capacity overflow is all-or-nothing
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: Reset forgets applied ids and restores stocks
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: invalid elapsed time rejected without change
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: clock, served ≤ requested, bounds over a varied run
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: earlier snapshots are not mutated
+  [Passed] (conformance-simulation) D1 OutpostBaseSimulation @6aed43a: cabin readings: absent is never 0, observed time not in the future - O2 Valid, CO2 Valid
+
+== discovery: Passed 0, Failed 0, Pending 1, Info 3
+  [Info] (discovery) ICrewRoster (D3) - Trainer.Application.Crew.CrewRoster
+  [Info] (discovery) IOutpostSimulation parameters - OutpostBaseSimulation built with OutpostSimulationParameters.SyntheticTraining() (rates are D1's; conformance does not judge them).
+  [Info] (discovery) IOutpostSimulation (D1) - Trainer.Simulation.LifeSupport.OutpostBaseSimulation
+  [Pending] (discovery) IOutpostAuthority (D2) - No production implementation in the loaded assemblies.
+
+---- NUnit (reflection runner, not Unity Test Runner) ----
+PeerConformanceRun: pass 3, fail 0, inconclusive 0, ignored 0
+TOTAL pass 3, fail 0, inconclusive 0, ignored 0
