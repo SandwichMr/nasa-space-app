@@ -1,0 +1,89 @@
+PASS · 76 native PlayMode smoke checks
+Native PlayMode smoke checks with COMMON FAKE only. Captures are scripted states, not authority, networking, build or human play.
+not joined: no live readings or station action
+join loads the latest confirmed snapshot
+opening nearby water panel blocks movement once
+inspection calls the real intent signature
+station intent has the local station and action
+pending response is distinct from confirmed effect
+pending request is not duplicated
+sending a request cannot invent progress or stocks
+accepted response alone cannot invent a state change
+resource rejection has an actionable explanation
+close releases movement and panel focus
+details share the same movement owner
+closing details releases movement
+confirmed movement out of reach closes the station
+remote station cannot open or send actions
+other occupant and stalled progress remain authoritative
+disconnect clears state, panel, focus and movement block
+rejoin receives the current state
+disable detaches binding and unblocks movement
+explicit rebind after enable
+new epoch closes the old interaction and frees input
+old port cannot clear the new binding
+old snapshot listener detached on rebind
+old intent listener detached on rebind
+explicit unbind releases all view-owned input
+unknown CO2 is never zero or safe
+stale CO2 does not advertise a live nominal band or trend
+gas is a partial pressure, never a normalized life percentage
+an old observation cannot label equipment as currently nominal
+empty food explains replenishment rather than inventing crops
+full resource keeps declared capacity and authoritative trend: BatteryEnergy
+full resource keeps declared capacity and authoritative trend: PotableWater
+full resource keeps declared capacity and authoritative trend: StoredFood
+stale observation rejection offers reinspection
+off-spec decision explains recoverable water consequence
+serialized prefab available: World/Phase02/BaseInterior
+serialized prefab available: World/Phase03/ExpeditionWorld
+serialized prefab available: UI/Phase04/BaseOperationsPanel
+serialized prefab available: World/Phase04/BaseOperationsWorld
+phase 2 terminal replaced once without duplicate caption: water-recycler
+phase 2 terminal replaced once without duplicate caption: air-scrubber
+phase 2 terminal replaced once without duplicate caption: logistics-console
+three station prefabs mounted from the shared layout
+D4 adds no competing collision or physics
+serialized prefab available: Crew/Phase03/ExpeditionAstronaut
+original astronaut animation controller retained
+serialized prefab available: Crew/Phase03/ExpeditionAstronaut
+original astronaut animation controller retained
+station uses exact authoritative placement: water-recycler
+station uses exact authoritative placement: air-scrubber
+station uses exact authoritative placement: logistics-console
+station sprite and existing URP material resolve
+station sprite and existing URP material resolve
+station sprite and existing URP material resolve
+station sprite and existing URP material resolve
+station sprite and existing URP material resolve
+station sprite and existing URP material resolve
+station sprite and existing URP material resolve
+station sprite and existing URP material resolve
+station sprite and existing URP material resolve
+existing-camera framing reserves HUD bands without moving the camera
+render capture has a usable Game view size
+water decision panel opens only within reach
+render capture has a usable Game view size
+render capture has a usable Game view size
+station shows confirmed repair work without extrapolating
+render capture has a usable Game view size
+test and other occupant are visible in the world
+render capture has a usable Game view size
+render capture has a usable Game view size
+disconnect hides stations and releases focused panel
+render capture has a usable Game view size
+restored service does not invent restored water
+render capture has a usable Game view size
+render capture has a usable Game view size
+render capture has a usable Game view size
+
+Verification of final artifacts:
+Unity 6000.3.28f1 native import/compilation/prefab serialization: exit 0 (import-verified.log).
+Unity Test Runner EditMode filter Phase04: Passed 31/31, 0 failed, 0 skipped (editmode-phase04.xml).
+Native graphical PlayMode smoke runner: exit 0, 76 checks (visual-verified.log). Not a NUnit PlayMode suite.
+10 unretouched 1440x909 render screenshots inspected visually; all labelled COMMON FAKE.
+PASS: 71 asset files, metadata, GUIDs, 43 prefab references, 8 RGBA sprites with transparent first pixel and alpha 0..255, D4 ownership, credential patterns.
+No diff in contracts, existing assets, scenes, Packages, ProjectSettings or renderer configuration.
+Initial graphical attempt entered safe mode for an omitted Trainer.Application import in the test driver; corrected before the successful passes. Earlier attempts are not represented as passed.
+No production scene assembly, phase 4 build, sockets, cross-process or human-play validation performed by D4.
+Brine quantity is not exposed by the frozen snapshot; UI labels it unreported rather than calculating it.
