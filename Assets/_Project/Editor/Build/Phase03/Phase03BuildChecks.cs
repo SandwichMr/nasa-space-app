@@ -10,11 +10,14 @@ using Trainer.Simulation.LifeSupport;
 using Trainer.Tooling.Composition.Phase03;
 using Trainer.Tooling.Validation.Phase03;
 using Trainer.Unity.Bootstrap;
+using Trainer.Unity.Bootstrap.Provisional;
 using Trainer.Unity.Configuration;
 using Trainer.Unity.Controls;
 using Trainer.Unity.Networking.Expedition;
 using Trainer.Unity.Networking.Outpost;
+using Trainer.Unity.Presentation.Expedition;
 using Trainer.Unity.Validation.Phase03;
+using Trainer.Unity.World.Expedition;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
@@ -115,12 +118,32 @@ namespace Trainer.Tooling.BuildChecks.Phase03
                 checks.Add(new Phase03Check("single movement controller (phase 2 keyboard, its E disabled)", keyboard.Length == 1
                     && !new SerializedObject(keyboard[0]).FindProperty("interactWithE").boolValue, keyboard.Length + " keyboard component(s)"));
                 var avatars = All<CrewAvatarSync>();
+                var avatarPrefab = avatars.Length == 1
+                    ? new SerializedObject(avatars[0]).FindProperty("avatarPrefab").objectReferenceValue as GameObject : null;
                 checks.Add(new Phase03Check("avatars use the D4 astronaut prefab", avatars.Length == 1
-                    && new SerializedObject(avatars[0]).FindProperty("avatarPrefab").objectReferenceValue != null, avatars.Length + " avatar sync"));
+                    && AssetDatabase.GetAssetPath(avatarPrefab) == Phase03SceneBuilder.AstronautPrefab
+                    && avatarPrefab.GetComponentsInChildren<ICrewAvatarView>(true).Length > 0
+                    && avatarPrefab.GetComponentsInChildren<IExpeditionCrewView>(true).Length > 0,
+                    avatars.Length + " avatar sync; phase 2 movement visuals and phase 3 crew view required"));
                 Transform mount = so?.FindProperty("presentationMount")?.objectReferenceValue as Transform;
                 int views = mount == null ? 0 : mount.GetComponentsInChildren<IExpeditionView>(true).Length;
                 checks.Add(new Phase03Check("presentation mount holds IExpeditionView components", views > 0,
-                    views + " view(s); provisional until D4 delivers"));
+                    views + " view(s)"));
+                var world = mount == null ? null : mount.GetComponentsInChildren<ExpeditionWorldView>(true).SingleOrDefault();
+                var panel = mount == null ? null : mount.GetComponentsInChildren<ExpeditionPanel>(true).SingleOrDefault();
+                checks.Add(new Phase03Check("D4 world and HUD prefab instances replace provisional views", views == 2
+                    && world != null && panel != null
+                    && PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(world.gameObject) == Phase03SceneBuilder.WorldPrefab
+                    && PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(panel.gameObject) == Phase03SceneBuilder.PanelPrefab
+                    && All<ProvisionalExpeditionWorld>().Length == 0 && All<ProvisionalExpeditionHud>().Length == 0,
+                    "two production D4 views; no provisional scene components"));
+                var worldSo = world == null ? null : new SerializedObject(world);
+                string[] artFields = { "regolith", "rock", "route", "hatchOpen", "hatchClosed", "hatchCycle", "shelter", "antenna",
+                    "material", "sciencePrefab", "optionalPrefab" };
+                checks.Add(new Phase03Check("D4 world uses the composition base and all visual references", worldSo != null
+                    && worldSo.FindProperty("baseView").objectReferenceValue == so?.FindProperty("baseView")?.objectReferenceValue
+                    && artFields.All(f => worldSo.FindProperty(f).objectReferenceValue != null),
+                    "geometry configured once from the same scenario before presentation Bind"));
                 int physics = All<Collider2D>().Length + All<Rigidbody2D>().Length + All<Collider>().Length + All<Rigidbody>().Length;
                 checks.Add(new Phase03Check("no Unity physics decides positions", physics == 0, physics + " collider/rigidbody components"));
                 checks.Add(new Phase03Check("autopilot present and inert without -trainer-autopilot", All<ExpeditionAutopilot>().Length == 1,
@@ -216,11 +239,13 @@ namespace Trainer.Tooling.BuildChecks.Phase03
         {
             try
             {
-                string head = File.ReadAllText(".git/HEAD").Trim();
-                if (!head.StartsWith("ref: ")) return head;
-                string reference = head.Substring(5);
-                string file = Path.Combine(".git", reference);
-                return (File.Exists(file) ? File.ReadAllText(file).Trim() : "?") + " (" + reference + ")";
+                // In a linked worktree .git is a file. Ask Git to resolve loose or packed refs in either layout.
+                using (var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("git", "rev-parse --verify HEAD")
+                { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true }))
+                {
+                    if (process == null || !process.WaitForExit(5000)) return "?";
+                    return process.ExitCode == 0 ? process.StandardOutput.ReadToEnd().Trim() : "?";
+                }
             }
             catch (Exception) { return "?"; }
         }

@@ -1,12 +1,13 @@
 using System;
 using System.IO;
 using Trainer.Unity.Bootstrap;
-using Trainer.Unity.Bootstrap.Provisional;
 using Trainer.Unity.Configuration;
 using Trainer.Unity.Controls;
 using Trainer.Unity.Networking.Expedition;
 using Trainer.Unity.Networking.Outpost;
+using Trainer.Unity.Presentation.Expedition;
 using Trainer.Unity.Validation.Phase03;
+using Trainer.Unity.World.Expedition;
 using Trainer.Unity.World.Outpost;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -19,8 +20,8 @@ namespace Trainer.Tooling.Composition.Phase03
     /// <summary>
     /// D2 (single scene editor): builds the phase 3 scenario asset and the scene <c>Phase03_EvaAndShelter</c>
     /// reproducibly from code, so the composition is reviewable and can be regenerated after a contract or prefab change.
-    /// It reuses the phase 2 base and astronaut prefabs (D4) and the phase 2 movement, avatar and session components;
-    /// the phase 3 views under the presentation mount are the labelled PROVISIONAL ones until D4's arrive.
+    /// It reuses the phase 2 base, movement, avatar and session components, and mounts D4's phase 3
+    /// world/HUD prefabs and astronaut variant on the same session port.
     /// Menu: Tools/Trainer/Phase 3/Build scenario asset and scene. CLI:
     /// Unity -batchmode -nographics -projectPath &lt;repo&gt; -executeMethod Trainer.Tooling.Composition.Phase03.Phase03SceneBuilder.BuildFromCommandLine
     /// [-phase3ResetScenario] -logFile Logs/phase3-scene.log
@@ -31,7 +32,9 @@ namespace Trainer.Tooling.Composition.Phase03
         public const string ScenarioFolder = "Assets/_Project/Data/Scenarios/Phase03";
         public const string ScenarioPath = ScenarioFolder + "/Phase03_EvaAndShelter_Synthetic.asset";
         public const string BaseInteriorPrefab = "Assets/_Project/Prefabs/World/Phase02/BaseInterior.prefab";
-        public const string AstronautPrefab = "Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab";
+        public const string AstronautPrefab = "Assets/_Project/Prefabs/Crew/Phase03/ExpeditionAstronaut.prefab";
+        public const string WorldPrefab = "Assets/_Project/Prefabs/World/Phase03/ExpeditionWorld.prefab";
+        public const string PanelPrefab = "Assets/_Project/Prefabs/UI/Phase03/ExpeditionPanel.prefab";
         public const string PresentationMountName = "Phase03 Presentation Mount";
 
         [MenuItem("Tools/Trainer/Phase 3/Build scenario asset and scene")]
@@ -64,6 +67,10 @@ namespace Trainer.Tooling.Composition.Phase03
                 ?? throw new InvalidOperationException("Missing " + BaseInteriorPrefab);
             var astronaut = AssetDatabase.LoadAssetAtPath<GameObject>(AstronautPrefab)
                 ?? throw new InvalidOperationException("Missing " + AstronautPrefab);
+            var worldAsset = AssetDatabase.LoadAssetAtPath<GameObject>(WorldPrefab)
+                ?? throw new InvalidOperationException("Missing " + WorldPrefab);
+            var panelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(PanelPrefab)
+                ?? throw new InvalidOperationException("Missing " + PanelPrefab);
 
             // Camera and light: same configuration as the phase 2 scene.
             var cameraObject = new GameObject("Main Camera") { tag = "MainCamera" };
@@ -105,14 +112,14 @@ namespace Trainer.Tooling.Composition.Phase03
             var controlsObject = new GameObject("SessionControls");
             var controls = controlsObject.AddComponent<OutpostSessionControls>();
 
-            // D4 mount: provisional views until D4's IExpeditionView components replace them.
+            // Production D4 views. The composition binds them after configuring the base from the scenario.
             var mount = new GameObject(PresentationMountName);
-            var hudObject = new GameObject("PROVISIONAL HUD (D2)");
+            var hudObject = (GameObject)PrefabUtility.InstantiatePrefab(panelAsset, scene);
             hudObject.transform.SetParent(mount.transform, false);
-            var hud = hudObject.AddComponent<ProvisionalExpeditionHud>();
-            var worldObject = new GameObject("PROVISIONAL World overlays (D2)");
+            if (hudObject.GetComponent<ExpeditionPanel>() == null) throw new InvalidOperationException("ExpeditionPanel missing");
+            var worldObject = (GameObject)PrefabUtility.InstantiatePrefab(worldAsset, scene);
             worldObject.transform.SetParent(mount.transform, false);
-            var world = worldObject.AddComponent<ProvisionalExpeditionWorld>();
+            var world = worldObject.GetComponent<ExpeditionWorldView>() ?? throw new InvalidOperationException("ExpeditionWorldView missing");
 
             Set(bootstrap, "scenario", scenario);
             Set(bootstrap, "runner", runner);
@@ -121,9 +128,7 @@ namespace Trainer.Tooling.Composition.Phase03
             Set(avatars, "avatarParent", crewParent.transform);
             Set(avatars, "followCamera", camera);
             Set(presenter, "avatars", avatars);
-            Set(hud, "baseView", baseView);
             Set(world, "baseView", baseView);
-            Set(world, "avatars", avatars);
             Set(autopilot, "composition", composition);
             Set(autopilot, "keyboard", keyboard);
             Set(autopilot, "interaction", interaction);

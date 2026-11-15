@@ -30,7 +30,14 @@ namespace Trainer.Unity.Presentation.Expedition
             }
             Context = null; Shown = null; ClearView();
         }
-        private void Membership(OutpostMembership value) { Shown = null; ClearView(); if (value.IsJoined) { OnMembershipRestored(); Refresh(); } }
+        private void Membership(OutpostMembership value)
+        {
+            // A focused details panel must not leave D3's input blocked after disconnect/rejoin.
+            Context.UnblockMovement(this);
+            Shown = null;
+            ClearView();
+            if (value.IsJoined) { OnMembershipRestored(); Refresh(); }
+        }
         private void Refresh()
         {
             if (Context != null && Context.Port.Membership.IsJoined && Context.Port.TryGetExpedition(out var s)) Receive(s);

@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &203764080
+--- !u!1 &156133810
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,57 +127,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 203764081}
-  - component: {fileID: 203764082}
-  m_Layer: 0
-  m_Name: PROVISIONAL World overlays (D2)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &203764081
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 203764080}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1375749492}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &203764082
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 203764080}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 21eda531d42b8c280ad49898f5d27b30, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.Provisional.ProvisionalExpeditionWorld
-  baseView: {fileID: 811583552}
-  avatars: {fileID: 318982291}
---- !u!1 &318982290
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 318982295}
-  - component: {fileID: 318982294}
-  - component: {fileID: 318982291}
-  - component: {fileID: 318982293}
-  - component: {fileID: 318982292}
+  - component: {fileID: 156133815}
+  - component: {fileID: 156133814}
+  - component: {fileID: 156133813}
+  - component: {fileID: 156133812}
+  - component: {fileID: 156133811}
   m_Layer: 0
   m_Name: CrewPresentation
   m_TagString: Untagged
@@ -185,45 +139,26 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &318982291
+--- !u!114 &156133811
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 318982290}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1c5347ada6294a948a5d216ad4ecbc6b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.Outpost.CrewAvatarSync
-  avatarPrefab: {fileID: 8175744984538422888, guid: 0d02e233705a134bdb43bb8c037a5e21, type: 3}
-  avatarParent: {fileID: 914899331}
-  followCamera: {fileID: 468025006}
-  cameraSmoothingSeconds: 0.15
-  interpolationDelaySeconds: 0.1
-  teleportMeters: 1.5
-  avatarZ: 0
---- !u!114 &318982292
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 318982290}
+  m_GameObject: {fileID: 156133810}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1bc2d36b547783c1b09a0b7c67535ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.Expedition.ExpeditionCrewPresenter
-  avatars: {fileID: 318982291}
---- !u!114 &318982293
+  avatars: {fileID: 156133813}
+--- !u!114 &156133812
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 318982290}
+  m_GameObject: {fileID: 156133810}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 60438bce73214523d8ea588fc1ffa796, type: 3}
@@ -231,26 +166,45 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Controls.ExpeditionInteractionInput
   interactWithE: 1
   declareReturnWithR: 1
---- !u!114 &318982294
+--- !u!114 &156133813
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 318982290}
+  m_GameObject: {fileID: 156133810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c5347ada6294a948a5d216ad4ecbc6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.Outpost.CrewAvatarSync
+  avatarPrefab: {fileID: 8386218846017305754, guid: 375e72ef9803e558ba1837740d14a955, type: 3}
+  avatarParent: {fileID: 1162843715}
+  followCamera: {fileID: 365355467}
+  cameraSmoothingSeconds: 0.15
+  interpolationDelaySeconds: 0.1
+  teleportMeters: 1.5
+  avatarZ: 0
+--- !u!114 &156133814
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 156133810}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ebf0037a07a74edaa04c7a64b43f6484, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Controls.CrewKeyboardInput
   interactWithE: 0
---- !u!4 &318982295
+--- !u!4 &156133815
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 318982290}
+  m_GameObject: {fileID: 156133810}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -259,7 +213,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &468025005
+--- !u!1 &194167568
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -267,150 +221,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 468025009}
-  - component: {fileID: 468025006}
-  - component: {fileID: 468025008}
-  - component: {fileID: 468025007}
-  m_Layer: 0
-  m_Name: Main Camera
-  m_TagString: MainCamera
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!20 &468025006
-Camera:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 468025005}
-  m_Enabled: 1
-  serializedVersion: 2
-  m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.03137255, g: 0.050980393, b: 0.09019608, a: 0}
-  m_projectionMatrixMode: 1
-  m_GateFitMode: 2
-  m_FOVAxisMode: 0
-  m_Iso: 200
-  m_ShutterSpeed: 0.005
-  m_Aperture: 16
-  m_FocusDistance: 10
-  m_FocalLength: 50
-  m_BladeCount: 5
-  m_Curvature: {x: 2, y: 11}
-  m_BarrelClipping: 0.25
-  m_Anamorphism: 0
-  m_SensorSize: {x: 36, y: 24}
-  m_LensShift: {x: 0, y: 0}
-  m_NormalizedViewPortRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  near clip plane: 0.3
-  far clip plane: 1000
-  field of view: 60
-  orthographic: 1
-  orthographic size: 5
-  m_Depth: 0
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
-  m_TargetDisplay: 0
-  m_TargetEye: 3
-  m_HDR: 1
-  m_AllowMSAA: 1
-  m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
-  m_StereoConvergence: 10
-  m_StereoSeparation: 0.022
---- !u!114 &468025007
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 468025005}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26e773f10102497d39e9c80721b4c861, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.World.Outpost.LocalCameraFraming
-  visibleHeightMeters: 9.5
---- !u!114 &468025008
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 468025005}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
-  m_RenderShadows: 1
-  m_RequiresDepthTextureOption: 2
-  m_RequiresOpaqueTextureOption: 2
-  m_CameraType: 0
-  m_Cameras: []
-  m_RendererIndex: -1
-  m_VolumeLayerMask:
-    serializedVersion: 2
-    m_Bits: 1
-  m_VolumeTrigger: {fileID: 0}
-  m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
-  m_Antialiasing: 0
-  m_AntialiasingQuality: 2
-  m_StopNaN: 0
-  m_Dithering: 0
-  m_ClearDepth: 1
-  m_AllowXRRendering: 1
-  m_AllowHDROutput: 1
-  m_UseScreenCoordOverride: 0
-  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
-  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
-  m_RequiresDepthTexture: 0
-  m_RequiresColorTexture: 0
-  m_TaaSettings:
-    m_Quality: 3
-    m_FrameInfluence: 0.1
-    m_JitterScale: 1
-    m_MipBias: 0
-    m_VarianceClampScale: 0.9
-    m_ContrastAdaptiveSharpening: 0
-  m_Version: 2
---- !u!4 &468025009
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 468025005}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.75, y: 3.25, z: -10}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &570057199
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 570057201}
-  - component: {fileID: 570057200}
+  - component: {fileID: 194167570}
+  - component: {fileID: 194167569}
   m_Layer: 0
   m_Name: Global Light 2D
   m_TagString: Untagged
@@ -418,13 +230,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &570057200
+--- !u!114 &194167569
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 570057199}
+  m_GameObject: {fileID: 194167568}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
@@ -470,13 +282,13 @@ MonoBehaviour:
   - {x: 0.5, y: -0.5, z: 0}
   - {x: 0.5, y: 0.5, z: 0}
   - {x: -0.5, y: 0.5, z: 0}
---- !u!4 &570057201
+--- !u!4 &194167570
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 570057199}
+  m_GameObject: {fileID: 194167568}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -485,187 +297,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &663987907
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 663987909}
-  - component: {fileID: 663987908}
-  m_Layer: 0
-  m_Name: ExpeditionClient
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &663987908
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 663987907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 813ec2f1a0961f7ed94e758ccc22fc8b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.Expedition.ExpeditionNetworkClient
-  options:
-    Address: 127.0.0.1
-    Port: 7777
-    Path: /
-    Secure: 0
-    ServerName: 
-    ConnectTimeoutMs: 1000
-    MaxConnectAttempts: 10
-    DisconnectTimeoutMs: 30000
-  connectOnStart: 0
-  readLaunchArguments: 1
-  synchronizationTimeoutSeconds: 10
-  runInBackground: 1
---- !u!4 &663987909
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 663987907}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &674556835
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 674556838}
-  - component: {fileID: 674556837}
-  - component: {fileID: 674556836}
-  m_Layer: 0
-  m_Name: ExpeditionComposition
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &674556836
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 674556835}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 349f5e62e2b017e37b96d64d882465fc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Validation.Phase03.ExpeditionAutopilot
-  composition: {fileID: 674556837}
-  keyboard: {fileID: 318982294}
-  interaction: {fileID: 318982293}
---- !u!114 &674556837
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 674556835}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a190ef6a780bc95228297e007c44e86b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.ExpeditionSceneComposition
-  role: 0
-  readCommandLine: 1
-  scenario: {fileID: 11400000, guid: c1153266c84bf17b891d4087a2bb1ea3, type: 2}
-  bootstrap: {fileID: 1547974138}
-  networkHost: {fileID: 1547974137}
-  networkClient: {fileID: 663987908}
-  keyboardInput: {fileID: 318982294}
-  avatarSync: {fileID: 318982291}
-  interactionInput: {fileID: 318982293}
-  crewPresenter: {fileID: 318982292}
-  baseView: {fileID: 811583552}
-  sessionControls: {fileID: 1727245299}
-  presentationMount: {fileID: 1375749492}
-  authorityPlays: 1
-  authorityOnly:
-  - {fileID: 1547974136}
-  clientOnly:
-  - {fileID: 663987907}
---- !u!4 &674556838
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 674556835}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &681808105
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 681808106}
-  - component: {fileID: 681808107}
-  m_Layer: 0
-  m_Name: PROVISIONAL HUD (D2)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &681808106
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 681808105}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1375749492}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &681808107
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 681808105}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7bd94894955a92cd19d202a0b4d9e5e7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.Provisional.ProvisionalExpeditionHud
-  baseView: {fileID: 811583552}
---- !u!1001 &811583551
+--- !u!1001 &321558457
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -722,10 +354,10 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6b4f311e686b90b10a51e0ad49a35712, type: 3}
---- !u!114 &811583552 stripped
+--- !u!114 &321558458 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5700089807195346442, guid: 6b4f311e686b90b10a51e0ad49a35712, type: 3}
-  m_PrefabInstance: {fileID: 811583551}
+  m_PrefabInstance: {fileID: 321558457}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
@@ -733,7 +365,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31f5743398641672ba013a487c4009d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.World.Outpost.BaseInteriorView
---- !u!1 &914899330
+--- !u!1 &365355466
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -741,21 +373,189 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 914899331}
+  - component: {fileID: 365355470}
+  - component: {fileID: 365355467}
+  - component: {fileID: 365355469}
+  - component: {fileID: 365355468}
   m_Layer: 0
-  m_Name: Crew
-  m_TagString: Untagged
+  m_Name: Main Camera
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &914899331
+--- !u!20 &365355467
+Camera:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 365355466}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.03137255, g: 0.050980393, b: 0.09019608, a: 0}
+  m_projectionMatrixMode: 1
+  m_GateFitMode: 2
+  m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 50
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_NormalizedViewPortRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  near clip plane: 0.3
+  far clip plane: 1000
+  field of view: 60
+  orthographic: 1
+  orthographic size: 5
+  m_Depth: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingPath: -1
+  m_TargetTexture: {fileID: 0}
+  m_TargetDisplay: 0
+  m_TargetEye: 3
+  m_HDR: 1
+  m_AllowMSAA: 1
+  m_AllowDynamicResolution: 0
+  m_ForceIntoRT: 0
+  m_OcclusionCulling: 1
+  m_StereoConvergence: 10
+  m_StereoSeparation: 0.022
+--- !u!114 &365355468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 365355466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26e773f10102497d39e9c80721b4c861, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.World.Outpost.LocalCameraFraming
+  visibleHeightMeters: 9.5
+--- !u!114 &365355469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 365355466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
+--- !u!4 &365355470
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 914899330}
+  m_GameObject: {fileID: 365355466}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.75, y: 3.25, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &432070977
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 432070979}
+  - component: {fileID: 432070978}
+  m_Layer: 0
+  m_Name: ExpeditionClient
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &432070978
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 432070977}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 813ec2f1a0961f7ed94e758ccc22fc8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.Expedition.ExpeditionNetworkClient
+  options:
+    Address: 127.0.0.1
+    Port: 7777
+    Path: /
+    Secure: 0
+    ServerName: 
+    ConnectTimeoutMs: 1000
+    MaxConnectAttempts: 10
+    DisconnectTimeoutMs: 30000
+  connectOnStart: 0
+  readLaunchArguments: 1
+  synchronizationTimeoutSeconds: 10
+  runInBackground: 1
+--- !u!4 &432070979
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 432070977}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -764,7 +564,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1375749491
+--- !u!1 &937754445
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -772,7 +572,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1375749492}
+  - component: {fileID: 937754446}
   m_Layer: 0
   m_Name: Phase03 Presentation Mount
   m_TagString: Untagged
@@ -780,24 +580,152 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1375749492
+--- !u!4 &937754446
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1375749491}
+  m_GameObject: {fileID: 937754445}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 681808106}
-  - {fileID: 203764081}
+  - {fileID: 962507380}
+  - {fileID: 1064388597}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1547974136
+--- !u!1001 &962507379
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 937754446}
+    m_Modifications:
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7221410441081426441, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+      propertyPath: m_Name
+      value: ExpeditionPanel
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+--- !u!4 &962507380 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3621501620674459843, guid: b651855992eb287928ab9d4837ab4bbe, type: 3}
+  m_PrefabInstance: {fileID: 962507379}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1064388596
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 937754446}
+    m_Modifications:
+    - target: {fileID: 1081166913689710840, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_Name
+      value: ExpeditionWorld
+      objectReference: {fileID: 0}
+    - target: {fileID: 5736760841334246956, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: baseView
+      value: 
+      objectReference: {fileID: 321558458}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+--- !u!4 &1064388597 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+  m_PrefabInstance: {fileID: 1064388596}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1162843714
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -805,10 +733,41 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1547974140}
-  - component: {fileID: 1547974139}
-  - component: {fileID: 1547974138}
-  - component: {fileID: 1547974137}
+  - component: {fileID: 1162843715}
+  m_Layer: 0
+  m_Name: Crew
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1162843715
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1162843714}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1219450295
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1219450299}
+  - component: {fileID: 1219450298}
+  - component: {fileID: 1219450297}
+  - component: {fileID: 1219450296}
   m_Layer: 0
   m_Name: ExpeditionAuthority
   m_TagString: Untagged
@@ -816,13 +775,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &1547974137
+--- !u!114 &1219450296
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1547974136}
+  m_GameObject: {fileID: 1219450295}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee22380cdcab65ca690d25bd2305a4a1, type: 3}
@@ -840,39 +799,39 @@ MonoBehaviour:
   disconnectOnProtocolError: 1
   batchModeFrameRate: 30
   runInBackground: 1
---- !u!114 &1547974138
+--- !u!114 &1219450297
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1547974136}
+  m_GameObject: {fileID: 1219450295}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 72011f10d0983a3839bc82922df7c8c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.ExpeditionBootstrap
   scenario: {fileID: 11400000, guid: c1153266c84bf17b891d4087a2bb1ea3, type: 2}
-  runner: {fileID: 1547974139}
---- !u!114 &1547974139
+  runner: {fileID: 1219450298}
+--- !u!114 &1219450298
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1547974136}
+  m_GameObject: {fileID: 1219450295}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c4435751e0c310a8e880815e059859a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.ExpeditionRunner
---- !u!4 &1547974140
+--- !u!4 &1219450299
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1547974136}
+  m_GameObject: {fileID: 1219450295}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -881,7 +840,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1727245298
+--- !u!1 &1882464599
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -889,8 +848,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1727245300}
-  - component: {fileID: 1727245299}
+  - component: {fileID: 1882464601}
+  - component: {fileID: 1882464600}
   m_Layer: 0
   m_Name: SessionControls
   m_TagString: Untagged
@@ -898,25 +857,103 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1727245299
+--- !u!114 &1882464600
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1727245298}
+  m_GameObject: {fileID: 1882464599}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4c70d856a22c439795a675a0b2350931, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.OutpostSessionControls
---- !u!4 &1727245300
+--- !u!4 &1882464601
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1727245298}
+  m_GameObject: {fileID: 1882464599}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1911240550
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1911240553}
+  - component: {fileID: 1911240552}
+  - component: {fileID: 1911240551}
+  m_Layer: 0
+  m_Name: ExpeditionComposition
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1911240551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1911240550}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 349f5e62e2b017e37b96d64d882465fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Validation.Phase03.ExpeditionAutopilot
+  composition: {fileID: 1911240552}
+  keyboard: {fileID: 156133814}
+  interaction: {fileID: 156133812}
+--- !u!114 &1911240552
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1911240550}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a190ef6a780bc95228297e007c44e86b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.ExpeditionSceneComposition
+  role: 0
+  readCommandLine: 1
+  scenario: {fileID: 11400000, guid: c1153266c84bf17b891d4087a2bb1ea3, type: 2}
+  bootstrap: {fileID: 1219450297}
+  networkHost: {fileID: 1219450296}
+  networkClient: {fileID: 432070978}
+  keyboardInput: {fileID: 156133814}
+  avatarSync: {fileID: 156133813}
+  interactionInput: {fileID: 156133812}
+  crewPresenter: {fileID: 156133811}
+  baseView: {fileID: 321558458}
+  sessionControls: {fileID: 1882464600}
+  presentationMount: {fileID: 937754446}
+  authorityPlays: 1
+  authorityOnly:
+  - {fileID: 1219450295}
+  clientOnly:
+  - {fileID: 432070977}
+--- !u!4 &1911240553
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1911240550}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -929,13 +966,13 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 468025009}
-  - {fileID: 570057201}
-  - {fileID: 674556838}
-  - {fileID: 1547974140}
-  - {fileID: 663987909}
-  - {fileID: 318982295}
-  - {fileID: 914899331}
-  - {fileID: 811583551}
-  - {fileID: 1727245300}
-  - {fileID: 1375749492}
+  - {fileID: 365355470}
+  - {fileID: 194167570}
+  - {fileID: 1911240553}
+  - {fileID: 1219450299}
+  - {fileID: 432070979}
+  - {fileID: 156133815}
+  - {fileID: 1162843715}
+  - {fileID: 321558457}
+  - {fileID: 1882464601}
+  - {fileID: 937754446}
