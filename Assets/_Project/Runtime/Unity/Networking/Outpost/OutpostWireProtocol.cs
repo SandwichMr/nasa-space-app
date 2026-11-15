@@ -160,7 +160,12 @@ namespace Trainer.Unity.Networking.Outpost
         internal static byte[] EncodeSnapshot(OutpostSessionSnapshot s)
         {
             if (s == null) throw new ArgumentNullException(nameof(s));
-            return Encode(OutpostMessageKind.Snapshot, w =>
+            return Encode(OutpostMessageKind.Snapshot, w => WriteSnapshotBody(w, s));
+        }
+
+        /// <summary>Phase 2 snapshot body (shared with the phase 3 cable, which embeds it unchanged).</summary>
+        internal static void WriteSnapshotBody(BinaryWriter w, OutpostSessionSnapshot s)
+        {
             {
                 w.Write(s.Epoch);
                 w.Write(s.Revision);
@@ -212,12 +217,15 @@ namespace Trainer.Unity.Networking.Outpost
                     w.Write((byte)o.Unit);
                     w.Write(o.Required);
                 }
-            });
+            }
         }
 
         /// <summary>Splits a host message into frames of at most <see cref="MaxFrameBytes"/>. A message that fits
         /// is returned as is (one frame). Each frame is a new array, as the transport takes ownership.</summary>
-        internal static List<byte[]> Frame(byte[] message)
+        internal static List<byte[]> Frame(byte[] message) => Frame(message, Magic1, Version);
+
+        /// <summary>Same framing under another cable header (the phase 3 cable reuses it with its own magic).</summary>
+        internal static List<byte[]> Frame(byte[] message, byte magic1, byte version)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
             if (message.Length > MaxMessageBytes) throw new ArgumentException("Message too large.", nameof(message));
@@ -234,8 +242,8 @@ namespace Trainer.Unity.Networking.Outpost
                 int offset = i * body, length = Math.Min(body, message.Length - offset);
                 var frame = new byte[ChunkHeaderBytes + length];
                 frame[0] = Magic0;
-                frame[1] = Magic1;
-                frame[2] = Version;
+                frame[1] = magic1;
+                frame[2] = version;
                 frame[3] = (byte)OutpostMessageKind.Chunk;
                 frame[4] = (byte)i;
                 frame[5] = (byte)(i >> 8);
@@ -254,13 +262,22 @@ namespace Trainer.Unity.Networking.Outpost
         /// </summary>
         internal sealed class Assembler
         {
+            private readonly byte magic1, version;
             private MemoryStream partial;
             private int expected, count;
+
+            internal Assembler() : this(Magic1, Version) { }
+
+            internal Assembler(byte magic1, byte version)
+            {
+                this.magic1 = magic1;
+                this.version = version;
+            }
 
             internal bool TryAccept(byte[] frame, out byte[] message, out string error)
             {
                 message = null;
-                if (!TryOpen(frame, out OutpostMessageKind kind, out error)) return Reset(false);
+                if (!TryOpen(frame, out OutpostMessageKind kind, out error, magic1, version)) return Reset(false);
                 if (kind != OutpostMessageKind.Chunk)
                 {
                     if (partial != null) return Reset(Fail(SessionNetworkCodes.MalformedPayload, out error));
@@ -329,7 +346,7 @@ namespace Trainer.Unity.Networking.Outpost
             return ok;
         }
 
-        private static OutpostMembership ReadMembership(BinaryReader r)
+        internal static OutpostMembership ReadMembership(BinaryReader r)
         {
             var status = (MembershipStatus)r.ReadByte();
             int player = r.ReadInt32();
@@ -343,7 +360,7 @@ namespace Trainer.Unity.Networking.Outpost
             }
         }
 
-        private static OutpostSessionSnapshot ReadSnapshot(BinaryReader r)
+        internal static OutpostSessionSnapshot ReadSnapshot(BinaryReader r)
         {
             long epoch = r.ReadInt64(), revision = r.ReadInt64();
             var state = (SessionState)r.ReadInt32();
@@ -388,7 +405,7 @@ namespace Trainer.Unity.Networking.Outpost
             return new OutpostSessionSnapshot(epoch, revision, state, outcome, scenario, crew, stations, resources, objectives);
         }
 
-        private static void WriteResources(BinaryWriter w, OutpostSimulationSnapshot s)
+        internal static void WriteResources(BinaryWriter w, OutpostSimulationSnapshot s)
         {
             PowerSnapshot p = s.Power;
             foreach (double v in new[] { p.SimulatedTimeSeconds, p.EnergyJoules, p.CapacityJoules, p.GenerationWatts,
@@ -407,7 +424,7 @@ namespace Trainer.Unity.Networking.Outpost
             WriteReading(w, s.LifeSupport.Cabin.CarbonDioxide);
         }
 
-        private static OutpostSimulationSnapshot ReadResources(BinaryReader r)
+        internal static OutpostSimulationSnapshot ReadResources(BinaryReader r)
         {
             var values = new double[8];
             for (int i = 0; i < values.Length; i++) values[i] = r.ReadDouble();
@@ -420,7 +437,7 @@ namespace Trainer.Unity.Networking.Outpost
             return new OutpostSimulationSnapshot(power, requested, served, new LifeSupportSnapshot(water, food, cabin));
         }
 
-        private static void WriteReading(BinaryWriter w, GasReading reading)
+        internal static void WriteReading(BinaryWriter w, GasReading reading)
         {
             w.Write((byte)reading.Status);
             if (reading.Status == ReadingStatus.Unavailable) return;
@@ -428,14 +445,14 @@ namespace Trainer.Unity.Networking.Outpost
             w.Write(reading.ObservedAtSeconds.Value);
         }
 
-        private static GasReading ReadReading(BinaryReader r)
+        internal static GasReading ReadReading(BinaryReader r)
         {
             var status = (ReadingStatus)r.ReadByte();
             if (status == ReadingStatus.Unavailable) return GasReading.Unavailable;
             return new GasReading(status, r.ReadDouble(), r.ReadDouble());
         }
 
-        private static bool ValidPower(PowerSnapshot p)
+        internal static bool ValidPower(PowerSnapshot p)
         {
             foreach (double v in new[] { p.SimulatedTimeSeconds, p.EnergyJoules, p.CapacityJoules, p.GenerationWatts,
                          p.EssentialRequestedWatts, p.EssentialServedWatts, p.ScienceRequestedWatts, p.ScienceServedWatts })
@@ -450,15 +467,17 @@ namespace Trainer.Unity.Networking.Outpost
             kind == OutpostMessageKind.Result || kind == OutpostMessageKind.Snapshot
             || kind == OutpostMessageKind.Membership || kind == OutpostMessageKind.Chunk;
 
-        private static byte[] Encode(OutpostMessageKind kind, Action<BinaryWriter> body)
+        private static byte[] Encode(OutpostMessageKind kind, Action<BinaryWriter> body) => Encode(kind, body, Magic1, Version);
+
+        internal static byte[] Encode(OutpostMessageKind kind, Action<BinaryWriter> body, byte magic1, byte version)
         {
             using (var stream = new MemoryStream())
             {
                 using (var writer = new BinaryWriter(stream, StrictUtf8, true))
                 {
                     writer.Write(Magic0);
-                    writer.Write(Magic1);
-                    writer.Write(Version);
+                    writer.Write(magic1);
+                    writer.Write(version);
                     writer.Write((byte)kind);
                     body(writer);
                 }
@@ -466,21 +485,24 @@ namespace Trainer.Unity.Networking.Outpost
             }
         }
 
-        private static bool TryOpen(byte[] payload, out OutpostMessageKind kind, out string error)
+        private static bool TryOpen(byte[] payload, out OutpostMessageKind kind, out string error) =>
+            TryOpen(payload, out kind, out error, Magic1, Version);
+
+        internal static bool TryOpen(byte[] payload, out OutpostMessageKind kind, out string error, byte magic1, byte version)
         {
             kind = 0;
             error = null;
             if (payload == null || payload.Length == 0) error = SessionNetworkCodes.EmptyPayload;
             else if (payload.Length < HeaderBytes) error = SessionNetworkCodes.MalformedPayload;
-            else if (payload[0] != Magic0 || payload[1] != Magic1) error = SessionNetworkCodes.BadMagic;
-            else if (payload[2] != Version) error = SessionNetworkCodes.UnsupportedVersion;
+            else if (payload[0] != Magic0 || payload[1] != magic1) error = SessionNetworkCodes.BadMagic;
+            else if (payload[2] != version) error = SessionNetworkCodes.UnsupportedVersion;
             else kind = (OutpostMessageKind)payload[3];
             return error == null;
         }
 
         /// <summary>Runs <paramref name="body"/>; any read past the end, trailing byte or value the contract
         /// constructors reject becomes MalformedPayload.</summary>
-        private static bool Read(byte[] payload, out string error, Action<BinaryReader> body)
+        internal static bool Read(byte[] payload, out string error, Action<BinaryReader> body)
         {
             try
             {
@@ -500,13 +522,13 @@ namespace Trainer.Unity.Networking.Outpost
             }
         }
 
-        private static bool Fail(string code, out string error)
+        internal static bool Fail(string code, out string error)
         {
             error = code;
             return false;
         }
 
-        private static void WriteKey(BinaryWriter w, string key)
+        internal static void WriteKey(BinaryWriter w, string key)
         {
             if (key == null)
             {
@@ -518,7 +540,7 @@ namespace Trainer.Unity.Networking.Outpost
             w.Write(bytes);
         }
 
-        private static string ReadKey(BinaryReader r)
+        internal static string ReadKey(BinaryReader r)
         {
             int length = r.ReadByte();
             if (length == 0) return null;
@@ -530,7 +552,7 @@ namespace Trainer.Unity.Networking.Outpost
             return key;
         }
 
-        private static string ReadText(BinaryReader r)
+        internal static string ReadText(BinaryReader r)
         {
             int length = r.ReadUInt16();
             if (length > MaxReasonBytes) throw new InvalidDataException();
@@ -539,14 +561,14 @@ namespace Trainer.Unity.Networking.Outpost
             return StrictUtf8.GetString(bytes);
         }
 
-        private static bool ReadBool(BinaryReader r)
+        internal static bool ReadBool(BinaryReader r)
         {
             byte raw = r.ReadByte();
             if (raw > 1) throw new InvalidDataException();
             return raw == 1;
         }
 
-        private static Guid ReadGuid(BinaryReader r)
+        internal static Guid ReadGuid(BinaryReader r)
         {
             byte[] bytes = r.ReadBytes(16);
             if (bytes.Length != 16) throw new EndOfStreamException();
@@ -554,7 +576,7 @@ namespace Trainer.Unity.Networking.Outpost
         }
 
         /// <summary>UTF-8 of <paramref name="text"/>, cut at a character boundary to fit <paramref name="max"/>.</summary>
-        private static byte[] Utf8Cut(string text, int max, out bool truncated)
+        internal static byte[] Utf8Cut(string text, int max, out bool truncated)
         {
             byte[] bytes = LenientUtf8.GetBytes(text ?? string.Empty);
             truncated = bytes.Length > max;

@@ -74,6 +74,13 @@ namespace Trainer.Unity.Networking.Outpost
         public IOutpostSessionPort Port => port;
         public int AvatarCount => avatars.Count;
 
+        /// <summary>The avatar root shown for <paramref name="player"/> (read-only access for phase 3 decorations).</summary>
+        public bool TryGetAvatar(PlayerId player, out GameObject root)
+        {
+            root = avatars.TryGetValue(player, out Avatar avatar) ? avatar.Root : null;
+            return root != null;
+        }
+
         /// <summary>The local astronaut's transform, or null.</summary>
         public Transform LocalAvatar =>
             port != null && port.Membership.IsJoined && avatars.TryGetValue(port.Membership.Player, out Avatar a)
