@@ -30,6 +30,7 @@ namespace Trainer.Unity.Networking.BaseOperations
         private readonly HashSet<ulong> connected = new HashSet<ulong>();
         private readonly Dictionary<ulong, PlayerId> players = new Dictionary<ulong, PlayerId>();
         private readonly Dictionary<PlayerId, ulong> connections = new Dictionary<PlayerId, ulong>();
+        private readonly List<ulong> failedLinks = new List<ulong>();
         private BaseOperationsSnapshot latest;
         private bool dirty;
         private bool disposed;
@@ -60,6 +61,7 @@ namespace Trainer.Unity.Networking.BaseOperations
 
         public void FlushSnapshots()
         {
+            ReleaseFailedLinks();
             if (!dirty || latest == null) return;
             dirty = false;
             if (players.Count == 0) return;
@@ -67,6 +69,23 @@ namespace Trainer.Unity.Networking.BaseOperations
             ulong[] targets = new ulong[players.Count];
             players.Keys.CopyTo(targets, 0); // a send may synchronously disconnect a client
             foreach (ulong target in targets) SendFrames(target, frames);
+            ReleaseFailedLinks();
+        }
+
+        /// <summary>A link whose send failed leaves ONCE here, without waiting for a ClientDisconnected that may never come
+        /// (a throwing DisconnectClient, or a transport disposed before its next Update). Deferred out of the send so the
+        /// authority is never re-entered from inside its own callback; idempotent with <see cref="OnClientDisconnected"/>.</summary>
+        private void ReleaseFailedLinks()
+        {
+            while (failedLinks.Count > 0)
+            {
+                ulong id = failedLinks[0];
+                failedLinks.RemoveAt(0);
+                if (!players.TryGetValue(id, out PlayerId player)) continue;
+                players.Remove(id);
+                connections.Remove(player);
+                Leave(player);
+            }
         }
 
         public void Dispose()
@@ -202,6 +221,7 @@ namespace Trainer.Unity.Networking.BaseOperations
             catch (Exception)
             {
                 connected.Remove(target);
+                if (!failedLinks.Contains(target)) failedLinks.Add(target);
                 try { transport.DisconnectClient(target, SessionNetworkCodes.SendFailed); }
                 catch (Exception) { /* the binding must still report link loss */ }
                 finally { ProtocolError?.Invoke(target, SessionNetworkCodes.SendFailed); }

@@ -4,9 +4,12 @@ using Trainer.Unity.Bootstrap;
 using Trainer.Unity.Bootstrap.BaseOperations;
 using Trainer.Unity.Configuration;
 using Trainer.Unity.Controls;
+using Trainer.Unity.Networking.BaseOperations;
 using Trainer.Unity.Networking.Expedition;
 using Trainer.Unity.Networking.Outpost;
-using Trainer.Unity.Presentation.Expedition;
+using Trainer.Unity.Presentation.BaseOperations;
+using Trainer.Unity.Validation.Phase04;
+using Trainer.Unity.World.BaseOperations;
 using Trainer.Unity.World.Expedition;
 using Trainer.Unity.World.Outpost;
 using UnityEditor;
@@ -19,10 +22,11 @@ namespace Trainer.Tooling.Composition.Phase04
 {
     /// <summary>
     /// D2 (single scene editor): builds the phase 4 scenario asset and the scene <c>Phase04_LivingBase</c> reproducibly
-    /// from code. It reuses the phase 2 base, movement, avatar and session components and the phase 3 interaction keys,
-    /// crew presenter and D4 phase 3 prefabs, and mounts the phase 4 views on the same port: D4's phase 4 panel/world
-    /// prefabs when they exist in the branch, otherwise the labelled PROVISIONAL D2 view. Re-run it after D4's prefabs are
-    /// merged (integration/phase-04) to swap the provisional view out.
+    /// from code. It reuses the phase 2 base, movement, avatar and session components, the phase 3 R key, crew presenter,
+    /// astronaut and world prefab, and mounts on ONE port: D3's network host (authority-only) and client (client-only),
+    /// D3's phase 4 E key, D4's phase 4 panel/world prefabs (required: no provisional view) with D4's camera framing, and
+    /// D5's acceptance pilot (inert without -trainer-autopilot continuity). D4's recipe retires the phase 3 ExpeditionPanel:
+    /// the phase 4 panel shows reserves, EVA margin and received advisories, so both HUDs never overlap.
     /// Menu: Tools/Trainer/Phase 4/Build scenario asset and scene. CLI:
     /// Unity -batchmode -nographics -projectPath &lt;repo&gt; -executeMethod Trainer.Tooling.Composition.Phase04.Phase04SceneBuilder.BuildFromCommandLine
     /// [-phase4ResetScenario] -logFile Logs/phase4-scene.log
@@ -36,7 +40,6 @@ namespace Trainer.Tooling.Composition.Phase04
         public const string BaseInteriorPrefab = "Assets/_Project/Prefabs/World/Phase02/BaseInterior.prefab";
         public const string AstronautPrefab = "Assets/_Project/Prefabs/Crew/Phase03/ExpeditionAstronaut.prefab";
         public const string Phase3WorldPrefab = "Assets/_Project/Prefabs/World/Phase03/ExpeditionWorld.prefab";
-        public const string Phase3PanelPrefab = "Assets/_Project/Prefabs/UI/Phase03/ExpeditionPanel.prefab";
         public const string Phase4PanelPrefab = "Assets/_Project/Prefabs/UI/Phase04/BaseOperationsPanel.prefab";
         public const string Phase4WorldPrefab = "Assets/_Project/Prefabs/World/Phase04/BaseOperationsWorld.prefab";
         public const string Phase3MountName = "Phase03 Presentation Mount";
@@ -71,9 +74,8 @@ namespace Trainer.Tooling.Composition.Phase04
             var baseInteriorAsset = Load(BaseInteriorPrefab);
             var astronaut = Load(AstronautPrefab);
             var phase3World = Load(Phase3WorldPrefab);
-            var phase3Panel = Load(Phase3PanelPrefab);
-            var phase4Panel = AssetDatabase.LoadAssetAtPath<GameObject>(Phase4PanelPrefab); // optional until D4 is merged
-            var phase4World = AssetDatabase.LoadAssetAtPath<GameObject>(Phase4WorldPrefab);
+            var phase4Panel = Load(Phase4PanelPrefab);
+            var phase4World = Load(Phase4WorldPrefab);
 
             // Camera and light: same configuration as the phase 2 and 3 scenes.
             var cameraObject = new GameObject("Main Camera") { tag = "MainCamera" };
@@ -84,7 +86,7 @@ namespace Trainer.Tooling.Composition.Phase04
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.03137255f, 0.050980393f, 0.09019608f, 0f);
             camera.GetUniversalAdditionalCameraData();
-            cameraObject.AddComponent<LocalCameraFraming>();
+            var framing = cameraObject.AddComponent<BaseOperationsCameraFraming>(); // D4 framing; never with LocalCameraFraming
             var lightObject = new GameObject("Global Light 2D");
             Light2D light = lightObject.AddComponent<Light2D>();
             light.lightType = Light2D.LightType.Global;
@@ -92,15 +94,20 @@ namespace Trainer.Tooling.Composition.Phase04
             // Composition and the authority-only root (single continuous authority + single runner).
             var compositionObject = new GameObject("BaseOperationsComposition");
             var composition = compositionObject.AddComponent<BaseOperationsSceneComposition>();
-            var authorityObject = new GameObject("BaseOperationsAuthority");
+            compositionObject.AddComponent<BaseOperationsAutopilot>(); // D5, inert unless -trainer-autopilot continuity
+            var authorityObject = new GameObject("BaseOperationsAuthority (authority only)");
             var runner = authorityObject.AddComponent<BaseOperationsRunner>();
             var bootstrap = authorityObject.AddComponent<BaseOperationsBootstrap>();
+            var host = authorityObject.AddComponent<BaseOperationsNetworkHost>();
+            var clientObject = new GameObject("BaseOperationsClient (client only)");
+            var client = clientObject.AddComponent<BaseOperationsNetworkClient>();
 
             // Crew presentation: phase 2 movement (its own E disabled) and avatars, phase 3 keys and crew frames.
             var crewObject = new GameObject("CrewPresentation");
             var keyboard = crewObject.AddComponent<CrewKeyboardInput>();
             var avatars = crewObject.AddComponent<CrewAvatarSync>();
             var interaction = crewObject.AddComponent<ExpeditionInteractionInput>();
+            var operationsKey = crewObject.AddComponent<BaseOperationsInteractionInput>();
             var presenter = crewObject.AddComponent<ExpeditionCrewPresenter>();
             var crewParent = new GameObject("Crew");
 
@@ -110,29 +117,25 @@ namespace Trainer.Tooling.Composition.Phase04
             var controlsObject = new GameObject("SessionControls");
             var controls = controlsObject.AddComponent<OutpostSessionControls>();
 
-            // Phase 3 views (EVA, hatch, shelter) on the same port.
+            // Phase 3 world (EVA, hatch, shelter signs, avatars' frames) on the same port. ExpeditionPanel is retired (D4 recipe).
             var mount3 = new GameObject(Phase3MountName);
-            var panel3 = (GameObject)PrefabUtility.InstantiatePrefab(phase3Panel, scene);
-            panel3.transform.SetParent(mount3.transform, false);
-            if (panel3.GetComponent<ExpeditionPanel>() == null) throw new InvalidOperationException("ExpeditionPanel missing");
             var world3Object = (GameObject)PrefabUtility.InstantiatePrefab(phase3World, scene);
             world3Object.transform.SetParent(mount3.transform, false);
             var world3 = world3Object.GetComponent<ExpeditionWorldView>() ?? throw new InvalidOperationException("ExpeditionWorldView missing");
 
-            // Phase 4 views: D4's prefabs when present, otherwise the labelled provisional view.
+            // Phase 4 views: D4's prefabs (required in the productive scene).
             var mount4 = new GameObject(Phase4MountName);
-            if (phase4Panel != null) Mount(phase4Panel, mount4, scene);
-            if (phase4World != null) Mount(phase4World, mount4, scene);
-            if (phase4Panel == null)
-            {
-                var provisional = new GameObject("ProvisionalBaseOperationsHud (D2, PROVISIONAL)");
-                provisional.transform.SetParent(mount4.transform, false);
-                provisional.AddComponent<ProvisionalBaseOperationsHud>();
-            }
+            var panel4Object = Mount(phase4Panel, mount4, scene);
+            var panel4 = panel4Object.GetComponentInChildren<BaseOperationsPanel>(true) ?? throw new InvalidOperationException("BaseOperationsPanel missing");
+            var world4Object = Mount(phase4World, mount4, scene);
+            var world4 = world4Object.GetComponentInChildren<BaseOperationsWorldView>(true) ?? throw new InvalidOperationException("BaseOperationsWorldView missing");
 
             Set(bootstrap, "scenario", scenario);
             Set(bootstrap, "runner", runner);
             Set(keyboard, "interactWithE", false);
+            Set(interaction, "interactWithE", false); // E is D3's phase 4 key, which falls back to the phase 3 interaction
+            Set(world4, "baseInterior", baseView);
+            Set(framing, "panel", panel4);
             Set(avatars, "avatarPrefab", astronaut);
             Set(avatars, "avatarParent", crewParent.transform);
             Set(avatars, "followCamera", camera);
@@ -140,6 +143,9 @@ namespace Trainer.Tooling.Composition.Phase04
             Set(world3, "baseView", baseView);
             Set(composition, "scenario", scenario);
             Set(composition, "bootstrap", bootstrap);
+            Set(composition, "networkHost", host);
+            Set(composition, "networkClient", client);
+            Set(composition, "operationsInput", operationsKey);
             Set(composition, "keyboardInput", keyboard);
             Set(composition, "avatarSync", avatars);
             Set(composition, "interactionInput", interaction);
@@ -149,13 +155,15 @@ namespace Trainer.Tooling.Composition.Phase04
             Set(composition, "phase3Mount", mount3.transform);
             Set(composition, "phase4Mount", mount4.transform);
             SetArray(composition, "authorityOnly", authorityObject);
+            SetArray(composition, "clientOnly", clientObject);
             authorityObject.SetActive(false);
+            clientObject.SetActive(false);
 
             EnsureFolder("Assets/_Project/Scenes");
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new InvalidOperationException("Could not save " + ScenePath);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Phase04SceneBuilder] Saved {ScenePath} with scenario {ScenarioPath}; phase 4 views: " +
-                (phase4Panel != null ? "D4 prefabs" : "PROVISIONAL D2 view"));
+            Debug.Log($"[Phase04SceneBuilder] Saved {ScenePath} with scenario {ScenarioPath}: D3 host/client/local port/E key, " +
+                "D4 BaseOperationsPanel + BaseOperationsWorld + BaseOperationsCameraFraming, phase 3 ExpeditionWorld, D5 pilot (inert)");
         }
 
         private static void EnsureScenario(bool reset)
@@ -177,10 +185,11 @@ namespace Trainer.Tooling.Composition.Phase04
         private static GameObject Load(string path) =>
             AssetDatabase.LoadAssetAtPath<GameObject>(path) ?? throw new InvalidOperationException("Missing " + path);
 
-        private static void Mount(GameObject prefab, GameObject mount, Scene scene)
+        private static GameObject Mount(GameObject prefab, GameObject mount, Scene scene)
         {
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             instance.transform.SetParent(mount.transform, false);
+            return instance;
         }
 
         private static void EnsureFolder(string path)

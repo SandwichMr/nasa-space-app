@@ -164,13 +164,18 @@ namespace Trainer.Tooling.BuildChecks.Phase03
             foreach (string file in Directory.GetFiles("Assets/_Project/Runtime", "*.cs", SearchOption.AllDirectories))
             {
                 string path = file.Replace('\\', '/');
-                if (path.Split('/').Contains("Editor") || path.Contains("/Contracts/Expedition/Development/")) continue;
+                // Labelled development fixture folders of the contracts (phase 3 and the phase 4 fixture built on it) are the
+                // fixtures themselves, not production consumers. Every other player source is still scanned.
+                if (path.Split('/').Contains("Editor") || IsContractDevelopmentFolder(path)) continue;
                 string text = Regex.Replace(File.ReadAllText(path), @"//.*?$|/\*.*?\*/", "", RegexOptions.Multiline | RegexOptions.Singleline);
                 if (Regex.IsMatch(text, @"\b(FakeExpeditionSessionPort|ExpeditionFixtures|ExpeditionSnapshotBuilder)\b")) offenders.Add(path);
             }
             return new Phase03Check("no development fake or fixture in player sources", offenders.Count == 0,
                 offenders.Count == 0 ? "clean" : string.Join(", ", offenders));
         }
+
+        public static bool IsContractDevelopmentFolder(string path) =>
+            path.Contains("/Runtime/Application/Contracts/Expedition/Development/") || path.Contains("/Runtime/Application/Contracts/BaseOperations/Development/");
 
         /// <summary>Phase 2 tooling discovers implementations by interface: phase 3 must not add new ones.</summary>
         public static Phase03Check Phase2DiscoveryUnchanged()

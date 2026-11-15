@@ -413,7 +413,16 @@ namespace Trainer.Application.BaseOperations
                             EndOperation(op, ActivityStatus.Failed, "processor-failed", now);
                             return;
                         }
-                        double kg = scenario.Equipment.WaterProcessor.BatchKilograms;
+                        WaterProcessorConfiguration config = scenario.Equipment.WaterProcessor;
+                        double kg = config.BatchKilograms;
+                        // Destination first (D1 rule): the equipment must be able to take the batch BEFORE the base gives up
+                        // the untreated water, so a refusal never loses mass or faults the session (integration fix).
+                        double recovery = water.Condition == EquipmentCondition.Nominal ? config.NominalRecoveryFraction : config.DegradedRecoveryFraction;
+                        if (water.HoldKilograms > 0d || kg * recovery > config.HoldCapacityKilograms + Tolerance)
+                        {
+                            EndOperation(op, ActivityStatus.Failed, "equipment-refused", now);
+                            return;
+                        }
                         if (!ApplyBase(BaseOperationsTransfers.BatchIntake(op.CommandId, kg)))
                         {
                             EndOperation(op, ActivityStatus.Failed, "insufficient-untreated-water", now);

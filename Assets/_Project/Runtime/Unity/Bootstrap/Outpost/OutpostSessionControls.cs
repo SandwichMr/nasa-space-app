@@ -30,6 +30,10 @@ namespace Trainer.Unity.Bootstrap
         private Action disconnect;
         private Func<SessionConnectionState> connectionState;
         private GUIStyle label, button;
+        private float canvasWidth = DefaultCanvasWidth, canvasHeight = DefaultCanvasHeight, stripY = DefaultStripY;
+
+        /// <summary>Phase 2/3 layout: 1280×720 virtual canvas, strip at y 102.</summary>
+        public const float DefaultCanvasWidth = 1280f, DefaultCanvasHeight = 720f, DefaultStripY = 102f;
 
         public OutpostCommand Pending => pending;
         public string Feedback => feedback;
@@ -55,6 +59,17 @@ namespace Trainer.Unity.Bootstrap
             connect = connectAction;
             disconnect = disconnectAction;
             connectionState = state;
+        }
+
+        /// <summary>Optional: draw the strip in another scene's virtual canvas (phase 4: D4's 1440×900 HUD) at the row that
+        /// scene's panel leaves free. Without it the phase 2/3 layout is unchanged.</summary>
+        public void ConfigureCanvas(float width, float height, float stripTop)
+        {
+            if (!(width >= 640f) || !(height >= 360f) || !(stripTop >= 0f) || stripTop > height - 34f)
+                throw new ArgumentOutOfRangeException(nameof(stripTop), "Canvas at least 640×360 and the strip inside it.");
+            canvasWidth = width;
+            canvasHeight = height;
+            stripY = stripTop;
         }
 
         public void SetStatus(bool isConfirmed, string detail)
@@ -124,8 +139,8 @@ namespace Trainer.Unity.Bootstrap
                 button = new GUIStyle(GUI.skin.button) { fontSize = 15 };
             }
             Matrix4x4 previous = GUI.matrix;
-            float scale = Mathf.Min(Screen.width / 1280f, Screen.height / 720f);
-            GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - 1280 * scale) / 2, (Screen.height - 720 * scale) / 2, 0),
+            float scale = Mathf.Min(Screen.width / canvasWidth, Screen.height / canvasHeight);
+            GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - canvasWidth * scale) / 2, (Screen.height - canvasHeight * scale) / 2, 0),
                 Quaternion.identity, new Vector3(scale, scale, 1));
             try { Draw(); }
             finally { GUI.matrix = previous; GUI.enabled = true; GUI.color = Color.white; }
@@ -133,7 +148,8 @@ namespace Trainer.Unity.Bootstrap
 
         private void Draw()
         {
-            var strip = new Rect(16, 102, 1248, 34);
+            var strip = new Rect(16, stripY, canvasWidth - 32, 34);
+            float buttonY = stripY + 3;
             GUI.color = new Color(.055f, .09f, .15f, .92f);
             GUI.DrawTexture(strip, Texture2D.whiteTexture);
             GUI.color = confirmed ? new Color(.45f, .9f, .6f) : new Color(.95f, .7f, .35f);
@@ -141,9 +157,9 @@ namespace Trainer.Unity.Bootstrap
             GUI.color = Color.white;
 
             string text = string.IsNullOrEmpty(feedback) ? status : feedback;
-            GUI.Label(new Rect(30, 107, 760, 24), text, label);
+            GUI.Label(new Rect(30, stripY + 5, 760, 24), text, label);
 
-            float x = 1248 + 16 - 8;
+            float x = strip.xMax - 8;
             bool joined = port != null && port.Membership.IsJoined;
             OutpostSessionSnapshot snapshot = null;
             bool hasState = joined && port.TryGetSnapshot(out snapshot) && snapshot != null;
@@ -157,12 +173,12 @@ namespace Trainer.Unity.Bootstrap
                 if (offline)
                 {
                     GUI.enabled = connect != null;
-                    if (GUI.Button(new Rect(x, 105, 126, 28), "Conectar", button)) connect?.Invoke();
+                    if (GUI.Button(new Rect(x, buttonY, 126, 28), "Conectar", button)) connect?.Invoke();
                 }
                 else
                 {
                     GUI.enabled = disconnect != null;
-                    if (GUI.Button(new Rect(x, 105, 126, 28), "Desconectar", button)) disconnect?.Invoke();
+                    if (GUI.Button(new Rect(x, buttonY, 126, 28), "Desconectar", button)) disconnect?.Invoke();
                 }
                 GUI.enabled = true;
             }
@@ -170,7 +186,7 @@ namespace Trainer.Unity.Bootstrap
 
             x -= 130;
             GUI.enabled = idle;
-            if (GUI.Button(new Rect(x, 105, 126, 28), "Reiniciar", button)) Request(OutpostAction.Restart);
+            if (GUI.Button(new Rect(x, buttonY, 126, 28), "Reiniciar", button)) Request(OutpostAction.Restart);
 
             string primary = null;
             OutpostAction action = OutpostAction.Resume;
@@ -183,7 +199,7 @@ namespace Trainer.Unity.Bootstrap
             if (primary != null)
             {
                 x -= 150;
-                if (GUI.Button(new Rect(x, 105, 146, 28), idle ? primary : "Esperando…", button)) Request(action);
+                if (GUI.Button(new Rect(x, buttonY, 146, 28), idle ? primary : "Esperando…", button)) Request(action);
             }
             GUI.enabled = true;
         }

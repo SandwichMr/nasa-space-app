@@ -14,6 +14,9 @@ namespace Trainer.Unity.Presentation.BaseOperations
     /// <summary>Compact HUD and proximity-only station panels. The injected ports own all pending requests and state.</summary>
     public sealed class BaseOperationsPanel : BaseOperationsBoundView
     {
+        /// <summary>Row of the 1440×900 canvas left free for the scene's session strip (start, pause, restart, connect).</summary>
+        public const float SessionStripY = 42f;
+        private const float GaugeTop = 80f, GaugeHeight = 93f;
         [SerializeField] private Texture2D battery, water, food, oxygen, carbonDioxide;
         private static readonly GaugeKind[] Essential = { GaugeKind.BatteryEnergy, GaugeKind.PotableWater, GaugeKind.StoredFood, GaugeKind.CabinOxygen, GaugeKind.CabinCarbonDioxide };
         private static readonly Color Background = new Color(.035f, .065f, .10f, 1);
@@ -24,6 +27,7 @@ namespace Trainer.Unity.Presentation.BaseOperations
         private GUIStyle text, small, heading, value, button;
         private Vector2 scroll;
         private float stationContentHeight = 1500;
+        private float detailsContentHeight = 1050;
         private StationId opened;
         private bool details;
         private string answer;
@@ -120,15 +124,15 @@ namespace Trainer.Unity.Presentation.BaseOperations
                 GUI.enabled = Live;
                 if (GUI.Button(new Rect(1236, 10, 182, 32), details ? "Cerrar detalles" : "Recursos y actividad", button)) ToggleDetails();
                 GUI.enabled = previousEnabled;
-                for (int i = 0; i < Essential.Length; i++) Gauge(new Rect(22 + i * 282, 48, 268, 119), Essential[i], Icon(i));
+                for (int i = 0; i < Essential.Length; i++) Gauge(new Rect(22 + i * 282, GaugeTop, 268, GaugeHeight), Essential[i], Icon(i));
                 if (!Live)
                 {
-                    Label(new Rect(24, 170, 1390, 24), "? SIN DATOS VIGENTES · Conecta para recibir el estado. No se muestran reservas ni acciones confirmadas.", small);
+                    Label(new Rect(24, 175, 1390, 18), "? SIN DATOS VIGENTES · Conecta para recibir el estado. No se muestran reservas ni acciones confirmadas.", small);
                     Label(new Rect(24, 818, 1390, 50), "Sin conexión. El último estado no confirma el resultado de solicitudes pendientes.", text);
                     return;
                 }
                 var p = Shown.Outpost.Resources.Power;
-                Label(new Rect(24, 170, 1390, 22), $"ENERGÍA  ·  Generación {p.GenerationWatts:0.##} W   /   Demanda {p.EssentialRequestedWatts + p.ScienceRequestedWatts + Shown.Outpost.Resources.ServiceLoadRequestedWatts:0.##} W   ·   Balance {BaseOperationsText.Reading(Shown.GaugeOf(GaugeKind.PowerBalance).Reading)}   ·   " + BaseOperationsText.Band(Shown.GaugeOf(GaugeKind.PowerBalance)), small);
+                Label(new Rect(24, 175, 1390, 18), $"ENERGÍA  ·  Generación {p.GenerationWatts:0.##} W   /   Demanda {p.EssentialRequestedWatts + p.ScienceRequestedWatts + Shown.Outpost.Resources.ServiceLoadRequestedWatts:0.##} W   ·   Balance {BaseOperationsText.Reading(Shown.GaugeOf(GaugeKind.PowerBalance).Reading)}   ·   " + BaseOperationsText.Band(Shown.GaugeOf(GaugeKind.PowerBalance)), small);
                 Footer();
                 if (opened.IsValid || details) Paint(new Rect(944, 193, 496, 607), Background);
                 if (opened.IsValid) StationPanel();
@@ -149,15 +153,15 @@ namespace Trainer.Unity.Presentation.BaseOperations
             ResourceGauge gauge = Live ? Shown.GaugeOf(kind) : null;
             Color accent = Accent(gauge);
             Paint(new Rect(rect.x, rect.y, 3, rect.height), accent);
-            if (icon != null) GUI.DrawTexture(new Rect(rect.x + 12, rect.y + 12, 25, 25), icon, ScaleMode.ScaleToFit);
-            Label(new Rect(rect.x + 46, rect.y + 9, 212, 20), BaseOperationsText.Name(kind), small);
-            Label(new Rect(rect.x + 13, rect.y + 34, 250, 28), BaseOperationsText.Value(gauge), value);
+            if (icon != null) GUI.DrawTexture(new Rect(rect.x + 12, rect.y + 6, 22, 22), icon, ScaleMode.ScaleToFit);
+            Label(new Rect(rect.x + 42, rect.y + 7, 216, 18), BaseOperationsText.Name(kind), small);
+            Label(new Rect(rect.x + 13, rect.y + 26, 250, 27), BaseOperationsText.Value(gauge), value);
             bool valid = gauge != null && gauge.Reading.Status == ReadingStatus.Valid;
             // ONLY a declared capacity can be the denominator. Cabin partial pressures are never percentages.
             if (valid && gauge.Capacity.HasValue && gauge.Capacity.Value > 0)
             {
-                Paint(new Rect(rect.x + 14, rect.y + 66, 240, 5), Background);
-                Paint(new Rect(rect.x + 14, rect.y + 66, 240 * (float)(gauge.Reading.Value.Value / gauge.Capacity.Value), 5), accent);
+                Paint(new Rect(rect.x + 14, rect.y + 55, 240, 5), Background);
+                Paint(new Rect(rect.x + 14, rect.y + 55, 240 * Mathf.Clamp01((float)(gauge.Reading.Value.Value / gauge.Capacity.Value)), 5), accent);
             }
             else
             {
@@ -165,41 +169,55 @@ namespace Trainer.Unity.Presentation.BaseOperations
                     : gauge.LimitAt.HasValue ? "Línea del escenario ≤ " + BaseOperationsText.Number(gauge.LimitAt.Value) + " " + BaseOperationsText.Unit(gauge.Reading.Unit)
                     : gauge.ReserveAt.HasValue ? "Reserva del escenario: " + BaseOperationsText.Number(gauge.ReserveAt.Value) + " " + BaseOperationsText.Unit(gauge.Reading.Unit)
                     : "Sin escala declarada";
-                Label(new Rect(rect.x + 13, rect.y + 62, 250, 20), line, small);
+                Label(new Rect(rect.x + 13, rect.y + 50, 250, 16), line, small);
             }
-            Label(new Rect(rect.x + 13, rect.y + 77, 250, 20), BaseOperationsText.Band(gauge), small, accent);
-            Label(new Rect(rect.x + 13, rect.y + 96, 250, 20), BaseOperationsText.Trend(gauge), small);
+            Label(new Rect(rect.x + 13, rect.y + 61, 250, 16), BaseOperationsText.Band(gauge), small, accent);
+            Label(new Rect(rect.x + 13, rect.y + 76, 250, 16), BaseOperationsText.Trend(gauge), small);
             GUI.Label(rect, new GUIContent("", BaseOperationsText.Action(kind)), GUIStyle.none);
         }
 
         private void Footer()
         {
             Shown.Expedition.TryGetCrew(Context.Port.Membership.Player, out var crew);
-            string info = crew != null && crew.OnSuitSupply ? ExpeditionPanel.Margin(crew.Margin, Shown.SimulatedTimeSeconds)
-                : "WASD / flechas · camina y repartid el trabajo. E: interacción existente · R: regreso";
+            string info = crew != null && crew.OnSuitSupply
+                ? "TRAJE · " + ExpeditionPanel.Margin(crew.Margin, Shown.SimulatedTimeSeconds) + " · " + ExpeditionPanel.Protection(crew.Protection)
+                : "WASD / flechas · camina y repartid el trabajo. E: estación cercana / esclusa / tarea · R: regreso";
             Label(new Rect(24, 807, 1130, 23), info, small);
             string notice = Feedback;
             if (string.IsNullOrEmpty(notice) && !string.IsNullOrEmpty(GUI.tooltip)) notice = GUI.tooltip;
-            if (string.IsNullOrEmpty(notice)) notice = Advisory();
-            Label(new Rect(24, 833, 1130, 56), notice, text);
+            // A received shelter advisory keeps its own line: an answer or a tooltip never hides it.
+            if (TryAdvisory(crew, out string advisory))
+            {
+                Label(new Rect(24, 830, 1130, 30), advisory, text, Amber);
+                Label(new Rect(24, 861, 1130, 30), notice, small);
+            }
+            else Label(new Rect(24, 833, 1130, 56), string.IsNullOrEmpty(notice) ? NoAdvisory : notice, text);
             StationId nearby = NearbyStation();
             GUI.enabled = Live && nearby.IsValid;
             if (GUI.Button(new Rect(1176, 814, 242, 42), opened.IsValid ? "Cerrar estación" : "Abrir estación cercana", button))
             { if (opened.IsValid) ClosePanel(); else OpenNearbyStation(); }
             GUI.enabled = true;
         }
-        private string Advisory()
+        public const string NoAdvisory = "Sin aviso recibido · no significa seguro. Mantén las reservas y comprueba los equipos.";
+
+        /// <summary>The latest shelter advisory RECEIVED by this player (never a global emission), or false.</summary>
+        public string Advisory => Live && TryAdvisory(null, out string text) ? text : NoAdvisory;
+
+        private bool TryAdvisory(ExpeditionCrewState crew, out string text)
         {
+            text = null;
             IssuedAdvisory latest = null;
             AdvisoryReception received = null;
             foreach (var advisory in Shown.Expedition.Advisories)
                 if (Shown.Expedition.TryGetReception(advisory.Message.Id, Context.Port.Membership.Player, out var reception)) { latest = advisory; received = reception; }
-            if (latest == null) return "Sin aviso recibido · no significa seguro. Mantén las reservas y comprueba los equipos.";
+            if (latest == null) return false;
             var message = latest.Message;
             string instruction = message.Kind == AdvisoryKind.InstructionEnd ? "Control: fin explícito del periodo de refugio del ejercicio."
                 : "AVISO · Entra al refugio" + (message.ShelterBySeconds.HasValue ? $" antes de t={message.ShelterBySeconds:0.#} s." : ".");
-            return instruction + $" Recibido t={received.ReceivedAtSeconds:0.#} s · válido hasta {message.ValidUntilSeconds:0.#} s."
-                + (latest.Validity == AdvisoryValidity.Expired && message.Kind != AdvisoryKind.InstructionEnd ? " DATO VENCIDO: mantén la instrucción." : "");
+            text = instruction + $" Recibido t={received.ReceivedAtSeconds:0.#} s · válido hasta {message.ValidUntilSeconds:0.#} s."
+                + (latest.Validity == AdvisoryValidity.Expired && message.Kind != AdvisoryKind.InstructionEnd ? " DATO VENCIDO: mantén la instrucción." : "")
+                + (crew != null && message.Kind != AdvisoryKind.InstructionEnd ? " · " + ExpeditionPanel.Protection(crew.Protection) : "");
+            return true;
         }
         private void StationPanel()
         {
@@ -231,14 +249,13 @@ namespace Trainer.Unity.Presentation.BaseOperations
                 EquipmentKind? kind = Context.Scenario.EquipmentAt(opened);
                 if (kind.HasValue) EquipmentPanel(kind.Value, ref y);
                 else LogisticsPanel(ref y);
-                if (Shown.Decisions.Count > 0)
+                // The latest decision ON THIS machine, even if a teammate decided something elsewhere afterwards.
+                DecisionRecord decision = kind.HasValue ? LatestDecision(kind.Value) : null;
+                if (decision != null)
                 {
-                    var decision = Shown.Decisions[Shown.Decisions.Count - 1];
-                    if (kind.HasValue && decision.Equipment == kind.Value)
-                    {
-                        Label(new Rect(4, y + 10, 396, 82), "ÚLTIMA CONSECUENCIA CONFIRMADA\n" + BaseOperationsText.Explanation(decision.ExplanationKey), text);
-                        y += 100;
-                    }
+                    Label(new Rect(4, y + 10, 396, 98), "ÚLTIMA CONSECUENCIA CONFIRMADA · " + Performer(decision.Performer) + $" · t={decision.AtSeconds:0.#} s\n"
+                        + BaseOperationsText.Explanation(decision.ExplanationKey), text);
+                    y += 112;
                 }
                 Label(new Rect(4, y + 8, 396, 70), Feedback, text, Amber);
                 stationContentHeight = y + 90;
@@ -352,7 +369,7 @@ namespace Trainer.Unity.Presentation.BaseOperations
         {
             Paint(new Rect(954, 204, 464, 583), Background);
             Label(new Rect(974, 219, 410, 29), "RESERVAS, EQUIPO Y ACTIVIDAD", heading);
-            scroll = GUI.BeginScrollView(new Rect(972, 260, 432, 512), scroll, new Rect(0, 0, 409, 1050));
+            scroll = GUI.BeginScrollView(new Rect(972, 260, 432, 512), scroll, new Rect(0, 0, 409, detailsContentHeight));
             try
             {
                 float y = 0;
@@ -370,12 +387,47 @@ namespace Trainer.Unity.Presentation.BaseOperations
                     var r = Shown.LatestReport;
                     Label(new Rect(2, y, 402, 72), $"INFORME {r.FromSeconds:0.#}–{r.ToSeconds:0.#} s · la base continúa\n{r.ActivitiesCompleted} actividades completadas · {r.ActivitiesCancelled} canceladas\nAgua {r.PotableDeltaKilograms:+0.##;-0.##;0} kg · comida {r.FoodDeltaKilograms:+0.##;-0.##;0} kg · energía {r.EnergyDeltaJoules:+0.##;-0.##;0} J", text); y += 80;
                 }
-                Label(new Rect(2, y, 402, 27), "Salidas finalizadas: " + Shown.Session.ExpeditionsFinished + " · la sesión continúa", small);
+                Label(new Rect(2, y, 402, 27), "Salidas finalizadas: " + Shown.Session.ExpeditionsFinished + " · la sesión continúa", small); y += 34;
+                string eva = ExpeditionDetails();
+                float evaHeight = text.CalcHeight(new GUIContent(eva), 402);
+                Label(new Rect(2, y, 402, evaHeight), eva, text); y += evaHeight + 8;
+                detailsContentHeight = Mathf.Max(512, y);
             }
             finally { GUI.EndScrollView(); }
         }
 
+        public DecisionRecord LatestDecision(EquipmentKind kind)
+        {
+            if (!Live) return null;
+            for (int i = Shown.Decisions.Count - 1; i >= 0; i--)
+                if (Shown.Decisions[i].Equipment == kind) return Shown.Decisions[i];
+            return null;
+        }
+
         private string Performer(PlayerId player) => Shown.Outpost.TryGetCrew(player, out var crew) ? "Astronauta " + (crew.Slot + 1) + (player == Context.Port.Membership.Player ? " · TÚ" : "") : "Compañero";
+        /// <summary>Phase 3 data that the retired ExpeditionPanel showed: objectives, airlock, own suit and protection.</summary>
+        private string ExpeditionDetails()
+        {
+            var s = Shown.Expedition;
+            var b = new StringBuilder("EXPEDICIÓN Y REFUGIO\n");
+            foreach (var o in s.Objectives) b.Append(o.Met ? "HECHO · " : "PENDIENTE · ").Append(o.Key).Append(o.Role == ObjectiveRole.Optional ? " (opcional)" : "").Append('\n');
+            b.Append($"Esclusa: {s.Airlock.Occupants.Count}/{Context.Scenario.Expedition.Airlock.Capacity} plazas · ")
+                .Append(s.Airlock.IsCycling ? $"transición {s.Airlock.CycleFraction:P0}" : "disponible").Append(s.Airlock.Stalled ? " · SIN SERVICIO" : "").Append('\n');
+            b.Append("Refugio: ").Append(!s.Shelter.Prepared ? "sin preparar" : s.Shelter.ServiceAvailable ? "preparado · con servicio" : "SIN SERVICIO").Append('\n');
+            if (s.TryGetCrew(Context.Port.Membership.Player, out var mine))
+            {
+                b.Append("Tú: ").Append(ExpeditionPanel.Margin(mine.Margin, s.SimulatedTimeSeconds)).Append(" · ").Append(ExpeditionPanel.Protection(mine.Protection)).Append('\n');
+                if (mine.SuitIndex >= 0 && mine.SuitIndex < s.Suits.Count)
+                {
+                    var suit = s.Suits[mine.SuitIndex];
+                    b.Append("Traje: ").Append(suit.Status == SuitStatus.Sealed ? "sellado" : "puesto").Append(" · revisión ").Append(suit.Completed).Append('\n');
+                    foreach (var model in Context.Scenario.Expedition.Eva.Model.Services)
+                        b.Append($"{model.Service}: {suit.Reading.Levels.Get(model.Service):0.###}/{model.Capacity:0.###} {model.Unit} · reserva {model.Reserve:0.###}\n");
+                }
+            }
+            return b.ToString().TrimEnd();
+        }
+
         private static string OrderLabel(OrderState state) => state == OrderState.Pending ? "PENDIENTE" : state == OrderState.InTransit ? "EN TRÁNSITO" : state == OrderState.Arrived ? "LLEGÓ · SIN DESCARGAR" : state == OrderState.Unloaded ? "DESCARGADO" : "CANCELADO";
         private static string Manifest(System.Collections.Generic.IReadOnlyList<ManifestItem> items)
         {

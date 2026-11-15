@@ -311,9 +311,12 @@ namespace Trainer.Tooling.Validation.Phase04
                 var conflict = BaseOperationCommand.Operation(inspect.Id, epoch, BaseOperationAction.ProcessBatch, ws);
                 string conflicting = a.Send(conflict) ?? s.AwaitAnswer(a);
                 Require(conflicting == OutpostReasons.CommandIdConflict, "same id, other content: " + conflicting);
+                int originalAnswers = a.Results.Count(r => r.CommandId == inspect.Id);
                 string stolen = b.Send(inspect) ?? s.AwaitAnswer(b);
-                Require(stolen != OutpostReasons.Accepted || b.Results.Count(r => r.CommandId == inspect.Id) == 1,
-                    "another sender reusing the id was accepted as new work");
+                // Contract: an id reused by ANOTHER sender is refused (CommandIdConflict); never Accepted, never answered to
+                // the original sender, never a second effect.
+                Require(stolen == OutpostReasons.CommandIdConflict, "another sender reusing the id must get CommandIdConflict: " + stolen);
+                Require(a.Results.Count(r => r.CommandId == inspect.Id) == originalAnswers, "the original sender got an answer for another sender's reuse");
                 Require(s.State.Operations.Count(o => o.Station == ws) == 1, "two operations at one station");
                 if (effects >= 0) Require(s.Instance.Equipment.Effects.Count == effects, "a replay applied an equipment effect");
                 Require(s.AdvanceUntil(x => !x.TryGetOperation(a.Player, out _), 60), "inspection did not end");

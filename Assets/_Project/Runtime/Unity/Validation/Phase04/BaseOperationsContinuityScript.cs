@@ -23,6 +23,8 @@ namespace Trainer.Unity.Validation.Phase04
         public double DriverSeconds;
         public double FirstSimulatedSeconds = -1;
         public double LastSimulatedSeconds;
+        /// <summary>Driver time of the last snapshot whose simulated clock moved forward (frozen-state detection).</summary>
+        public double LastAdvanceDriverSeconds;
         public long Epoch = -1;
         public int Requests;
         public int Accepted;
@@ -69,6 +71,8 @@ namespace Trainer.Unity.Validation.Phase04
     public sealed class BaseOperationsContinuityScript
     {
         public const int MinRoutes = 3;
+        /// <summary>The session must still be advancing at the end: early progress followed by a frozen state is a FAIL.</summary>
+        public const double MaxFrozenDriverSeconds = 15;
         private const double WaypointArrival = 0.2;
         private const double StuckSeconds = 6;
         private const int MaxReplans = 8;
@@ -191,6 +195,7 @@ namespace Trainer.Unity.Validation.Phase04
                 Finish(s, false, "simulated clock went back");
                 return false;
             }
+            if (s.SimulatedTimeSeconds > Metrics.LastSimulatedSeconds + 1e-9) Metrics.LastAdvanceDriverSeconds = Metrics.DriverSeconds;
             Metrics.LastSimulatedSeconds = s.SimulatedTimeSeconds;
             if (s.Outpost.State == SessionState.Completed)
             {
@@ -253,6 +258,9 @@ namespace Trainer.Unity.Validation.Phase04
         {
             var missing = new List<string>();
             if (Metrics.SimulatedSeconds <= 0) missing.Add("simulated clock did not advance");
+            double frozen = Metrics.DriverSeconds - Metrics.LastAdvanceDriverSeconds;
+            if (frozen > MaxFrozenDriverSeconds)
+                missing.Add($"state frozen for the last {frozen:0.#} s (no simulated advance; session {s.Outpost.State})");
             if (Role == ContinuityRole.Water)
             {
                 if (Metrics.RoutesAccepted < MinRoutes) missing.Add("routed batches " + Metrics.RoutesAccepted + " < " + MinRoutes);

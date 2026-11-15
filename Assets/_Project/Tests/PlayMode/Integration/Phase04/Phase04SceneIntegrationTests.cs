@@ -4,7 +4,6 @@
 // readings. Neither proves sockets between processes, a build, render on a target device or a session played by people.
 #if UNITY_INCLUDE_TESTS
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
@@ -14,10 +13,7 @@ using Trainer.Application.Expedition;
 using Trainer.Application.Outpost;
 using Trainer.Simulation.BaseOperations;
 using Trainer.Simulation.LifeSupport;
-using Trainer.Unity.Validation.Phase04;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.TestTools;
 
 namespace Trainer.Tests.Phase04.Integration
 {
@@ -36,53 +32,13 @@ namespace Trainer.Tests.Phase04.Integration
             spawned.Clear();
         }
 
-        /// <summary>The productive scene runs ONE continuous session whose clock advances and never closes in 5 s.</summary>
-        [UnityTest]
-        public IEnumerator ProductiveSceneRunsOneContinuousSession()
-        {
-#if UNITY_EDITOR
-            if (!System.IO.File.Exists(ScenePath)) Assert.Inconclusive("pendiente de D2: " + ScenePath + " missing");
-            yield return UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(ScenePath, new LoadSceneParameters(LoadSceneMode.Single));
-            IBaseOperationsSessionPort port = null;
-            IBaseOperationsIntents intents = null;
-            BaseOperationsScenario scenario = null;
-            float deadline = Time.realtimeSinceStartup + 15f;
-            while (Time.realtimeSinceStartup < deadline)
-            {
-                if (BaseOperationsAutopilot.TryFindSession(out port, out intents, out scenario) && port.Membership.IsJoined
-                    && port.TryGetBaseOperations(out _)) break;
-                yield return null;
-            }
-            if (port == null || !port.Membership.IsJoined)
-                Assert.Inconclusive("the scene exposes no joined phase 4 port/intents/scenario in Play Mode (default role may need a host flag; see D2 handoff)");
-            Assert.That(port.GetType().Name.IndexOf("Fake", StringComparison.OrdinalIgnoreCase), Is.LessThan(0), "fake port in the productive scene");
-            Assert.That(port.TryGetBaseOperations(out BaseOperationsSnapshot first), Is.True);
-            Assert.That(first.Session.Mode, Is.EqualTo(BaseSessionMode.Continuous));
-            if (first.Outpost.State == Trainer.Application.SessionState.Ready)
-                port.Submit(ExpeditionCommand.Session(Guid.NewGuid(), first.Epoch, ExpeditionAction.Resume));
-            var observed = new List<BaseOperationsSnapshot>();
-            port.BaseOperationsChanged += observed.Add;
-            float until = Time.realtimeSinceStartup + 5f;
-            while (Time.realtimeSinceStartup < until) yield return null;
-            port.BaseOperationsChanged -= observed.Add;
-            Assert.That(observed.Count, Is.GreaterThan(0), "no snapshot in 5 s");
-            BaseOperationsSnapshot last = observed[observed.Count - 1];
-            Assert.That(last.Epoch, Is.EqualTo(first.Epoch), "the base was reset");
-            Assert.That(last.SimulatedTimeSeconds, Is.GreaterThan(first.SimulatedTimeSeconds), "the clock did not advance");
-            Assert.That(last.Outpost.State, Is.Not.EqualTo(Trainer.Application.SessionState.Completed));
-            for (int i = 1; i < observed.Count; i++)
-                Assert.That(observed[i].SimulatedTimeSeconds, Is.GreaterThanOrEqualTo(observed[i - 1].SimulatedTimeSeconds), "two clocks or a clock going back");
-            double real = 5, simulated = last.SimulatedTimeSeconds - first.SimulatedTimeSeconds;
-            TestContext.WriteLine($"real {real:0.0} s, simulated {simulated:0.0} s (ratio {simulated / real:0.00}); {observed.Count} snapshots");
-#else
-            Assert.Inconclusive("Editor only");
-            yield break;
-#endif
-        }
+        // The productive-scene check that used [UnityTest] never compiled: without a test asmdef Assembly-CSharp does not
+        // reference UnityEngine.TestRunner (autoReferenced: false), so [UnityTest] does not exist here. It is to be run, with the
+        // same assertions, against the BUILD: authority + two clients (docs/phase-04/INTEGRATION.md, gates 5–6). Pending.
 
         /// <summary>D4 prefabs bind to the fake, survive unknown/stale readings without sending intents, and unbind.</summary>
-        [UnityTest]
-        public IEnumerator D4ViewsBindToUnknownReadingsWithoutSendingIntents()
+        [Test]
+        public void D4ViewsBindToUnknownReadingsWithoutSendingIntents()
         {
 #if UNITY_EDITOR
             var prefabs = new List<GameObject>();
@@ -110,10 +66,7 @@ namespace Trainer.Tests.Phase04.Integration
                 .Resources(UnknownCabin(s0.Outpost.Resources))).Build();
             foreach (IBaseOperationsView view in views) view.Bind(context);
             fake.Publish(s0);
-            yield return null;
             fake.Publish(unknown);
-            yield return null;
-            yield return null;
             Assert.That(unknown.GaugeOf(GaugeKind.CabinCarbonDioxide).Band, Is.EqualTo(GaugeBand.Unknown), "fixture sanity");
             Assert.That(intents.Calls, Is.EqualTo(0), "a view sent an intent by itself");
             Assert.That(fake.PendingOperations.Count, Is.EqualTo(0), "a view built a command");
@@ -122,7 +75,6 @@ namespace Trainer.Tests.Phase04.Integration
                                   "instead of 0/normal needs D4's visual evidence or a person: not judged here.");
 #else
             Assert.Inconclusive("Editor only");
-            yield break;
 #endif
         }
 

@@ -73,8 +73,18 @@ namespace Trainer.Unity.Presentation.BaseOperations
             if (gauge == null || gauge.Reading.Status != ReadingStatus.Valid || !gauge.TrendPerSecond.HasValue)
                 return "Tendencia sin confirmar";
             double trend = gauge.TrendPerSecond.Value;
-            return (trend > 0 ? "+ SUBE " : trend < 0 ? "− BAJA " : "= ESTABLE ")
-                + Number(System.Math.Abs(trend)) + " " + Unit(gauge.Reading.Unit) + "/s";
+            return (trend > 0 ? "+ SUBE " : trend < 0 ? "− BAJA " : "= ESTABLE ") + Rate(System.Math.Abs(trend), gauge.Reading.Unit);
+        }
+
+        /// <summary>A published rate in a unit of time where it does not round to 0 (per second, minute or hour). Energy keeps
+        /// J/s. A real change is never shown as "0" next to "BAJA"/"SUBE".</summary>
+        public static string Rate(double perSecond, ReadingUnit unit)
+        {
+            string u = Unit(unit);
+            if (perSecond == 0 || perSecond >= 0.01 || unit == ReadingUnit.Joules || unit == ReadingUnit.Watts) return Number(perSecond) + " " + u + "/s";
+            if (perSecond * 60 >= 0.01) return Number(perSecond * 60) + " " + u + "/min";
+            double perHour = perSecond * 3600;
+            return (perHour >= 0.01 ? Number(perHour) : "< 0.01") + " " + u + "/h";
         }
 
         public static string Action(GaugeKind kind)
@@ -193,9 +203,22 @@ namespace Trainer.Unity.Presentation.BaseOperations
         {
             switch (key)
             {
+                // D2 explanation keys (docs/phase-04/handoffs/02_LIVING_BASE_HANDOFF.md, «Claves»).
                 case "accepted-off-spec-product": return "Producto fuera de línea enviado al tanque. Recomprobar lo devuelve a sin tratar.";
+                case "accepted-within-limit": return "Producto dentro de la línea: el agua potable subió con ese lote.";
+                case "reprocessed-off-spec-product": return "Producto fuera de línea devuelto a sin tratar: el tanque potable no se contaminó.";
+                case "reprocessed-within-limit": return "El producto estaba dentro de la línea; volver a tratarlo gastó tiempo y energía.";
+                case "bed-switch-not-needed": return "El lecho activo no estaba cargado: el cambio no mejoró la retirada de CO2.";
+                case "switched-to-loaded-bed": return "El lecho de reserva estaba cargado: el CO2 se retira peor. Regenera la reserva.";
                 case "bed-switch-restored-removal": return "Cambio de lecho confirmado. Revisa la nueva tendencia del CO2.";
+                case "standby-bed-regenerated": return "Lecho de reserva limpio: listo para el próximo cambio.";
+                case "standby-bed-already-clean": return "La reserva ya estaba limpia: se gastaron tiempo y energía.";
+                case "isolated-for-repair": return "Equipo aislado para repararlo: su servicio está detenido hasta restituirlo.";
+                case "processor-filter-replaced": return "Filtro del reciclador cambiado. Prueba el equipo antes de restituir.";
+                case "processor-filter-not-indicated": return "Ese filtro no era la causa. Se gastaron tiempo y repuesto.";
+                case "inlet-filter-replaced": return "Filtro de entrada cambiado. Prueba el flujo antes de restituir.";
                 case "inlet-filter-not-indicated": return "Ese filtro no era la causa. Se gastaron tiempo y repuesto; revisa los lechos.";
+                case "restored-after-passed-test": return "Servicio restituido tras una prueba aprobada. Lo ya perdido no se devuelve.";
                 case "product-reprocessed": return "Producto devuelto a sin tratar; comprueba el tanque antes del siguiente lote.";
                 case "processor-restored": return "Servicio restituido. El agua y la energía gastadas no se devuelven.";
                 default: return "Resultado confirmado: " + key + ". Comprueba las lecturas y recursos actuales.";
