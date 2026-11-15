@@ -1,79 +1,76 @@
-# Fase 4 — Misión con averías, información y planificación
+# Fase 4 — Base viva: recursos, mantenimiento y sesión continua
 
-**Objetivo:** La expedición y la base forman una misión con contingencias diagnosticables, apoyo diferido y más de una estrategia.
+**Estado:** planificación revisada, no implementación ni aceptación. Sustituye el alcance anterior de fase 4.
+**Objetivo:** convertir la base y la expedición de fase 3 en una sesión cooperativa que continúa mientras se juega. Completar una tarea o expedición no termina la partida.
+**Arquitectura:** Unity Universal 2D → Application → Simulation; una autoridad, un reloj y un inventario confirmado.
 
-**Arquitectura:** Unity Universal 2D -> Application -> Simulation, con una autoridad de sesión.
+## Entrada y transición desde fase 3
 
-**Estado:** plan de desarrollo, no evidencia de que esta versión exista. Esta fase incluye gráficos, interacción, integración y build; no solo componentes aislados.
+Conservar el interior, los astronautas, movimiento/red, recursos, contratos EVA, esclusa, refugio y resultados de expedición que realmente estén implementados. No reabrir ni reescribir la fase 3 en paralelo. Inspeccionar su entrega integrada antes de declarar la entrada aceptada.
 
-## Qué podrá jugar el equipo
+D2 debe separar explícitamente el ciclo de la sesión del ciclo de una tarea/expedición. El cierre por cumplir objetivos de fases anteriores queda disponible como modo de entrenamiento/regresión; no puede seguir cerrando el modo continuo. Cancelar una expedición devuelve al flujo de base. Una avería o reserva baja no produce automáticamente una derrota: debe existir una ventana y una vía de recuperación según el escenario. Si hay una condición realmente irreversible, documentar su regla y ofrecer reinicio, no fingir continuidad.
 
-Gestionar la base y su salida bajo una contingencia seleccionada: refrigeración degradada, agua no aprobada o equipo aislado/averiado. Revisar evidencias, consultar un procedimiento local, pedir apoyo terrestre fechado, decidir qué posponer y comprobar una reparación antes de volver al servicio.
+Por defecto el mundo progresa durante una sesión activa; no se consume fuera de una partida ejecutándose. Acordar pausa autoritativa, velocidad del tiempo, abandono y salida voluntaria. Persistencia entre reinicios se cierra en fase 6; no prometer un servidor persistente 24/7.
 
-Agregar planificación de producción de alimentos con una instalación pequeña y acotada: decidir energía/luz/agua/tiempo para mantener un cultivo o proceso elegido. No es un botón que crea raciones. En una misión corta puede enseñarse el costo de mantener la producción futura sin obtener cosecha. Si se modela rendimiento/crecimiento, exigir datos/condiciones y tiempo simulado compatibles; sin esa calibración, mostrar la limitación y mantener el stock alimentario separado.
+## Experiencia y prioridad P0
 
-No introducir todos los desastres juntos: seleccionar una variante comprensible de misión y después ampliar. La información incompleta tiene causa y fecha, no ocultación arbitraria.
+- Caminar, verse y repartirse trabajo dentro/fuera de la base existente.
+- HUD con barras funcionales de batería, agua potable y comida; O2 y CO2 diferenciados, con unidades, estado y límites del modelo. Añadir generación/demanda eléctrica y tendencia; detalle de agua sin tratar y residuos disponible sin saturar el HUD. Desconocido/antiguo no es cero.
+- Consumo continuo y reposición/reciclaje con límites explícitos. Cada barra debe tener causa, consecuencia y acción del jugador; nunca ser un contador decorativo.
+- Ciclo jugable: observar → priorizar → intervenir → comprobar efecto → recuperar margen → continuar.
+- Al menos dos estaciones con interacción significativa conectada al mismo modelo, además de su animación/progreso: tratamiento de agua y diagnóstico/servicio de aire. Elegir una ruta/estado correcto usando información visible; no un minijuego desconectado ni una solución clínica universal.
+- Un contratiempo de equipo reproducible: degradación del tratamiento de agua. Diagnosticar, aislar cuando proceda, reparar con tiempo/repuesto y comprobar antes de restituir. No introducir todos los desastres juntos.
+- Encargos científicos como oportunidades dentro de la sesión. Su recompensa no termina la base; no sustituir mantenimiento por otra lista finita.
 
-## Entrada y cambios de contrato
+## D1 — Balances continuos y recuperación
 
-Partir de fase 3 y acordar equipos/estados de fallo, lecturas con antigüedad, órdenes/mensajes, destinos de residuos y alcance del modelo térmico/producción. Los coeficientes desconocidos y políticas se identifican antes de hacer nuevas promesas físicas. Un radioenlace entre compañeros no recibe el retraso de Tierra.
+**Propiedad propuesta:** implementaciones nuevas bajo `Runtime/Simulation/BaseOperations/**` y sus pruebas bajo `Tests/EditMode/Phase04/Simulation/**`; mantenimiento de implementaciones previas solo en lista coordinada, no de contratos congelados.
 
-## Trabajo paralelo y unificación
+1. Conectar energía, demanda de tripulación, agua por calidad, comida y servicios de aire al reloj único. Auditar doble cobro interior/EVA.
+2. Modelar degradación y reparación sin devolver automáticamente agua/energía ya perdida.
+3. Definir entradas externas para sostener una sesión: reciclaje con pérdidas y reabastecimiento explícito, limitado y con costo/plazo de escenario; registrar origen y destino de masa. Comida no aparece por pulsar un botón y un circuito con pérdidas no es autosuficiente.
+4. Registrar unidades, frontera, supuestos sintéticos y límites. No inventar MTBF, porcentajes universales o fisiología clínica.
 
-Antes de abrir ramas, registrar el commit de base, contratos reales, SDK/target y permisos de esta fase. Cada persona trabaja en una rama `feature/phase-04/d0X-rol`, con propiedad exclusiva de sus archivos. Las áreas indicadas abajo son el reparto para preparar la lista concreta de escritura; **no autorizan a una IA a editar toda esa carpeta**. Acordar esa lista y congelar las interfaces antes de comenzar.
+**Entrega:** balances verificables, demandas activas y vías de recuperación que impidan una cuenta regresiva inevitable disfrazada de juego continuo.
 
-D2 coordina composición y es el único editor de escenas compartidas en la tarea de integración autorizada. D4 entrega arte/prefabs; D3 componentes/adaptadores; D1 modelo; D5 validación. Paquetes/settings se cambian solo en una actualización común aprobada, nunca cinco veces en paralelo.
+## D2 — Sesión continua, acciones y montaje
 
-Al reunir las cinco entregas, usar `integration/phase-04`, retirar los fakes del flujo real, conectar referencias y probar la misma build. Nadie marca la fase terminada solo porque su rama compila. La integración está dentro de esta fase, aunque sea una tarea distinta del trabajo aislado. Si un contrato necesita cambiar, publicar una nueva base coordinada.
+**Responsable de preparación común y cierre de integración.** Propiedad propuesta: `Runtime/Application/BaseOperations/**`, `Runtime/Unity/Bootstrap/BaseOperations/**` y escena/asset asignados explícitamente al aprobar la base.
 
-## D1 — Fallos de servicio y dependencias
+1. Preparar tipos reales para ciclo de sesión, estado de equipos, observaciones, interacción y finalización de encargos independiente del cierre global.
+2. Implementar transición base ↔ expedición ↔ base sin destruir stocks, repetir cobros o reiniciar el reloj.
+3. Implementar las dos interacciones de estación y la secuencia de reparación. Validar pasos en autoridad; el cliente no envía «completado» arbitrario. Una interacción debe depender de observaciones/acciones, no solo esperar una barra.
+4. Garantizar metas cortas y señales claras sin victoria automática al terminar un checklist. Informes periódicos son resúmenes no terminales.
+5. Componer la escena acumulativa y montar los prefabs de D4; no dejarla reservada ni declarar que un merge la conectó solo.
 
-**Trabajo independiente:** Añadir el modelo térmico reducido requerido por la contingencia y sus cargas/rechazo; efectos físicos de degradación; proceso de suministro/producción alimentaria elegido con límites, entradas/outputs y tiempo. No simular por barras clínicas.
+**Entrega:** la misma base sigue operando tras completar/cancelar varias actividades, con decisiones y efectos visibles.
 
-**Área de propiedad propuesta:** `Simulation/Systems, Equipment y Resources asignados; tests de conservación/tiempo.`
+## D3 — Cooperación y estado continuo
 
-**Entrega a integración:** Una contingencia coherente y producción/planificación acotada. Batería cargada no garantiza enfriamiento y las cosechas no avanzan en otro reloj.
+**Propiedad propuesta:** `Runtime/Unity/Networking/BaseOperations/**` y `Tests/PlayMode/Networking/Phase04/**`, con adaptadores puros en rutas acordadas.
 
-## D2 — Diagnóstico, reparación y misiones
+Sincronizar stocks, ocupación, pasos de mantenimiento, órdenes de reabastecimiento y estado de sesión. Incorporación tardía obtiene el estado actual, no los valores iniciales. Desconectar libera trabajo/reservas según política explícita, sin duplicar repuestos; reconexión solo si está implementada y verificada. Conservar identidades, épocas, validación de secuencias y deduplicación. No crear otro transporte, controlador de movimiento o reloj cliente.
 
-**Trabajo independiente:** Crear secuencia inspeccionar/aislar/intervenir/probar/restituir con herramienta/repuesto/tiempo, procedimiento local y objetivos alternativos. Registrar comandos y decisión/costo para debrief.
+## D4 — Barras, base legible e interacción
 
-**Área de propiedad propuesta:** `Application; Equipment/Tasks/Communications según reparto explícito; integración de escena.`
+**Propiedad propuesta:** `Art/Phase04/**`, `Prefabs/UI/Phase04/**`, `Runtime/Unity/Presentation/BaseOperations/**`, prefabs de equipo asignados y `Tests/PlayMode/UI/Phase04/**`.
 
-**Entrega a integración:** Misión reparable o cancelable sin botón de cura universal. Una pieza cambiada no elimina por sí sola una causa común ni devuelve recursos perdidos.
+Implementar barras reales, tendencia/avisos comprensibles y estados del equipo. Mostrar qué falta y qué cambió tras una acción; texto/icono además de color. Dar interfaz visible a las dos interacciones, progreso/ocupación y rechazo de comandos. Mejorar coherencia visual del interior y estaciones existentes sin cambiar geometría autoritativa. D4 entrega prefabs y bindings; D2 es el único editor de la escena compartida. No resolverlo con otro panel técnico que tape el mundo.
 
-## D3 — Información y acciones distribuidas
+## D5 — Prueba de continuidad, recuperación y utilidad
 
-**Trabajo independiente:** Sincronizar reparación exclusiva, inventarios comprometidos, observaciones permitidas y mensajes de misión con disponibilidad. Mantener transporte de jugadores separado de cola Tierra-base y revisar órdenes obsoletas.
+**Propiedad propuesta:** `Editor/Validation/Phase04/**`, `Editor/Build/Phase04/**`, pruebas integradas de fase 4 y handoff propio.
 
-**Área de propiedad propuesta:** `Networking y adaptadores de comunicación asignados; tests de idempotencia/autorización.`
+Comprobar límites de stocks, calidad del agua, reservas de equipo/repuestos, tiempo y balances. Fixtures: operación estable; escasez por decisiones; avería; reparación y recuperación; varias expediciones y encargos completos sin cierre global. Probar simultaneidad, incorporación tardía y desconexión durante reparación.
 
-**Entrega a integración:** La misma contingencia y tarea en todos, sin conocimiento futuro filtrado ni demora científica aplicada al chat/pings de compañeros.
+Criterio de aceptación propuesto: una sesión integrada de al menos 30 minutos de tiempo de jugador con dos clientes reales, varios ciclos de trabajo, una avería recuperada y una necesidad de reposición. El tiempo de simulación y su escala se registran aparte; no fingir crecimiento agrícola o ciclos lunares reales en ese intervalo. Verificar qué decisiones comprendieron los participantes, sin inventar pruebas de usuarios.
 
-## D4 — Evidencias, equipos y explicación visual
+## Preparación común, integración y cierre
 
-**Trabajo independiente:** Representar estados de equipo, inspección/reparación, stock/cultivo/proceso y mensajes en tránsito. Añadir comparación final de decisiones comprensible para niños, sin mostrar cada subsistema todo el tiempo.
+D2 prepara una sola actualización compatible y revisada: `docs/phase-04/{SESSION_CONTRACT,OWNERSHIP,COMMON_BASE}.md`, contratos mínimos, fake y fixtures etiquetadas. Debe publicar un SHA completo real antes de repartir consumidores. Si una sola IA asume D1+D2+D3+D5, sigue siendo responsable de esa preparación; no se exigen cuatro ramas ficticias.
 
-**Área de propiedad propuesta:** `Art/Phase04, prefabs y paneles específicos; feedback de estados con archivos asignados.`
+Antes de arrancar, convertir las áreas propuestas en lista exacta y sin solapamientos de escritura; no constituyen permiso para editar toda la carpeta. El trabajo entra en `integration/phase-04`, con montaje explícito D2 y retiro de fakes de producción.
 
-**Entrega a integración:** Se entiende qué está fallando, qué falta para intervenir y qué costo tiene la elección. No usar color como única evidencia ni un panel técnico infinito.
+**La fase termina cuando:** la build deja de cerrar por objetivos, las barras reflejan consumos/recuperación reales, dos estaciones requieren decisiones, la base afronta y supera una avería y la sesión continúa con ambos clientes coherentes. Registrar importación, EditMode, PlayMode, validadores, build y ejecución real por separado.
 
-## D5 — Datos, escenarios y comparación
-
-**Trabajo independiente:** Comprobar fuentes/licencias/contextos, calibración y restricciones del modelo; fixtures reproducibles de variantes; prueba de reparación/desconexión/repetición y comparación con referencias válidas.
-
-**Área de propiedad propuesta:** `Pipeline/fixtures/Tests/Phase04 según lista aprobada; builds y documentación de ciencia.`
-
-**Entrega a integración:** Build con misión normal y una contingencia jugables; debrief trazable. No afirmar pronóstico, tasa de fallos o producción alimentaria validada si solo hay supuestos.
-
-## Integración y cierre obligatorio
-
-Unir en `integration/phase-04`, jugar una misión completa con la contingencia elegida y comprobar que el modelo físico, observaciones, reparación y resultado cuentan la misma historia. La producción futura de alimentos debe tener una decisión visible, no solo un decorado; documentar sus límites.
-
-**La fase termina cuando:** el grupo diagnostica y actúa o cancela, paga costos reales del modelo, puede continuar sin una respuesta terrestre inmediata y entiende el resultado. Existen variantes pequeñas/repetibles y no se rompieron las salidas de fase 3.
-
-**Se aplaza:** MTBF inventados, simulación clínica, agricultura autosuficiente, ISRU industrial, red de relays completa, predicción solar entrenada sin validación y dosimetría no resuelta.
-
-## Regla de avance
-
-No pasar a la fase siguiente hasta guardar el commit/build aceptados y los resultados reales de prueba. Se pueden explorar ideas futuras en una rama separada, pero no llamar completada una versión sin integrar. La fase 5 es el cierre de este roadmap; no se añade una fase extra de integración.
+**Fuera de alcance:** API NASA obligatoria en vivo, catálogo grande de desastres, agricultura autosuficiente, construcción libre y persistencia con host apagado. Los eventos externos y la variedad se entregan en fase 5, no se prometen como ya existentes.

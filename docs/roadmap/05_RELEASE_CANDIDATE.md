@@ -1,77 +1,74 @@
-# Fase 5 — Experiencia completa y candidato de entrega
+# Fase 5 — Contratiempos, datos NASA y rejugabilidad
 
-**Objetivo:** Una build accesible, coherente y presentable que personas externas pueden jugar sin ayuda permanente del desarrollador.
+**Estado:** planificación revisada, no implementación. Sustituye la antigua fase 5 de release; el cierre pasa a fase 6.
+**Nota de ruta:** se conserva el nombre histórico `05_RELEASE_CANDIDATE.md` para no romper enlaces existentes; su contenido vigente es este, no una fase de pulido.
+**Objetivo:** que la base continua de fase 4 genere decisiones variadas mediante contratiempos, avisos contextualizados y oportunidades renovables, sin depender de un suceso solar real en ese momento.
 
-**Arquitectura:** Unity Universal 2D -> Application -> Simulation, con una autoridad de sesión.
+## Qué podrá jugar el equipo
 
-**Estado:** plan de desarrollo, no evidencia de que esta versión exista. Esta fase incluye gráficos, interacción, integración y build; no solo componentes aislados.
+Gestionar una base que alterna preparación, incidentes y recuperación. Llegan avisos, fallan/degradan equipos según escenarios declarados y aparecen encargos científicos/expediciones opcionales. El grupo decide posponer ciencia, repartir mantenimiento, solicitar suministros, retirar a compañeros del exterior y preparar protección. Completar el episodio no cierra la partida: vuelve a un estado de operación y nuevas oportunidades.
 
-## Qué podrá jugar una persona externa
+La variedad no consiste en acelerar infinitamente las barras o apilar emergencias imposibles. Debe haber descansos, anticipación y más de una estrategia viable.
 
-Abrir la entrega, entrar con su equipo, aprender los controles mediante una introducción corta, gestionar la base, realizar la misión y reaccionar a la contingencia. Al terminar entiende el costo de sus decisiones, puede reintentar y consultar qué fuentes reales se usaron.
+## Entrada y preparación común
 
-No es la primera fase que dibuja el mundo o conecta botones. El juego ya existe desde las versiones anteriores; aquí se pule su cohesión, accesibilidad y entrega. No añadir sistemas nuevos grandes por querer impresionar al final.
+Partir de una build aceptada de fase 4 y conservar la expedición/refugio de fase 3. D2 coordina la actualización común de contratos de incidente, observación, fuente/validez, presupuesto de eventos y encargos. D5 coordina el contrato de datos científicos. Se preparan juntos una sola vez, con implementaciones/fake y SHA completo antes de consumidores: `docs/phase-05/{SESSION_CONTRACT,OWNERSHIP,COMMON_BASE}.md`.
 
-## Entrada y alcance compartido
+Las rutas abajo son propuestas; el manifiesto previo debe concretar archivos exclusivos. Paquetes/settings, API/hosting o cambios de contrato previos requieren coordinación, nunca cinco modificaciones paralelas.
 
-Partir de la misión jugable de fase 4. Acordar target final, tamaño de grupo soportado, ruta de acceso/hosting, condiciones de prueba y prioridades de corrección. Dos clientes fueron el mínimo de desarrollo, no una promesa automática de soporte para cinco jugadores. No cambiar SDK/Editor o todas las firmas al final sin motivo y aprobación.
+## D1 — Consecuencias físicas y recuperación
 
-## Trabajo paralelo y unificación
+**Propiedad propuesta:** `Runtime/Simulation/Incidents/**`, extensiones de equipo explícitamente asignadas y `Tests/EditMode/Phase05/Simulation/**`.
 
-Antes de abrir ramas, registrar el commit de base, contratos reales, SDK/target y permisos de esta fase. Cada persona trabaja en una rama `feature/phase-05/d0X-rol`, con propiedad exclusiva de sus archivos. Las áreas indicadas abajo son el reparto para preparar la lista concreta de escritura; **no autorizan a una IA a editar toda esa carpeta**. Acordar esa lista y congelar las interfaces antes de comenzar.
+Definir cómo afecta cada incidente a capacidades, consumos, rendimiento o disponibilidad. El director solicita activar una condición; no modifica stocks por fuera del modelo. Mantener balances y efectos reversibles/irreversibles declarados. Probar acumulación y eliminación de modificadores sin restaurar masa perdida ni cobrar dos veces.
 
-D2 coordina composición y es el único editor de escenas compartidas en la tarea de integración autorizada. D4 entrega arte/prefabs; D3 componentes/adaptadores; D1 modelo; D5 validación. Paquetes/settings se cambian solo en una actualización común aprobada, nunca cinco veces en paralelo.
+Primer catálogo acotado: degradación de reciclador, fallo de un servicio eléctrico/equipo y episodio de clima espacial con respuesta EVA/refugio. No añadir un modelo térmico nuevo completo si no es necesario para una decisión demostrable. Reutilizar lo implementado, sin daños clínicos ficticios.
 
-Al reunir las cinco entregas, usar `integration/phase-05`, retirar los fakes del flujo real, conectar referencias y probar la misma build. Nadie marca la fase terminada solo porque su rama compila. La integración está dentro de esta fase, aunque sea una tarea distinta del trabajo aislado. Si un contrato necesita cambiar, publicar una nueva base coordinada.
+## D2 — Director de eventos y actividades renovables
 
-## D1 — Corrección y costo de simulación
+**Propiedad propuesta:** `Runtime/Application/Incidents/**`, `Runtime/Application/Operations/**`, escenario y composición asignados.
 
-**Trabajo independiente:** Cerrar regresiones numéricas, mejorar detección de eventos y costo de ejecución sin alterar ciencia para maquillar resultados. Documentar tolerancias y dominios del modelo.
+1. Director autoritativo reproducible por semilla con estados aviso → preparación → incidente → intervención → recuperación. Reglas de activación consideran estado de base, tripulación y recursos; incluir enfriamiento y presupuesto de simultaneidad.
+2. Separar emergencias derivadas del modelo (agua realmente escasa) de incidentes authored (equipo que degrada). No generar agua escasa por azar sin descontarla/trazarla.
+3. Elegir intensidad y frecuencia como parámetros de juego sintéticos, nunca como probabilidades NASA ni frecuencia médica real.
+4. Encargos renovables con condiciones, costo, variedad y recompensa acotada; oportunidades y mejoras concretas de equipo, no tecnologías/árboles infinitos. Evitar la repetición obligatoria del mismo botón y las recompensas que eliminan todos los límites.
+5. Conectar aviso de partículas con planificación, retorno y protección reales de fase 3. Evaluar decisiones con información disponible en ese momento, no conocimiento futuro.
+6. Conservar operación tras resolver eventos y cerrar encargos. Agotar un catálogo finito no equivale a acabar la sesión: puede reutilizar variantes con reglas antirrepetición y límites explícitos.
 
-**Área de propiedad propuesta:** `Simulation y tests existentes asignados; sin reescritura general.`
+**Entrega:** incidentes con decisiones/consecuencias y un ciclo renovable, no una lista de escenas terminales.
 
-**Entrega a integración:** Modelo estable en la build final y configuraciones aprobadas. No sustituir evidencia faltante por una cifra bonita.
+## D3 — Adquisición externa y sincronización
 
-## D2 — Flujo completo y escena de entrega
+**Propiedad propuesta:** adaptadores en `Runtime/Unity/Integration/SpaceWeather/**`, red de incidentes en `Runtime/Unity/Networking/Incidents/**` y pruebas propias.
 
-**Trabajo independiente:** Pulir tutorial/progresión, navegación entre inicio/misión/resultado, reinicio y objetivos; integrar fixes y mantener una sola autoridad/runner por sesión.
+Con D5, verificar endpoints/esquemas oficiales vigentes antes de programar; no inventar una URL ni asumir que toda NASA usa la misma key. La autoridad/servicio autorizado descarga, valida, cachea y publica información normalizada; cada cliente no consulta ni sortea sus propios incidentes. No incrustar la API key en Git, assets, WebGL, logs o prefabs. Si WebGL requiere proxy secreto, proponer arquitectura antes de desplegar un servicio; no abrir infraestructura automáticamente.
 
-**Área de propiedad propuesta:** `Application/Bootstrap y escenas con propiedad única; integrador de release.`
+Diseñar timeout, rate limits, cache/versiones, deduplicación y revisión de registros. Una caída, respuesta vacía o API lenta no bloquea el reloj ni la partida. Un dato externo informa el director mediante política explícita; no ejecuta comandos arbitrarios ni impone automáticamente daño.
 
-**Entrega a integración:** Recorrido completo con buen resultado, cancelación y error recuperable; sin pasos manuales del Editor o referencias rotas.
+Sincronizar semilla/estado confirmado, fuente del aviso, revisiones, expiración y tareas. Late join obtiene incidentes activos sin duplicar consecuencias. Separar hora científica, reloj de sesión y latencia de red.
 
-## D3 — Conectividad y errores finales
+## D4 — Avisos, consecuencias visibles y variedad
 
-**Trabajo independiente:** Validar unión, capacidad acordada, autorización, duplicados, reconexión solo si fue implementada, pérdida de host y mensajes comprensibles en la topología elegida.
+**Propiedad propuesta:** `Art/Phase05/**`, `Audio/Phase05/**`, `Prefabs/UI/Phase05/**`, `Runtime/Unity/Presentation/Incidents/**` y pruebas UI propias.
 
-**Área de propiedad propuesta:** `Networking y tests asignados.`
+Mostrar qué está ocurriendo, qué se sabe, desde cuándo, su vigencia y qué acciones están disponibles. Señalar ruta/refugio, servicios degradados, ocupación y costos; no una pantalla de alarma constante. Información histórica, actual y sintética claramente diferenciada. API caída no se dibuja como «peligro cero».
 
-**Entrega a integración:** Pruebas reales en equipos/red/target anunciados, sin prometer crossplay, migración o Internet no probados. Revisar términos/credenciales y no incluir secretos.
+Mantener visibles las barras esenciales de fase 4. Explicar cambios mediante el mundo, señales, animaciones y texto; sonido opcional, no único canal. Encargos y mejoras tienen efecto perceptible. Entregar prefabs/receta a D2 para montaje.
 
-## D4 — Acabado visual, audio y accesibilidad
+## D5 — Datos NASA, ciencia y escenarios
 
-**Trabajo independiente:** Unificar sprites/animaciones/UI, contraste, tamaño de texto, iconos, señales y sonidos opcionales; mejorar tutorial/debrief sin depender de micrófono o color. Conservar atribución/licencias de assets.
+**Propiedad propuesta:** fixtures/cache de referencia en ruta acordada, `Editor/Validation/Phase05/**`, `Editor/Build/Phase05/**`, `Tests/EditMode/Phase05/Validation/**` y handoff propio.
 
-**Área de propiedad propuesta:** `Art, Audio, Prefabs y Presentation asignados; no cambiar reglas físicas.`
+- Verificar una integración real con una fuente NASA adecuada, por ejemplo DONKI para registros/eventos, según documentación y acceso comprobados. Guardar URL, tipo, identificador, unidades, tiempo de evento, disponibilidad/revisión, recuperación y procedencia/licencia. No afirmar que un registro detecta las condiciones exactas en nuestra base lunar ficticia.
+- Entregar un replay histórico contextualizado y congelado; además, un generador sintético etiquetado para flujo continuo y fallback. Modo de observación actual solo si está implementado y probado, nunca requisito para poder jugar.
+- Separar flare, CME y partículas energéticas. No convertir clase X, Kp, pfu ni dosis orbital directamente en dosis humana lunar. Una alerta no demuestra un impacto local ni una caída de producción solar. Sin transporte válido, enseñar respuesta cualitativa de protección, sin umbrales clínicos inventados.
+- Probar API vacía/caída, datos viejos/futuros, revisiones y duplicados; no filtrar información disponible después de la decisión del jugador.
+- Replays deterministas y tests de combinación: incidente con mantenimiento, desconexión, reinicio y reservas bajas. Verificar que director no cree estados sin salida por presupuesto/configuración.
 
-**Entrega a integración:** Presentación coherente y usable por el público, no necesariamente arte comercial. No abrir una producción artística nueva que rompa el alcance.
+## Integración y aceptación
 
-## D5 — Validación de usuarios y paquete final
+D2 monta en `integration/phase-05` con el resto, usando el mismo mundo y una autoridad. La fase no se acepta por descargar JSON o mostrar una alerta.
 
-**Trabajo independiente:** Ejecutar regresión completa, pruebas de comprensión con usuarios adecuados/autorizados si es viable, revisión de fuentes/licencias, build limpia, instrucciones y ensayo de demo. No recopilar datos personales innecesarios.
+**Cierre:** build con dos clientes reales que completa un tramo de operación normal, un contratiempo de equipo con recuperación y un episodio NASA histórico contextualizado con decisión de retorno/refugio; luego continúa jugando. Repetir con datos externos indisponibles usando fallback rotulado, sin romper multiplayer. Demostrar variedad entre semillas y reproducción de un mismo caso con la misma semilla. Registrar límites y evidencia por modo de datos.
 
-**Área de propiedad propuesta:** `Tests/Editor tooling y docs de release según lista aprobada.`
-
-**Entrega a integración:** Artefacto jugable, evidencias y limitaciones, créditos, explicación de datasets y pasos de acceso. Fallos pendientes visibles; nada de inventar aprobación o tests infantiles.
-
-## Integración y cierre obligatorio
-
-Unir en `integration/phase-05`, revisar el diff y generar desde un commit identificado la build candidata. Probarla sin depender de APIs NASA en vivo, pero sin afirmar que multiplayer online funciona sin conexión. Web necesita hosting/configuración y un navegador real; si se requiere acceso offline, probar un fallback descargable/local de verdad.
-
-**La fase termina cuando:** alguien externo completa el flujo y puede explicar una restricción aprendida; la misma build está probada con el grupo soportado; hay controles claros, resultado/reintento, fuentes/créditos, instrucciones y demo ensayada. Publicar/mandar la entrega solo con autorización, no por ejecutar este plan.
-
-**Fuera de alcance:** planeta adicional, mundo abierto, nuevas cámaras completas, voz pública, servicios no aprobados, certificaciones y funcionalidades prometidas pero no implementadas. Lo que no llegó se presenta como futuro trabajo.
-
-## Regla de avance
-
-No pasar a la fase siguiente hasta guardar el commit/build aceptados y los resultados reales de prueba. Se pueden explorar ideas futuras en una rama separada, pero no llamar completada una versión sin integrar. La fase 5 es el cierre de este roadmap; no se añade una fase extra de integración.
+**P1/P2, no bloqueantes del núcleo:** mayor catálogo, planificación alimentaria calibrada o nuevas mejoras. No cosechas instantáneas, MTBF inventados, pronóstico solar entrenado sin validación, dosimetría humana ni explotación de ISRU. No inflar la fase con todo el dossier científico.
