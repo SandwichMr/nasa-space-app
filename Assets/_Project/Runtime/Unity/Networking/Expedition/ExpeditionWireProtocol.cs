@@ -191,7 +191,7 @@ namespace Trainer.Unity.Networking.Expedition
 
         // ---- Phase 3 extension --------------------------------------------------------------------------------
 
-        private static void WriteExtension(BinaryWriter w, ExpeditionSessionSnapshot s)
+        internal static void WriteExtension(BinaryWriter w, ExpeditionSessionSnapshot s)
         {
             w.Write((byte)s.Crew.Count);
             foreach (ExpeditionCrewState c in s.Crew)
@@ -310,7 +310,7 @@ namespace Trainer.Unity.Networking.Expedition
             }
         }
 
-        private static ExpeditionSessionSnapshot ReadExtension(BinaryReader r, OutpostSessionSnapshot outpost)
+        internal static ExpeditionSessionSnapshot ReadExtension(BinaryReader r, OutpostSessionSnapshot outpost)
         {
             int crewCount = Count(r, OutpostLimits.MaxCrew);
             var crew = new List<ExpeditionCrewState>(crewCount);
@@ -461,22 +461,22 @@ namespace Trainer.Unity.Networking.Expedition
             return list;
         }
 
-        private static void WriteOptional(BinaryWriter w, double? value)
+        internal static void WriteOptional(BinaryWriter w, double? value)
         {
             w.Write(value.HasValue);
             if (value.HasValue) w.Write(value.Value);
         }
 
-        private static double? ReadOptional(BinaryReader r) => W.ReadBool(r) ? r.ReadDouble() : (double?)null;
+        internal static double? ReadOptional(BinaryReader r) => W.ReadBool(r) ? r.ReadDouble() : (double?)null;
 
-        private static int Count(BinaryReader r, int max)
+        internal static int Count(BinaryReader r, int max)
         {
             int count = r.ReadByte();
             if (count > max) throw new InvalidDataException();
             return count;
         }
 
-        private static string Key(BinaryReader r) => W.ReadKey(r) ?? throw new InvalidDataException();
+        internal static string Key(BinaryReader r) => W.ReadKey(r) ?? throw new InvalidDataException();
 
         private static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
 
