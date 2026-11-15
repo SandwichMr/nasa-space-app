@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Trainer.Simulation.BaseOperations;
 using Trainer.Simulation.Crew;
 
 namespace Trainer.Simulation.LifeSupport
@@ -25,8 +26,11 @@ namespace Trainer.Simulation.LifeSupport
     ///
     /// Not modelled: total pressure, humidity, temperature change, multiple zones, leaks, instrument failures,
     /// water processing (only through task effects), nutrients, waste, crops, any clinical consequence.
+    ///
+    /// Phase 4 (D1): also <see cref="IAirServiceCapacity"/>, on this same object (no second base model). The factor
+    /// multiplies the declared maximum CO2 removal rate; Reset sets it to 1, which reproduces phase 2 exactly.
     /// </summary>
-    public sealed class OutpostBaseSimulation : IOutpostSimulation
+    public sealed class OutpostBaseSimulation : IOutpostSimulation, IAirServiceCapacity
     {
         private const int MaxSegmentsPerAdvance = 64;
 
@@ -41,6 +45,7 @@ namespace Trainer.Simulation.LifeSupport
         private bool scienceRequested;
         private double serviceLoadWatts;
         private int crewAboard;
+        private double carbonDioxideRemovalFactor = 1d;
         private GasReading lastOxygenReading;
         private GasReading lastCarbonDioxideReading;
         private OutpostSimulationSnapshot snapshot;
@@ -97,6 +102,19 @@ namespace Trainer.Simulation.LifeSupport
 
         public double LastFullyServedScienceSeconds { get; private set; }
 
+        /// <summary>Phase 4 coupling of the air unit (D1). 1 after Reset (phase 2 behaviour).</summary>
+        public double CarbonDioxideRemovalFactor => carbonDioxideRemovalFactor;
+
+        /// <summary>Requires Reset; finite value in [0, 1], otherwise throws without changing the factor. Applies from the
+        /// next <see cref="Advance"/>; it does not change stocks or the published snapshot by itself.</summary>
+        public void SetCarbonDioxideRemovalFactor(double factor)
+        {
+            RequireReset();
+            if (double.IsNaN(factor) || factor < 0d || factor > 1d)
+                throw new ArgumentOutOfRangeException(nameof(factor), factor, "Must be within [0, 1].");
+            carbonDioxideRemovalFactor = factor;
+        }
+
         public void Reset(OutpostConfiguration configuration)
         {
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
@@ -111,6 +129,7 @@ namespace Trainer.Simulation.LifeSupport
             scienceRequested = false;
             serviceLoadWatts = 0d;
             crewAboard = 0;
+            carbonDioxideRemovalFactor = 1d;
 
             oxygenTargetKilograms = CabinGas.MassKilograms(
                 cabin.InitialOxygenPartialPressureKilopascals, CabinGas.OxygenMolarMass, cabin);
@@ -240,7 +259,7 @@ namespace Trainer.Simulation.LifeSupport
             r.Respire = respirationFraction * oxygenDemand;
             r.Exhale = respirationFraction * crew * perMember.CarbonDioxideProductionKilogramsPerSecond;
 
-            double removalAvailable = airPowered ? air.MaxCarbonDioxideRemovalKilogramsPerSecond : 0d;
+            double removalAvailable = airPowered ? air.MaxCarbonDioxideRemovalKilogramsPerSecond * carbonDioxideRemovalFactor : 0d;
             r.Remove = s.CabinCarbonDioxide > carbonDioxideFloorKilograms
                 ? removalAvailable
                 : Math.Min(removalAvailable, r.Exhale);
