@@ -213,13 +213,19 @@ namespace Trainer.Unity.Validation.Phase03
             Add($"start {task}", (me, s) => me.Act(() => intents.RequestStart(station, task)));
             Add($"finish {task}", (me, s) =>
             {
+                // Over a real link the Accepted result can arrive before the snapshot that shows the task running:
+                // wait for the confirmed state (start or end of THIS task) instead of judging an older snapshot.
                 s.Outpost.TryGetStation(station, out StationState state);
                 if (state.ActiveTask != null) return StepStatus.Running;
-                if (state.LastEnd != null && state.LastEnd.Performer == port.Membership.Player && state.LastEnd.Task == task)
+                if (state.LastEnd != null && state.LastEnd.Performer == port.Membership.Player && state.LastEnd.Task == task
+                    && state.LastEnd.EndedAtSeconds >= me.Running.StartedAt - 1e-6)
                     return state.LastEnd.Reason == TaskEndReason.Completed ? StepStatus.Done : me.Fail("ended " + state.LastEnd.Reason);
-                return me.Fail("no task end recorded");
+                return s.SimulatedTimeSeconds - me.Running.StartedAt > 5 + 2 * TaskDuration(task)
+                    ? me.Fail("no confirmed start or end of the task") : StepStatus.Running;
             });
         }
+
+        private double TaskDuration(TaskTypeId task) => scenario.Outpost.TryGetTask(task, out TaskDefinition d) ? d.DurationSeconds : 0;
 
         private void Cycle(AirlockState until)
         {
