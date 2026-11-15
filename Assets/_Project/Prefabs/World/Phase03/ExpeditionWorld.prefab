@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1081166913689710840
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6400238151197472432}
+  - component: {fileID: 5736760841334246956}
+  m_Layer: 0
+  m_Name: ExpeditionWorld
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6400238151197472432
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081166913689710840}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5736760841334246956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081166913689710840}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ed613680c11bdfc4a7f9e5018e84de5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.World.Expedition.ExpeditionWorldView
+  regolith: {fileID: 21300000, guid: 3823c71c33c8c350080ad317e655bd8d, type: 3}
+  rock: {fileID: 21300000, guid: cdc8318f9fadfa91ca64c0586c30e778, type: 3}
+  route: {fileID: 21300000, guid: 99a0f63ef1c70748b977aa36b182db41, type: 3}
+  hatchOpen: {fileID: 21300000, guid: d0ef6290bc88475c785157f50ef6a651, type: 3}
+  hatchClosed: {fileID: 21300000, guid: 64df71abc2d47f23d906cc7de3238f4f, type: 3}
+  hatchCycle: {fileID: 21300000, guid: a2c1001fb01b6197cbefa6dcd6c4638f, type: 3}
+  shelter: {fileID: 21300000, guid: d748e4425f11faaf4887c21219735870, type: 3}
+  antenna: {fileID: 21300000, guid: fc1516a1d3748c2a19e16b3dc8d6937c, type: 3}
+  material: {fileID: 2100000, guid: 0a04e991f373623718af90796762ec31, type: 2}
+  sciencePrefab: {fileID: 4080372259175288799, guid: 6bc126537a6d1ad529432707ed11f64b, type: 3}
+  optionalPrefab: {fileID: 5045217967672280185, guid: 9666195c23cd9239488f0c1d264a1b11, type: 3}
+  baseView: {fileID: 0}
