@@ -1,0 +1,6 @@
+commit 90d56f78025fc72b9c6a6fc5a23e7c0bc337f298
+editor 6000.3.28f1
+target StandaloneLinux64
+scenes Assets/_Project/Scenes/Phase03_EvaAndShelter.unity
+result Succeeded
+utc 2026-11-15T15:39:25.8071380Z

@@ -1,0 +1,42 @@
+Unity 6000.3.28f1; isolated integration worktree; Linux64.
+editmode-final: total=383 passed=383 failed=0 skipped=0; process exit 0.
+playmode-final: total=59 passed=59 failed=0 skipped=0; process exit 0.
+== Phase 3 checks: 34 passed, 0 failed
+  [Passed] scenario asset Assets/_Project/Data/Scenarios/Phase03/Phase03_EvaAndShelter_Synthetic.asset - Fase 3 · Salida exterior, regreso y refugio (escenario sintético)
+  [Passed] shipped: zones cover every admissible position - 12268 admissible grid points, 0 without zone
+  [Passed] shipped: airlock closed: the base reaches neither the chamber nor the exterior - reached zones: Interior, Shelter
+  [Passed] shipped: inner hatch open: the base reaches the chamber, never the exterior - reached zones: Interior, Shelter, Airlock
+  [Passed] shipped: outer hatch open: the chamber reaches the exterior, never the base - reached zones: Airlock, Exterior
+  [Passed] shipped: every station has a standing point in reach, in its required zone - 14 stations
+  [Passed] shipped: hatch doorways fit a crew disc and are clear of spawns - inner 1.6 m, outer 1.6 m, crew diameter 0.7 m
+  [Passed] shipped: the chamber holds its capacity clear of both doorways - 72 clear grid points for 2 crew (needs about 16)
+  [Passed] shipped: every exterior site has a return route to the airlock entry - regolith-site: 8.6 m; crater-rim: 25.5 m
+  [Passed] shipped: each exterior objective is reachable and returnable within the declared reserve - collect-regolith: margin 136 s at rest after the task, limited by Oxygen; crater-core: margin 88 s at rest after the task, limited by Oxygen
+  [Passed] shipped: particle episode labelled and explicitly ended - SYNTHETIC; 3 messages; explicit end: True; all issued before the mission ends: True; hidden event 140-220 s (never used to judge)
+  [Passed] fixture: zones cover every admissible position - 3977 admissible grid points, 0 without zone
+  [Passed] fixture: airlock closed: the base reaches neither the chamber nor the exterior - reached zones: Interior, Shelter
+  [Passed] fixture: inner hatch open: the base reaches the chamber, never the exterior - reached zones: Interior, Shelter, Airlock
+  [Passed] fixture: outer hatch open: the chamber reaches the exterior, never the base - reached zones: Airlock, Exterior
+  [Passed] fixture: every station has a standing point in reach, in its required zone - 11 stations
+  [Passed] fixture: hatch doorways fit a crew disc and are clear of spawns - inner 1.6 m, outer 1.6 m, crew diameter 0.7 m
+  [Passed] fixture: the chamber holds its capacity clear of both doorways - 80 clear grid points for 2 crew (needs about 16)
+  [Passed] fixture: every exterior site has a return route to the airlock entry - regolith-site: 6.2 m; crater-rim: 14.6 m
+  [Passed] fixture: each exterior objective is reachable and returnable within the declared reserve - collect-regolith: margin 142 s at rest after the task, limited by Oxygen; crater-core: margin 113 s at rest after the task, limited by Oxygen
+  [Passed] fixture: particle episode labelled and explicitly ended - SYNTHETIC; 2 messages; explicit end: True; all issued before the mission ends: True; hidden event 40-90 s (never used to judge)
+  [Passed] scene has exactly one expedition composition - 1 found
+  [Passed] composition references are wired - all assigned
+  [Passed] one bootstrap with the scenario and runner - 1 found
+  [Passed] one phase 3 host and one phase 3 client (no phase 1/2 network components) - a scene speaks one cable
+  [Passed] single movement controller (phase 2 keyboard, its E disabled) - 1 keyboard component(s)
+  [Passed] avatars use the D4 astronaut prefab - 1 avatar sync; phase 2 movement visuals and phase 3 crew view required
+  [Passed] presentation mount holds IExpeditionView components - 2 view(s)
+  [Passed] D4 world and HUD prefab instances replace provisional views - two production D4 views; no provisional scene components
+  [Passed] D4 world uses the composition base and all visual references - geometry configured once from the same scenario before presentation Bind
+  [Passed] no Unity physics decides positions - 0 collider/rigidbody components
+  [Passed] autopilot present and inert without -trainer-autopilot - D5 acceptance pilot
+  [Passed] no development fake or fixture in player sources - clean
+  [Passed] phase 2 implementation discovery stays unambiguous - IOutpostAuthority: OutpostAuthority; ICrewRoster: CrewRoster; IOutpostSimulation: OutpostBaseSimulation
+Linux64 build: Succeeded; process exit 0; see build-info.txt.
+Visual run: production scene, real authority, two host-local ports (same process, no network); flow B PASS/PASS, seven untouched runtime screenshots. Runner exit 0. Isolated test pacing: single authoritative runner at 3 simulated seconds per real second.
+Known separate Editor startup defect: ArgumentOutOfRangeException in UnityEditor.Search.SearchDatabase.EnumerateAll / SearchInit.IndexationOnStartup. The graphical runner only resumes this isolated instance if Console Error Pause stops it for this specific defect. Any other runtime error fails the graphical runner.
+Cross-process evidence is in process-acceptance.json. Automated pilots do not certify two-person play, physical keyboard/mouse, WebGL, TLS or LAN between machines.

@@ -1,0 +1,46 @@
+[
+  {
+    "flow": "A",
+    "port": 23931,
+    "authority_timescale": 2,
+    "build_info": "commit 90d56f78025fc72b9c6a6fc5a23e7c0bc337f298\neditor 6000.3.28f1\ntarget StandaloneLinux64\nscenes Assets/_Project/Scenes/Phase03_EvaAndShelter.unity\nresult Succeeded\nutc 2026-11-15T15:39:25.8071380Z\n",
+    "player_sha256": "8027f7d1f9ae7dacfc826fb218adcc1ae7464af098a8a59397e7531c0f7ec0bc",
+    "clients": {
+      "explorer": {
+        "exit": 0,
+        "verdict": [
+          "[Autopilot] RESULT PASS flow=A role=Explorer outcome=ScienceReturned expected=ScienceReturned at t=99.0s step='airlock PressurizedInnerOpen'"
+        ]
+      },
+      "support": {
+        "exit": 0,
+        "verdict": [
+          "[Autopilot] RESULT PASS flow=A role=Support outcome=ScienceReturned expected=ScienceReturned at t=99.0s step='wait for the result'"
+        ]
+      }
+    },
+    "passed": true
+  },
+  {
+    "flow": "B",
+    "port": 23932,
+    "authority_timescale": 2,
+    "build_info": "commit 90d56f78025fc72b9c6a6fc5a23e7c0bc337f298\neditor 6000.3.28f1\ntarget StandaloneLinux64\nscenes Assets/_Project/Scenes/Phase03_EvaAndShelter.unity\nresult Succeeded\nutc 2026-11-15T15:39:25.8071380Z\n",
+    "player_sha256": "8027f7d1f9ae7dacfc826fb218adcc1ae7464af098a8a59397e7531c0f7ec0bc",
+    "clients": {
+      "explorer": {
+        "exit": 0,
+        "verdict": [
+          "[Autopilot] RESULT PASS flow=B role=Explorer outcome=ShelteredInTime expected=ShelteredInTime at t=235.0s step='wait for the result'"
+        ]
+      },
+      "support": {
+        "exit": 0,
+        "verdict": [
+          "[Autopilot] RESULT PASS flow=B role=Support outcome=ShelteredInTime expected=ShelteredInTime at t=235.0s step='wait for the result'"
+        ]
+      }
+    },
+    "passed": true
+  }
+]

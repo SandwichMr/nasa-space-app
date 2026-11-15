@@ -54,3 +54,31 @@ La primera captura automática se interrumpió para corregir estos defectos. El 
 | D5 | `2166121`, `39c6495` |
 
 Los handoffs originales describen sus entregas antes del montaje. Su manifiesto D4 corresponde al commit `83ca41b`; los ajustes posteriores están en el historial y manifiesto de integración.
+
+## Resultado final
+
+**D1–D5 integradas y verificadas automáticamente; la aceptación manual de la fase sigue pendiente.**
+
+| Comprobación | Resultado |
+| --- | --- |
+| Merge técnico + D4 | Sin conflictos; commit `9e16eae` |
+| Montaje productivo | Prefabs World/HUD Phase03 y astronauta variante Phase03, dos vistas reales; sin componentes provisionales ni fakes |
+| EditMode (tres fases) | **383/383**, exit 0 |
+| PlayMode (tres fases, incluidos sockets reales) | **59/59**, exit 0 |
+| Checks D5 de fase 3 | **34/34**, exit 0 |
+| Build Linux64 final | **Succeeded**, exit 0, fuente `90d56f78025fc72b9c6a6fc5a23e7c0bc337f298` |
+| A: autoridad + dos clientes de esa build | **PASS/PASS**, `ScienceReturned`, t=99,0 s |
+| B: autoridad + dos clientes de esa build | **PASS/PASS**, `ShelteredInTime`, t=235,0 s |
+| Escena productiva en PlayMode con gráficos | Recorrido B **PASS/PASS**, dos puertos locales/una autoridad; siete capturas reales sin retoques |
+
+A y B se ejecutaron en paralelo en sesiones separadas, cada una con tres procesos sobre WebSocket en 127.0.0.1 (puertos 23931/23932). Solo la autoridad avanzó el tiempo: CLI de prueba `-trainer-timescale 2`. Pilotos automáticos D5, sin clientes fake ni colocación directa de jugadores. Ambas sesiones cerraron sus procesos y sockets al acabar. El ensayo gráfico usa el mismo generador de escena productiva y el mismo piloto D5, con ritmo de prueba 3; sus dos puertos son locales al proceso, no se usa esa captura para certificar red.
+
+Evidencia: [resumen](integration-evidence/verification.txt), [build y clientes](integration-evidence/process-acceptance.json), [guion reproducible](integration-evidence/run_process_acceptance.py), [resultado gráfico](integration-evidence/07-real-result.png) y [manifiesto](integration-evidence/ASSET_MANIFEST.tsv). Los logs completos y XML permanecen en `Logs/phase03-integration/` (ignorados). La build queda en `Builds/Phase3Mission/StandaloneLinux64/` (ignorada). El commit de archivo de evidencias posterior cambia solo documentación; el código compilado es `90d56f7`.
+
+### Abrir y repetir
+
+Abrir `/home/leonardo/phase03-integration` con Unity 6000.3.28f1 y la escena `Assets/_Project/Scenes/Phase03_EvaAndShelter.unity`. `Phase03SceneBuilder` ya regenera el montaje D4, sin resetear el escenario existente. Para repetir la validación de procesos después de generar la build: `python docs/phase-03/integration-evidence/run_process_acceptance.py`. Para repetir las capturas, el método CLI es `Trainer.Unity.Presentation.Expedition.Editor.Phase03IntegratedVisualChecks.Run`, con `-phase3-ci -trainer-bind 127.0.0.1 -trainer-port 23933` (sin batchmode ni nographics).
+
+Pendiente: partida manual con dos personas y teclado/ratón, aceptación de legibilidad por niños, WebGL/LAN/TLS si se solicitan. No se declara terminada la fase ni se fusiona con main. No push ni publicación. Los cambios sin commit del roadmap en `/home/leonardo/My project` permanecen en su carpeta y rama originales.
+
+Incidencia de Editor conocida: la indexación `UnityEditor.Search.SearchDatabase` volvió a emitir `ArgumentOutOfRangeException`; no se presenta como una ejecución sin incidencias del Editor. No hubo fallos de compilación ni otros errores de ejecución en la validación gráfica final. Las salidas y alcances exactos están en el resumen de evidencia.
