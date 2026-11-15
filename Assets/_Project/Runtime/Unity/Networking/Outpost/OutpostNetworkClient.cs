@@ -23,6 +23,8 @@ namespace Trainer.Unity.Networking.Outpost
 
         private UnityTransportClient transport;
         private float synchronizingSince;
+        private bool launchArgumentsRead;
+        private bool launchConnect;
 
         public OutpostConnectionController Connection { get; private set; }
         /// <summary>The <see cref="IOutpostSessionPort"/> for presentation and input. Same instance across rejoins.</summary>
@@ -38,6 +40,7 @@ namespace Trainer.Unity.Networking.Outpost
         {
             if (Connection != null) throw new InvalidOperationException("Configure before the first Connect.");
             options = (value ?? throw new ArgumentNullException(nameof(value))).Clone();
+            launchArgumentsRead = false; // Launch arguments still override the configured values.
         }
 
         /// <summary>Creates the adapter without connecting, so presentation can bind to <see cref="Session"/> early.</summary>
@@ -49,16 +52,22 @@ namespace Trainer.Unity.Networking.Outpost
 
         private void Start()
         {
-            bool connect = connectOnStart;
-            if (readLaunchArguments && Connection == null)
-            {
+            // The scene composition may call Prepare before this Start (an object activated during another
+            // object's Awake does not get its Start ordered by DefaultExecutionOrder). The launch arguments are
+            // read once, by whichever comes first, so -trainer-server/-trainer-connect are never dropped.
+            ReadLaunchArgumentsOnce();
+            if (connectOnStart || launchConnect) Connect();
+        }
+
+        private void ReadLaunchArgumentsOnce()
+        {
+            if (launchArgumentsRead || !readLaunchArguments || Connection != null) return;
+            launchArgumentsRead = true;
 #if UNITY_WEBGL && !UNITY_EDITOR
-                connect |= SessionNetworkArguments.ApplyPageUrl(options, UnityEngine.Application.absoluteURL);
+            launchConnect = SessionNetworkArguments.ApplyPageUrl(options, UnityEngine.Application.absoluteURL);
 #else
-                connect |= SessionNetworkArguments.Apply(options, Environment.GetCommandLineArgs());
+            launchConnect = SessionNetworkArguments.Apply(options, Environment.GetCommandLineArgs());
 #endif
-            }
-            if (connect) Connect();
         }
 
         /// <summary>Joins, or rejoins after a loss (a new PlayerId; old pending commands are gone).</summary>
@@ -98,6 +107,7 @@ namespace Trainer.Unity.Networking.Outpost
         private void EnsureComposed()
         {
             if (Connection != null) return;
+            ReadLaunchArgumentsOnce();
             if (runInBackground) UnityEngine.Application.runInBackground = true;
             transport = new UnityTransportClient(options);
             Connection = new OutpostConnectionController(transport);
@@ -107,6 +117,9 @@ namespace Trainer.Unity.Networking.Outpost
         private void OnStateChanged(SessionConnectionState state)
         {
             if (state == SessionConnectionState.Synchronizing) synchronizingSince = Time.unscaledTime;
+            Debug.Log($"[OutpostNetworkClient] {state}" + (Connection.LastDisconnectReason != null
+                ? " (" + Connection.LastDisconnectReason + ")" : "")
+                + (state == SessionConnectionState.Connected ? " as " + Connection.Session.Membership.Player : ""));
             StateChanged?.Invoke(state);
             ConnectionStatusChanged?.Invoke(OutpostConnectionStatus.IsConfirmed(state),
                 OutpostConnectionStatus.Describe(state, Connection.LastDisconnectReason));

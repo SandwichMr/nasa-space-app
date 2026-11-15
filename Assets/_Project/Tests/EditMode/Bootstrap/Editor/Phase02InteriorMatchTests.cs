@@ -181,7 +181,12 @@ public sealed class Phase02InteriorMatchTests
         if (owned) untitled = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
         try
         {
-            Assert.That(SceneManager.SetActiveScene(untitled), Is.True);
+            // Unity 6000.3 returns false from SetActiveScene for the scene that is ALREADY active (the batch
+            // runner's only untitled scene), so only a real switch is asserted; the requirement itself is
+            // that the audit runs with the untitled scene active.
+            if (SceneManager.GetActiveScene() != untitled)
+                Assert.That(SceneManager.SetActiveScene(untitled), Is.True, "Cannot activate the untitled scene.");
+            Assert.That(SceneManager.GetActiveScene(), Is.EqualTo(untitled), "The audit must run with the untitled scene active.");
             Assert.That(untitled.path, Is.Empty, "Reproduce the native untitled/unsaved context.");
             if (owned) EditorSceneManager.MarkSceneDirty(untitled);
             check();
