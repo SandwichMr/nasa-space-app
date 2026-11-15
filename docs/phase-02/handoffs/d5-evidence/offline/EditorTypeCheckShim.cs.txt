@@ -1,0 +1,13 @@
+// COMPILE-ONLY SHIM (scratch, not delivered): signatures of phase 1 Editor types referenced by
+// Phase02BuildChecks, copied from Editor/Build/PhaseOneBuildChecks.cs and Editor/Validation/PhaseOneIntegrationChecks.cs.
+using System; using System.Collections.Generic; using Trainer.Application;
+namespace Trainer.Tooling.BuildChecks {
+  public enum CheckStatus { Passed, Failed, Pending, Info }
+  public sealed class CheckOutcome { public string Name { get; } public string Kind { get; } public CheckStatus Status { get; } public string Detail { get; }
+    public CheckOutcome(string name, string kind, CheckStatus status, string detail) { Name = name; Kind = kind; Status = status; Detail = detail; } }
+  public static class PhaseOneBuildChecks { public const string PhaseOneScenePrefix = "Phase01_"; public static readonly string[] TemplateScenes = { }; }
+  public static class PhaseOneContractChecks { public static List<CheckOutcome> RunValidatorChecks() => null; public static List<CheckOutcome> RunFakeSessionChecks(Func<ISessionPort> factory) => null; }
+  public static class PhaseOneAssetAudit { public static List<CheckOutcome> AuditMissionScenes(string[] s) => null; public static List<CheckOutcome> AuditPrefabs() => null; }
+}
+namespace Trainer.Tooling.Validation { public static class PhaseOneIntegrationChecks {
+  public static List<Trainer.Tooling.BuildChecks.CheckOutcome> RunRealSessionChecks() => null; public static List<Trainer.Tooling.BuildChecks.CheckOutcome> RunLoopbackChecks() => null; } }
