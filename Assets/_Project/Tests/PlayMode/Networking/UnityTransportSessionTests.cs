@@ -514,7 +514,7 @@ public sealed class UnityTransportSessionTests
 
         var desktop = new WebSocketClientOptions();
         bool connect = SessionNetworkArguments.Apply(desktop,
-            new[] { "client", "-trainer-server", "game.example.org", "-trainer-port", "443", "-trainer-secure", "-trainer-connect" });
+            new[] { "client", "-trainer-role", "client", "-trainer-server", "game.example.org", "-trainer-port", "443", "-trainer-secure", "-trainer-connect" });
         Assert.That(connect, Is.True);
         Assert.That((desktop.Address, desktop.Port, desktop.Secure), Is.EqualTo(("game.example.org", 443, true)));
         Assert.Throws<ArgumentException>(() => SessionNetworkArguments.Apply(desktop, new[] { "-trainer-port", "70000" }));
@@ -527,6 +527,12 @@ public sealed class UnityTransportSessionTests
         var local = new WebSocketClientOptions { Address = "" };
         SessionNetworkArguments.ApplyPageUrl(local, "http://127.0.0.1:8000/index.html?server=10.0.0.5&path=%2Fgame");
         Assert.That((local.Address, local.Secure, local.Path), Is.EqualTo(("10.0.0.5", false, "/game")));
+        var explicitSecure = new WebSocketClientOptions();
+        connect = SessionNetworkArguments.ApplyPageUrl(explicitSecure,
+            "https://game.example.org/index.html?server=base.example.org&port=443&path=%2Ftrainer&secure=1&connect=1");
+        Assert.That(connect, Is.True);
+        Assert.That((explicitSecure.Address, explicitSecure.Port, explicitSecure.Secure, explicitSecure.Path),
+            Is.EqualTo(("base.example.org", 443, true, "/trainer")));
     }
 
     [Test]

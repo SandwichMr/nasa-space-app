@@ -80,6 +80,7 @@ namespace Trainer.Unity.Presentation.Editor
         private static void CheckBehavior()
         {
             hud = Spawn(Phase01VisualAssets.HudPath).GetComponent<MissionHUD>();
+            hud.ConfigureMission(new MissionRules(8, 300)); // Explicit rules for the fake-only capture fixture.
             room = Spawn(Phase01VisualAssets.RoomPath).GetComponent<PowerRoomView>();
             var stations = room.GetComponentsInChildren<PowerStationView>();
             Check(stations.Length == 3, "Three real station instances");

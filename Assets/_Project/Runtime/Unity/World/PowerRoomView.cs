@@ -47,6 +47,17 @@ namespace Trainer.Unity.World
             if (CanRequestScience) hud.SetScienceEnabled(enabled);
         }
 
+        /// <summary>Pixel viewport reserved for existing room sprites; no authoring camera is modified.</summary>
+        public static Rect CalculateViewport(int width, int height, float hudRight)
+        {
+            float left = System.Math.Min(hudRight + 12, System.Math.Max(0, width - 1));
+            float bottom = System.Math.Min(170, System.Math.Max(0, height - 1));
+            return new Rect(left, bottom, System.Math.Max(1, width - left - 12), System.Math.Max(1, height - bottom - 136));
+        }
+
+        public static float StationLabelWidth(float nearestStationPixels) =>
+            System.Math.Min(216, System.Math.Max(1, nearestStationPixels - 12));
+
         private void OnEnable() { Attach(); }
         private void OnDisable() { Detach(); selected = null; ClearVisuals(); }
         private void OnDestroy() { Detach(); }
@@ -93,9 +104,18 @@ namespace Trainer.Unity.World
                 Vector3 screen = viewCamera.WorldToScreenPoint(station.transform.position);
                 if (screen.z <= 0 || !viewCamera.pixelRect.Contains(new Vector2(screen.x, screen.y))) continue;
                 // Named buttons and sprite hit areas use the existing IMGUI input stack.
-                var rect = new Rect(screen.x - 108, Screen.height - screen.y + 88, 216, 104);
+                float nearest = float.PositiveInfinity;
+                foreach (var other in stations)
+                {
+                    if (other == null || other == station) continue;
+                    float distance = Mathf.Abs(viewCamera.WorldToScreenPoint(other.transform.position).x - screen.x);
+                    if (distance > 0) nearest = Mathf.Min(nearest, distance);
+                }
+                float labelWidth = StationLabelWidth(nearest);
+                var rect = new Rect(screen.x - labelWidth / 2, Screen.height - screen.y + 88, labelWidth, 116);
                 if (hud != null && rect.Overlaps(hud.PanelRect)) continue;
-                var spriteRect = new Rect(screen.x - 80, Screen.height - screen.y - 80, 160, 160);
+                float hitWidth = Mathf.Min(160, labelWidth);
+                var spriteRect = new Rect(screen.x - hitWidth / 2, Screen.height - screen.y - 80, hitWidth, 160);
                 if ((hud == null || !spriteRect.Overlaps(hud.PanelRect)) &&
                     GUI.Button(spriteRect, GUIContent.none, GUIStyle.none)) SelectStation(station.Kind);
                 GUI.color = station.IsSelected ? new Color(1f, .85f, .48f) : Color.white;

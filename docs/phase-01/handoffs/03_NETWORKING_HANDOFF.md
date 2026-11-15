@@ -5,7 +5,16 @@
 > **No** probado: cliente WebGL en navegador, TLS/wss, dos equipos (LAN), Internet ni escenas de D2/D4.
 > El resto de pruebas queda para la integración de las 5 D, como pidió el usuario.
 
-## Base y rama
+> Actualización de integración, 2026-11-14: la escena `Phase01_PowerCoop` ya incluye host y cliente reales. `MissionSceneComposition` conecta el estado/puerto remoto al HUD y retira listeners al deshabilitar/destruir. Conexión por argumentos o botón; reintento manual, sin autoridad local en Client. El HUD conserva motivos de conexión. El log del host distingue ws de wss. Esta corrección compiló C# fuera de Unity; no ejecutó sockets, players ni navegador. Las pruebas de sockets/3 procesos que se describen más abajo son evidencia HISTÓRICA de D3, no de esta corrección.
+>
+> Receta actual para host con jugador local: `./Phase1Check.x86_64 -trainer-role authority -trainer-port 7777`.
+> Cliente desktop: `./Phase1Check.x86_64 -trainer-role client -trainer-server 127.0.0.1 -trainer-port 7777 -trainer-connect`.
+> Web por HTTP, ws explícito: `?server=IP&port=7777&path=/&secure=0&connect=1`.
+> Web por HTTPS, wss explícito: `?server=dominio&port=443&path=/trainer&secure=1&connect=1`; requiere ese endpoint TLS/path configurado y accesible. No se configuró ningún servicio. El puerto público puede diferir del 7777 interno tras un proxy.
+>
+> `connectOnStart=0` en la escena: sin argumento/query el usuario usa Conectar/reintentar. El binding y UTP 2.7.4 ya existen; los pendientes actuales son ejecución del wiring, build, dos procesos y navegador/TLS. No añadir otra suscripción manual al HUD encima de la composición.
+
+## Base y rama de la entrega original (registro histórico)
 
 - Rama `feature/phase-01/d03-multiplayer`, creada desde `main` = `0f05e38` (`origin/main`). Cambios **sin commit**,
   sin push ni merge.
@@ -117,7 +126,7 @@ host.Diagnostic += (connectionId, code) => Debug.Log($"[red] {connectionId}: {co
 // Sin MissionBootstrap: listenOnStart=false; host.Configure(opts); host.StartHost(); host.Attach(authority);
 ```
 
-Cliente (escena de jugador; desktop o WebGL):
+Cliente (ejemplo de composición manual para otra escena; la escena entregada ya lo hace, no duplicar):
 
 ```csharp
 // GameObject con SessionNetworkClient. Configure(...) solo antes del primer Connect (antes de su Start).
@@ -139,7 +148,7 @@ Opciones: Inspector (`WebSocketHostOptions`/`WebSocketClientOptions`) o argument
 | Lado | Argumentos |
 | --- | --- |
 | Servidor | `-trainer-bind 0.0.0.0` · `-trainer-port 7777` · `-trainer-path /` · `-trainer-cert fullchain.pem -trainer-key privkey.pem` (wss directo) |
-| Cliente desktop | `-trainer-server HOST` · `-trainer-port N` · `-trainer-path /p` · `-trainer-secure` · `-trainer-server-name NOMBRE` · `-trainer-connect` |
+| Cliente desktop | `-trainer-role client` · `-trainer-server HOST` · `-trainer-port N` · `-trainer-path /p` · `-trainer-secure` · `-trainer-server-name NOMBRE` · `-trainer-connect` |
 | Cliente WebGL (query de la página) | `?server=HOST&port=N&path=/p&secure=1&serverName=NOMBRE&connect=1` |
 
 En WebGL, con `Address` **vacío** en el Inspector se usa el host que sirvió la página y `wss` si es HTTPS. El
@@ -284,8 +293,9 @@ Partida de 3 procesos. Arnés temporal, **no entregado**: monta en runtime `Miss
 1. Abrir con Unity 6000.3.28f1. En la copia, `com.unity.transport` 2.7.4 se resolvió sin errores.
 2. Test Runner → PlayMode: `UnityTransportSessionTests` (19) y `NetworkSessionAdapterTests` (34).
 3. Build Linux del servidor y ejecutarlo como en la receta de despliegue. Cliente desktop:
-   `-trainer-server <host> -trainer-port 7777 -trainer-connect`. Cliente WebGL:
-   `…/index.html?server=<host>&port=7777&connect=1` (o `Address` vacío y HTTPS ⇒ wss al mismo host).
+   `-trainer-role client -trainer-server <host> -trainer-port 7777 -trainer-connect`. Cliente WebGL por HTTP/ws:
+   `…/index.html?server=<host>&port=7777&secure=0&connect=1`. Por HTTPS/wss:
+   `…/index.html?server=<dominio>&port=443&path=/trainer&secure=1&connect=1` (endpoint TLS/path configurado).
 4. Comprobar con dos clientes: misma batería, revisión y resultado; ambos pueden actuar; el resultado solo le
    llega al remitente; Restart lleva a ambos a época+1; matar el servidor ⇒ "Se perdió la conexión" en ambos;
    la reincorporación funciona.

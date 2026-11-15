@@ -93,6 +93,7 @@ namespace Trainer.Tests.UI
             Check(asset != null, "prefab exists");
             hud = Instantiate(asset).GetComponent<MissionHUD>();
             Check(hud != null && hud.Snapshot == null, "prefab starts without authority");
+            hud.ConfigureMission(new MissionRules(8, 300)); // Explicit fixture goal; the fake has no mission rules.
             var fake = new FakeSessionPort();
             hud.Bind(fake);
             Check(hud.Snapshot.State == SessionState.Ready, "initial snapshot binding");
@@ -100,7 +101,7 @@ namespace Trainer.Tests.UI
             hud.SetScienceEnabled(true);
             Check(hud.Snapshot.ScienceEnabled && !hud.IsPending && hud.CommandStatus.Contains("aceptada"), "synchronous result");
             fake.PublishExample(SessionState.Completed, 8);
-            Check(hud.ResultText.Contains("completada") && hud.ResultText.Contains("8 s"), "result from snapshot");
+            Check(hud.ResultText.Contains("Objetivo logrado") && hud.ResultText.Contains("8 / 8 s"), "result from snapshot and supplied rules");
             hud.SetScienceEnabled(false);
             Check(hud.CommandStatus.Contains("rechazada") && hud.Snapshot.ScienceEnabled, "rejection preserves state");
             hud.Restart();
@@ -141,8 +142,11 @@ namespace Trainer.Tests.UI
             fake.PublishExample(SessionState.Interrupted);
             Check(hud.Snapshot.State == SessionState.Paused, "old port detached");
             hud.SetConnectionStatus(false, "Lost");
-            Check(hud.Snapshot == null && delivery.SnapshotListeners == 0 && hud.ConnectionText.Contains("Desconectado"),
-                "disconnect erases retained data");
+            Check(hud.Snapshot == null && delivery.SnapshotListeners == 0 && hud.ConnectionText.Contains("Lost")
+                && hud.ConnectionText.Contains("Sin datos vigentes"), "disconnect erases data and retains reason");
+            int submitted = delivery.Submissions;
+            hud.Resume(); hud.SetScienceEnabled(true);
+            Check(delivery.Submissions == submitted && !hud.IsPending, "lost link admits no mission commands");
             delivery.ExposeSnapshot = false;
             hud.Bind(delivery);
             hud.Resume();
@@ -152,9 +156,10 @@ namespace Trainer.Tests.UI
             Check(hud.Snapshot.State == SessionState.Running, "first event supplies state");
             hud.Pause();
             Check(hud.IsPending, "deferred pause pending");
-            hud.Bind(null);
+            hud.SetConnectionStatus(false, "SyncTimeout");
             delivery.Flush();
-            Check(hud.Snapshot == null && !hud.IsPending && hud.CommandStatus == "Sin solicitudes.", "rebind invalidates pending results");
+            Check(hud.Snapshot == null && !hud.IsPending && hud.CommandStatus == "Sin solicitudes."
+                && hud.ConnectionText.Contains("SyncTimeout"), "loss invalidates pending results and preserves detail");
             delivery.ExposeSnapshot = true;
             hud.Bind(delivery);
             delivery.ThrowOnSubmit = true;

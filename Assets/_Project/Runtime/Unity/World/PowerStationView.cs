@@ -43,12 +43,12 @@ namespace Trainer.Unity.World
                 }
             }
             else if (kind == PowerStationKind.Essential)
-                StatusText = Format("Solicitado {0:0.##} W\nServido {1:0.##} W · Prioridad esencial",
+                StatusText = Format("Último paso medido\nSolicitado {0:0.##} W · Servido {1:0.##} W\nPrioridad esencial",
                     p.EssentialRequestedWatts, p.EssentialServedWatts);
             else
             {
                 StatusText = (snapshot.ScienceEnabled ? "Activada" : "Desactivada") + " · Confirmado\n" +
-                    Format("Solicitado {0:0.##} W · Servido {1:0.##} W", p.ScienceRequestedWatts, p.ScienceServedWatts);
+                    Format("Último paso medido\nSolicitado {0:0.##} W · Servido {1:0.##} W", p.ScienceRequestedWatts, p.ScienceServedWatts);
                 if (body != null && !snapshot.ScienceEnabled) body.color = new Color(.63f, .66f, .75f);
             }
         }

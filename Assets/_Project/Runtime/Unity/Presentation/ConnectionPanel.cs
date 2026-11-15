@@ -8,7 +8,8 @@ namespace Trainer.Unity.Presentation
 
         public void Show(bool assigned, string detail)
         {
-            Text = assigned ? "Puerto asignado · " + detail : "Desconectado · Sin datos vigentes.";
+            Text = assigned ? "Puerto asignado · " + detail :
+                (string.IsNullOrWhiteSpace(detail) ? "Desconectado" : detail) + " · Sin datos vigentes.";
         }
 
         public void Draw() { GUILayout.Label(Text, new GUIStyle(GUI.skin.label) { wordWrap = true }); }

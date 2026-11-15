@@ -649,11 +649,11 @@ namespace Trainer.Tooling.BuildChecks
             return new List<CheckOutcome>
             {
                 // Balance, pause, objective, epochs and two-client consistency are now exercised by the
-                // real-session and loopback checks; what remains needs pieces that do not exist yet.
+                // real-session and loopback checks. Static wiring is audited separately; these need execution.
                 new CheckOutcome("PermissionPolicyPerRole", kind, CheckStatus.Pending, "No team policy for who may pause/restart/toggle science; bridge has connectionId but no roles."),
-                new CheckOutcome("ConnectionFailureMessagesInHud", kind, CheckStatus.Pending, "Needs scene wiring (D2) of SessionConnectionController state into MissionHUD.SetConnectionStatus (D4)."),
-                new CheckOutcome("MissionSceneClicksAndLegibility", kind, CheckStatus.Pending, "Needs the mission scene (D2); then manual run at target resolution with two players."),
-                new CheckOutcome("RealBuildTwoInstances", kind, CheckStatus.Pending, "Needs mission scene, approved SDK binding and chosen topology; then BuildFromCommandLine and two running instances.")
+                new CheckOutcome("ConnectionFailureMessagesInHud", kind, CheckStatus.Pending, "Wiring is present; still requires running the mission with connection failure, timeout and rejoin. Managed/loopback checks do not certify the HUD lifecycle."),
+                new CheckOutcome("MissionSceneClicksAndLegibility", kind, CheckStatus.Pending, "Mission scene and room prefab exist; render/clicks require a graphics run at the target resolution (reference: 1280 x 800 or larger)."),
+                new CheckOutcome("RealBuildTwoInstances", kind, CheckStatus.Pending, "Unity Transport/WebSocket binding and mission scene exist. BuildFromCommandLine and a host plus client must still be run as separate processes; record the topology.")
             };
         }
 
@@ -744,15 +744,19 @@ namespace Trainer.Tooling.BuildChecks
                 outcomes.Add(new CheckOutcome("CameraInScene " + path, Kind,
                     cameras.Count >= 1 ? CheckStatus.Passed : CheckStatus.Failed, cameras.Count + " Camera"));
 
-                Type roomType = FindType("Trainer.Unity.World.PowerRoomView");
-                if (roomType == null)
-                    outcomes.Add(new CheckOutcome("PowerRoomInScene " + path, Kind, CheckStatus.Pending,
-                        "PowerRoomView is not compiled in this checkout (D4 room visuals not integrated)."));
+                var compositions = Components<Trainer.Unity.Bootstrap.MissionSceneComposition>(objects);
+                if (compositions.Count != 1)
+                    outcomes.Add(new CheckOutcome("MissionCompositionWired " + path, Kind, CheckStatus.Failed,
+                        compositions.Count + " MissionSceneComposition (expected exactly 1)"));
                 else
                 {
-                    int rooms = objects.Sum(o => o.GetComponents(roomType).Length);
-                    outcomes.Add(new CheckOutcome("PowerRoomInScene " + path, Kind,
-                        rooms >= 1 ? CheckStatus.Passed : CheckStatus.Failed, rooms + " PowerRoomView"));
+                    outcomes.Add(AuditComposition(compositions[0]));
+                    var hosts = Components<Trainer.Unity.Networking.SessionNetworkHost>(objects);
+                    var clients = Components<Trainer.Unity.Networking.SessionNetworkClient>(objects);
+                    var rooms = Components<Trainer.Unity.World.PowerRoomView>(objects);
+                    outcomes.Add(new CheckOutcome("MissionNetworkAndRoomCounts " + path, Kind,
+                        hosts.Count == 1 && clients.Count == 1 && rooms.Count == 1 ? CheckStatus.Passed : CheckStatus.Failed,
+                        hosts.Count + " host, " + clients.Count + " client, " + rooms.Count + " room (expected 1 each)"));
                 }
 
                 if (scenario != null)
@@ -776,6 +780,80 @@ namespace Trainer.Tooling.BuildChecks
                 if (openedHere && scene.IsValid())
                     UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
             }
+        }
+
+        /// <summary>Reads serialized wiring and role gates without entering PlayMode or opening sockets.</summary>
+        public static CheckOutcome AuditComposition(Trainer.Unity.Bootstrap.MissionSceneComposition composition)
+        {
+            var problems = new List<string>();
+            if (composition == null)
+                return new CheckOutcome("MissionCompositionWired", Kind, CheckStatus.Failed, "composition missing");
+            var data = new SerializedObject(composition);
+            var bootstrap = composition.Bootstrap;
+            var client = composition.NetworkClient;
+            var room = composition.Room;
+            var hud = composition.Hud;
+            var camera = composition.SceneCamera;
+            if (bootstrap == null) problems.Add("bootstrap missing");
+            if (client == null) problems.Add("networkClient missing");
+            if (hud == null || !hud.enabled || !hud.gameObject.activeInHierarchy) problems.Add("HUD missing/inactive");
+            if (camera == null || !camera.enabled || !camera.orthographic || !camera.gameObject.activeInHierarchy)
+                problems.Add("active orthographic sceneCamera missing");
+            if (!composition.enabled || !composition.gameObject.activeInHierarchy) problems.Add("composition inactive");
+            if (bootstrap != null)
+            {
+                var host = bootstrap.GetComponent<Trainer.Unity.Networking.SessionNetworkHost>();
+                var bootstrapData = new SerializedObject(bootstrap);
+                var runner = bootstrapData.FindProperty("runner").objectReferenceValue as Trainer.Unity.Bootstrap.SimulationRunner;
+                if (runner == null || !runner.enabled) problems.Add("runner missing/disabled");
+                else if (!RoleContains(data, "authorityOnly", runner.gameObject) || RoleContains(data, "clientOnly", runner.gameObject))
+                    problems.Add("runner outside authority role gate");
+                if (bootstrap.Scenario == null || bootstrap.Scenario.Validate() != null) problems.Add("scenario missing/invalid");
+                if (host == null || !host.enabled) problems.Add("network host missing/disabled on bootstrap");
+                else
+                {
+                    var hostData = new SerializedObject(host);
+                    if (hostData.FindProperty("bootstrap").objectReferenceValue != bootstrap) problems.Add("host bootstrap mismatch");
+                    if (!hostData.FindProperty("listenOnStart").boolValue) problems.Add("host does not listen on start");
+                }
+                if (!bootstrap.enabled || !RoleContains(data, "authorityOnly", bootstrap.gameObject)
+                    || RoleContains(data, "clientOnly", bootstrap.gameObject) || bootstrap.gameObject.activeInHierarchy)
+                    problems.Add("authority must be saved inactive in authorityOnly, outside clientOnly");
+            }
+            if (client != null && (!client.enabled || !RoleContains(data, "clientOnly", client.gameObject)
+                || RoleContains(data, "authorityOnly", client.gameObject) || client.gameObject.activeInHierarchy))
+                problems.Add("client must be saved inactive in clientOnly, outside authorityOnly");
+            if (RoleContains(data, "authorityOnly", composition.gameObject) || RoleContains(data, "clientOnly", composition.gameObject))
+                problems.Add("role gate contains the composition itself");
+            if (room == null || !room.enabled || !room.gameObject.activeInHierarchy) problems.Add("room missing/inactive");
+            else
+            {
+                var roomData = new SerializedObject(room);
+                if (roomData.FindProperty("hud").objectReferenceValue != hud || hud == null) problems.Add("room HUD mismatch");
+                if (roomData.FindProperty("viewCamera").objectReferenceValue != camera || camera == null) problems.Add("room camera mismatch");
+                var stations = room.GetComponentsInChildren<Trainer.Unity.World.PowerStationView>(true);
+                if (stations.Length != 3 || stations.Select(s => s.Kind).Distinct().Count() != 3)
+                    problems.Add("room needs the three different stations");
+                SerializedProperty linked = roomData.FindProperty("stations");
+                if (linked.arraySize != 3 || Enumerable.Range(0, linked.arraySize)
+                    .Any(i => !stations.Contains(linked.GetArrayElementAtIndex(i).objectReferenceValue as Trainer.Unity.World.PowerStationView))
+                    || Enumerable.Range(0, linked.arraySize).Select(i => linked.GetArrayElementAtIndex(i).objectReferenceValue).Distinct().Count() != 3)
+                    problems.Add("room station references incomplete");
+            }
+            return new CheckOutcome("MissionCompositionWired", Kind, problems.Count == 0 ? CheckStatus.Passed : CheckStatus.Failed,
+                problems.Count == 0 ? "host/bootstrap/runner, client role, room/HUD/camera and three stations assigned; runtime execution still required"
+                    : string.Join("; ", problems));
+        }
+
+        private static bool RoleContains(SerializedObject data, string field, UnityEngine.GameObject target)
+        {
+            SerializedProperty array = data.FindProperty(field);
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                var root = array.GetArrayElementAtIndex(i).objectReferenceValue as UnityEngine.GameObject;
+                if (root != null && (target == root || target.transform.IsChildOf(root.transform))) return true;
+            }
+            return false;
         }
 
         public static List<CheckOutcome> AuditPrefabs()
@@ -870,6 +948,7 @@ namespace Trainer.Tooling.BuildChecks
                 {
                     string guid = match.Groups[1].Value;
                     references++;
+                    if (guid == "0000000000000000e000000000000000" || guid == "0000000000000000f000000000000000") continue;
                     if (string.IsNullOrEmpty(AssetDatabase.GUIDToAssetPath(guid)) && !unresolved.Contains(guid)) unresolved.Add(guid);
                 }
             }

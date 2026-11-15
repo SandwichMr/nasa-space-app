@@ -6,7 +6,9 @@ Base comprobada: `0f05e3874c16a5bd8700a6d9f95d2475ba83369f` (`main` al iniciar,
 por esta entrega de arte/sala; conserva su implementación funcional IMGUI.
 D4 está listo para conectar. Esto **no** certifica la fase integrada ni multiplayer.
 
-## Archivos de esta entrega
+> Actualización tras revisión (2026-11-14): la escena de misión ya instancia este prefab y llama a `room.Connect(hud, camera)` desde el compositor. El HUD recibe reglas/objetivo y distingue éxito, tiempo agotado e interrupción; muestra meta/restante. Las potencias de HUD/estaciones dicen «último paso medido», sin modificar la física. La conexión sin confirmar conserva su detalle y limpia datos/pendientes; el cliente tiene botones de conexión/reintento. El encuadre runtime reserva HUD/cabecera/controles. Son cambios de código/YAML comprobados con compilación managed y auditoría estática; el render/clics y ciclo de vida Unity de esta versión siguen SIN EJECUTAR. Las capturas/checks originales de abajo son históricos y usan fake, no certifican el wiring actual.
+
+## Archivos de la entrega original
 
 - `Assets/_Project/Runtime/Unity/Presentation/MissionHUD.cs`: binding previo,
   más aviso `PresentationChanged` para observadores visuales y ancho serializado.
@@ -60,7 +62,9 @@ Nombres, J, W, ciencia activada/desactivada, solicitado/servido y estado pendien
 son texto: el significado no depende solo del color. El servicio sigue siendo
 una carga eléctrica abstracta, sin afirmaciones de atmósfera ni fisiología.
 
-## Conexión de D2
+## Conexión actual y API reutilizable
+
+La escena de misión ya realiza esta composición. El ejemplo siguiente sirve para otra escena; no duplicar el wiring ni sus listeners.
 
 Instanciar `Prefabs/UI/MissionHUD.prefab` y `Prefabs/World/PowerRoom.prefab` en la
 escena compartida **solo desde la integración de D2**. Asignar las referencias por
@@ -73,6 +77,7 @@ using Trainer.Unity.World;
 
 // hud y room: componentes de las instancias; sceneCamera: cámara elegida por D2.
 // sessionPort: ISessionPort de la autoridad/adaptador existente, en hilo principal.
+hud.ConfigureMission(composition.Rules, composition.DescribeOutcome);
 room.Connect(hud, sceneCamera);
 hud.Bind(sessionPort);
 hud.SetConnectionStatus(true, "Conexión confirmada por el adaptador");
@@ -177,14 +182,14 @@ Los mensajes iniciales de licencia no impidieron las ejecuciones finales.
 
 ## Repetir
 
-Cerrar primero cualquier Editor que ya tenga este proyecto abierto. Para revisar
+Usar solo la copia aislada y no cerrar instancias ajenas. Si esta copia está abierta en otro proceso, terminar únicamente una instancia propia de prueba antes de lanzarla. Para revisar
 assets existentes no hace falta reconstruirlos. La reconstrucción explícita
 reescribe únicamente los prefabs/ajustes de importación propios de D4; no usarla
 para preservar posteriores ajustes artísticos manuales en esos mismos assets.
 
 ```sh
 UNITY='/home/leonardo/Unity/Hub/Editor/6000.3.28f1/Editor/Unity'
-PROJECT='/home/leonardo/My project'
+PROJECT="$PWD" # Ejecutar desde la copia aislada, nunca desde el original
 
 # Opcional: regenerar importación y prefabs de D4 con GUID administrados por Unity.
 "$UNITY" -batchmode -nographics -projectPath "$PROJECT" \
@@ -210,7 +215,7 @@ comprobar comportamientos mediante el mismo runner con `-batchmode -nographics`;
 se omiten las capturas y su conteo de checks es menor. No presentar eso como prueba
 visual. Si se desean conservar capturas en el repositorio, copiar solo las revisadas.
 
-Pendiente para D2/D3/D5: cableado en escena compartida al puerto real, comprobación
-de clics físicos y resoluciones objetivo, build y dos clientes reales. Los checks
+Cableado de escena al puerto real implementado tras la revisión. Pendiente de ejecución:
+clics físicos, render en resoluciones objetivo, build y participantes en procesos reales. Los checks
 llaman las mismas acciones públicas que los botones; no simulan ratón/mando.
 No se ejecutaron build ni multiplayer en esta entrega, ni se certifica Internet.

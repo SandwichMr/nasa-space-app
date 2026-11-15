@@ -72,7 +72,8 @@ namespace Trainer.Unity.Networking
             }
             Transport = transport;
             Transport.ConnectionClosed += OnConnectionClosed;
-            Debug.Log($"[SessionNetworkHost] Listening on ws://{effective.BindAddress}:{Transport.Port}{effective.Path}");
+            string scheme = string.IsNullOrEmpty(effective.CertificatePemPath) ? "ws" : "wss";
+            Debug.Log($"[SessionNetworkHost] Listening on {scheme}://{effective.BindAddress}:{Transport.Port}{effective.Path}");
             if (bootstrap != null)
             {
                 bootstrap.Composed += OnComposed;

@@ -12,7 +12,7 @@ namespace Trainer.Unity.Presentation
         {
             Text = power == null ? "Batería y cargas: esperando estado." : string.Format(
                 CultureInfo.InvariantCulture,
-                "Batería: {0:0.##} / {1:0.##} J\nGeneración: {2:0.##} W\n" +
+                "Batería: {0:0.##} / {1:0.##} J\nPotencias del último paso medido (Reset: lectura inicial).\nGeneración: {2:0.##} W\n" +
                 "Carga esencial — solicitada: {3:0.##} W · servida: {4:0.##} W\n" +
                 "Ciencia — solicitada: {5:0.##} W · servida: {6:0.##} W",
                 power.EnergyJoules, power.CapacityJoules, power.GenerationWatts,

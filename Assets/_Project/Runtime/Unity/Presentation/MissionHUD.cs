@@ -18,6 +18,10 @@ namespace Trainer.Unity.Presentation
         private readonly PowerPanel power = new PowerPanel();
         private readonly ScienceControls science = new ScienceControls();
         private readonly ResultPanel result = new ResultPanel();
+        private MissionRules rules;
+        private Func<MissionSnapshot, MissionOutcome?> describeOutcome;
+        private Action connectAction, disconnectAction;
+        private bool canConnect, canDisconnect;
 
         public MissionSnapshot Snapshot { get; private set; }
         public bool IsPending => pending != null;
@@ -30,6 +34,23 @@ namespace Trainer.Unity.Presentation
         public event Action PresentationChanged;
         public Rect PanelRect => new Rect(12, 12, Mathf.Min(panelWidth, Mathf.Max(200, Screen.width - 24)),
             Mathf.Max(100, Screen.height - 24));
+
+        /// <summary>Presentation inputs only: never advances or evaluates a separate client simulation.</summary>
+        public void ConfigureMission(MissionRules missionRules, Func<MissionSnapshot, MissionOutcome?> outcome = null)
+        {
+            rules = missionRules;
+            describeOutcome = outcome;
+            RefreshResult();
+            PresentationChanged?.Invoke();
+        }
+
+        public void ConfigureConnectionActions(Action connect, Action disconnect, bool allowConnect, bool allowDisconnect)
+        {
+            connectAction = connect;
+            disconnectAction = disconnect;
+            canConnect = allowConnect;
+            canDisconnect = allowDisconnect;
+        }
 
         /// <summary>Also use Bind(null) on transport loss. Rebinding invalidates all retained observations.</summary>
         public void Bind(ISessionPort sessionPort)
@@ -45,15 +66,21 @@ namespace Trainer.Unity.Presentation
         /// Reconnection requires Bind(port) again; this UI does not implement a network protocol.</summary>
         public void SetConnectionStatus(bool connected, string detail)
         {
-            if (!connected) { Bind(null); return; }
-            connectionDetail = string.IsNullOrWhiteSpace(detail) ? "Conexión confirmada externamente" : detail;
+            if (!connected) Bind(null);
+            connectionDetail = string.IsNullOrWhiteSpace(detail)
+                ? (connected ? "Conexión confirmada externamente" : "Desconectado") : detail;
             connection.Show(isActiveAndEnabled && port != null, connectionDetail);
             PresentationChanged?.Invoke();
         }
 
         private void OnEnable() { Clear(); Attach(); }
         private void OnDisable() { Detach(); Clear(); connectionDetail = "Transporte sin verificar"; }
-        private void OnDestroy() { Detach(); port = null; PresentationChanged = null; }
+        private void OnDestroy()
+        {
+            Detach(); port = null; describeOutcome = null;
+            connectAction = disconnectAction = null;
+            PresentationChanged = null;
+        }
 
         private void Attach()
         {
@@ -117,9 +144,11 @@ namespace Trainer.Unity.Presentation
             Snapshot = value;
             power.Show(value.Power);
             science.Show(value);
-            result.Show(value);
+            RefreshResult();
             PresentationChanged?.Invoke();
         }
+
+        private void RefreshResult() => result.Show(Snapshot, rules, Snapshot == null ? null : describeOutcome?.Invoke(Snapshot));
 
         private void ReceiveResult(CommandResult value)
         {
@@ -165,6 +194,15 @@ namespace Trainer.Unity.Presentation
             scroll = GUILayout.BeginScrollView(scroll);
             GUILayout.Label("ENTRENADOR DE MISIÓN · Energía y ciencia");
             connection.Draw();
+            if (connectAction != null || disconnectAction != null)
+            {
+                bool enabled = GUI.enabled;
+                GUI.enabled = enabled && canConnect;
+                if (GUILayout.Button("Conectar / reintentar", GUILayout.MinHeight(32))) connectAction?.Invoke();
+                GUI.enabled = enabled && canDisconnect;
+                if (GUILayout.Button("Desconectar", GUILayout.MinHeight(32))) disconnectAction?.Invoke();
+                GUI.enabled = enabled;
+            }
             GUILayout.Space(12);
             result.Draw();
             GUILayout.Space(12);

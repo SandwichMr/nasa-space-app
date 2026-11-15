@@ -541,8 +541,8 @@ namespace Trainer.Tooling.Validation
             }));
 
             outcomes.Add(new CheckOutcome("TwoProcessesOverApprovedSdk", CheckKinds.RealConnection, CheckStatus.Pending,
-                "No networking SDK approved: ISessionHostTransport/ISessionClientTransport have no binding. "
-                + "Loopback results above prove wiring only, not a network."));
+                "Unity Transport 2.7.4/WebSocket binding exists. This runner has not launched two processes over it. "
+                + "Run the mission host/client build separately; loopback results above prove protocol wiring only, not sockets or a network."));
             return outcomes;
         }
     }

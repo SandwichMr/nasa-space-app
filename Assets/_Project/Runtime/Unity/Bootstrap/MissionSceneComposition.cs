@@ -3,6 +3,8 @@ using Trainer.Application;
 using Trainer.Simulation;
 using Trainer.Unity.Configuration;
 using Trainer.Unity.Presentation;
+using Trainer.Unity.Networking;
+using Trainer.Unity.World;
 using UnityEngine;
 
 namespace Trainer.Unity.Bootstrap
@@ -26,8 +28,8 @@ namespace Trainer.Unity.Bootstrap
     /// A WebGL player is always a Client (it cannot host). Role-specific objects should be saved inactive in
     /// the scene; this component activates the ones of the resolved role in Awake, before their Start.
     ///
-    /// Network adapters are not referenced here: the client network component reports its port and link state
-    /// through <see cref="PresentRemoteSession"/>, and a host network component follows
+    /// The client network component reports its port and link state through PresentRemoteSession;
+    /// the host network component follows
     /// <see cref="MissionBootstrap.Composed"/>/<see cref="MissionBootstrap.ShutDown"/>.
     /// </summary>
     [DisallowMultipleComponent]
@@ -44,6 +46,9 @@ namespace Trainer.Unity.Bootstrap
         private MissionBootstrap bootstrap;
         [SerializeField, Tooltip("Optional HUD instance (D4 prefab).")]
         private MissionHUD hud;
+        [SerializeField] private SessionNetworkClient networkClient;
+        [SerializeField] private PowerRoomView room;
+        [SerializeField] private Camera sceneCamera;
         [SerializeField, Tooltip("On the authority, bind the HUD to the local session port (host with UI / local run).")]
         private bool bindLocalHud = true;
         [SerializeField, Tooltip("Objects that exist only in the authority process (bootstrap, runner, network host).")]
@@ -53,6 +58,8 @@ namespace Trainer.Unity.Bootstrap
 
         private bool roleApplied;
         private ISessionPort presented;
+        private SessionNetworkClient subscribedClient;
+        private int viewportWidth = -1, viewportHeight = -1;
 
         /// <summary>Role resolved in Awake (or by <see cref="ApplyRole"/>).</summary>
         public MissionProcessRole Role { get; private set; }
@@ -65,6 +72,9 @@ namespace Trainer.Unity.Bootstrap
 
         public MissionBootstrap Bootstrap => bootstrap;
         public MissionHUD Hud => hud;
+        public SessionNetworkClient NetworkClient => networkClient;
+        public PowerRoomView Room => room;
+        public Camera SceneCamera => sceneCamera;
 
         /// <summary>Scenario rules known to this build. Clients use them only to describe a published snapshot
         /// (see <see cref="DescribeOutcome"/>); they never evaluate or advance the mission.</summary>
@@ -115,6 +125,25 @@ namespace Trainer.Unity.Bootstrap
             if (Role == MissionProcessRole.Authority) ComposeAuthority();
         }
 
+        private void OnEnable() => AttachBindings();
+
+        private void OnDisable() => DetachBindings();
+
+        private void LateUpdate()
+        {
+            if (room == null || sceneCamera == null || hud == null || !sceneCamera.orthographic) return;
+            if (viewportWidth == Screen.width && viewportHeight == Screen.height) return;
+            viewportWidth = Screen.width;
+            viewportHeight = Screen.height;
+            Rect viewport = PowerRoomView.CalculateViewport(viewportWidth, viewportHeight, hud.PanelRect.xMax);
+            sceneCamera.pixelRect = viewport;
+            sceneCamera.aspect = viewport.width / viewport.height;
+            // Existing room art is 12 x 8 units. Fit it in the space between HUD/header/controls.
+            sceneCamera.orthographicSize = Mathf.Max(4.4f, 6.4f / sceneCamera.aspect);
+            Vector3 position = sceneCamera.transform.position;
+            sceneCamera.transform.position = new Vector3(room.transform.position.x, room.transform.position.y, position.z);
+        }
+
         /// <summary>Fixes the role once and enables only that role's objects. Called by Awake; public for tests
         /// and for a composition that is created from code.</summary>
         public void ApplyRole(MissionProcessRole value)
@@ -130,6 +159,7 @@ namespace Trainer.Unity.Bootstrap
             // Disable first so a client never runs authority Start (e.g. a network host would listen).
             SetActive(value == MissionProcessRole.Authority ? clientOnly : authorityOnly, false);
             SetActive(value == MissionProcessRole.Authority ? authorityOnly : clientOnly, true);
+            AttachBindings();
             Debug.Log($"[MissionSceneComposition] Role: {value}");
         }
 
@@ -141,16 +171,12 @@ namespace Trainer.Unity.Bootstrap
             if (Role != MissionProcessRole.Authority)
                 throw new InvalidOperationException("Only the authority composes a mission session.");
             if (bootstrap == null) throw new InvalidOperationException("MissionBootstrap not assigned.");
+            AttachBindings();
             if (bootstrap.Session != null) return bootstrap.Session;
-
-            bootstrap.ShutDown -= OnAuthorityShutDown;
-            bootstrap.ShutDown += OnAuthorityShutDown;
             // The only place the authoritative simulation is created; MissionSession is its only caller.
             MissionSession session = bootstrap.Compose(CreateSimulation());
             ScenarioDefinition scenario = bootstrap.Scenario;
             Debug.Log($"[MissionSceneComposition] Mission composed: '{scenario.DisplayName}'. {scenario.Provenance}");
-            if (hud != null && bindLocalHud) Present(session, true, LocalAuthorityDetail);
-            AuthorityComposed?.Invoke(session);
             return session;
         }
 
@@ -180,6 +206,67 @@ namespace Trainer.Unity.Bootstrap
 
         private static IPowerSimulation CreateSimulation() => new PowerSystem();
 
+        private void AttachBindings()
+        {
+            if (!roleApplied || !isActiveAndEnabled) return;
+            if (hud != null) hud.ConfigureMission(Rules, DescribeOutcome);
+            if (room != null) room.Connect(hud, sceneCamera);
+            viewportWidth = viewportHeight = -1;
+            if (Role == MissionProcessRole.Authority)
+            {
+                if (bootstrap == null) return;
+                bootstrap.Composed -= OnAuthorityComposed;
+                bootstrap.Composed += OnAuthorityComposed;
+                bootstrap.ShutDown -= OnAuthorityShutDown;
+                bootstrap.ShutDown += OnAuthorityShutDown;
+                if (bootstrap.Session != null && bindLocalHud) Present(bootstrap.Session, true, LocalAuthorityDetail);
+                if (hud != null) hud.ConfigureConnectionActions(null, null, false, false);
+            }
+            else if (networkClient != null)
+            {
+                if (subscribedClient != null) subscribedClient.ConnectionStatusChanged -= OnRemoteStatus;
+                subscribedClient = networkClient;
+                subscribedClient.ConnectionStatusChanged += OnRemoteStatus;
+                OnRemoteStatus(SessionConnectionStatus.IsConfirmed(networkClient.State),
+                    SessionConnectionStatus.Describe(networkClient.State, networkClient.Connection?.LastDisconnectReason));
+            }
+        }
+
+        private void DetachBindings()
+        {
+            if (subscribedClient != null) subscribedClient.ConnectionStatusChanged -= OnRemoteStatus;
+            subscribedClient = null;
+            if (bootstrap != null)
+            {
+                bootstrap.Composed -= OnAuthorityComposed;
+                bootstrap.ShutDown -= OnAuthorityShutDown;
+            }
+            if (room != null) room.Connect(null, null);
+            presented = null;
+            if (hud != null)
+            {
+                hud.ConfigureConnectionActions(null, null, false, false);
+                hud.SetConnectionStatus(false, "Presentación de misión detenida");
+                hud.ConfigureMission(null);
+            }
+        }
+
+        private void OnRemoteStatus(bool confirmed, string detail)
+        {
+            if (!isActiveAndEnabled || Role != MissionProcessRole.Client || networkClient == null) return;
+            PresentRemoteSession(networkClient.Session, confirmed, detail);
+            SessionConnectionState state = networkClient.State;
+            if (hud != null) hud.ConfigureConnectionActions(networkClient.Connect, networkClient.Disconnect,
+                state == SessionConnectionState.Disconnected || state == SessionConnectionState.ConnectionLost,
+                state != SessionConnectionState.Disconnected && state != SessionConnectionState.ConnectionLost);
+        }
+
+        private void OnAuthorityComposed(MissionSession session)
+        {
+            if (bindLocalHud) Present(session, true, LocalAuthorityDetail);
+            AuthorityComposed?.Invoke(session);
+        }
+
         private void Present(ISessionPort port, bool confirmed, string detail)
         {
             if (hud == null)
@@ -206,10 +293,7 @@ namespace Trainer.Unity.Bootstrap
             if (ReferenceEquals(presented, session)) Present(null, false, AuthorityStoppedDetail);
         }
 
-        private void OnDestroy()
-        {
-            if (bootstrap != null) bootstrap.ShutDown -= OnAuthorityShutDown;
-        }
+        private void OnDestroy() => DetachBindings();
 
         private static void SetActive(GameObject[] objects, bool active)
         {

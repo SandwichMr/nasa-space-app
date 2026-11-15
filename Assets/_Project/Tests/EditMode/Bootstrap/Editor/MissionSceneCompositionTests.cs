@@ -7,6 +7,9 @@ using Trainer.Simulation;
 using Trainer.Unity.Bootstrap;
 using Trainer.Unity.Configuration;
 using Trainer.Unity.Presentation;
+using Trainer.Unity.Networking;
+using Trainer.Unity.World;
+using Trainer.Tooling.BuildChecks;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -89,6 +92,9 @@ public sealed class MissionSceneCompositionTests
             Is.EqualTo(MissionProcessRole.Client));
         Assert.That(MissionSceneComposition.ResolveRole(MissionProcessRole.Authority,
             new[] { "game", "-trainer-role", "client" }, false), Is.EqualTo(MissionProcessRole.Client));
+        Assert.That(MissionSceneComposition.ResolveRole(MissionProcessRole.Authority,
+            new[] { "game", "-trainer-role", "client", "-trainer-server", "127.0.0.1", "-trainer-port", "7777", "-trainer-connect" }, false),
+            Is.EqualTo(MissionProcessRole.Client), "The documented desktop recipe selects the client role.");
         Assert.That(MissionSceneComposition.ResolveRole(MissionProcessRole.Client,
             new[] { "game", "-batchmode", "-trainer-role", "Server" }, false), Is.EqualTo(MissionProcessRole.Authority));
         Assert.That(MissionSceneComposition.ResolveRole(MissionProcessRole.Authority,
@@ -171,6 +177,34 @@ public sealed class MissionSceneCompositionTests
         Assert.That(scenario.MaxStepSeconds, Is.EqualTo(1));
     }
 
+    [Test] public void ClientLinkListenerIsIdempotentAndDetachesWhileDisabled()
+    {
+        var client = clientObject.AddComponent<SessionNetworkClient>();
+        Set(composition, "networkClient", client);
+        composition.ApplyRole(MissionProcessRole.Client);
+        var field = typeof(SessionNetworkClient).GetField("ConnectionStatusChanged", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        int Listeners() => (field.GetValue(client) as Delegate)?.GetInvocationList().Length ?? 0;
+        void Lifecycle(string name) => typeof(MissionSceneComposition).GetMethod(name,
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(composition, null);
+        Lifecycle("OnEnable"); Lifecycle("OnEnable");
+        Assert.That(Listeners(), Is.EqualTo(1));
+        var remote = new FakeSessionPort();
+        composition.PresentRemoteSession(remote, true, "Conectado");
+        Assert.That(hud.Snapshot, Is.Not.Null);
+        Lifecycle("OnDisable"); Lifecycle("OnDisable");
+        Assert.That(Listeners(), Is.Zero);
+        Assert.That(hud.Snapshot, Is.Null);
+        Lifecycle("OnEnable");
+        Assert.That(Listeners(), Is.EqualTo(1));
+        ((Action<bool, string>)field.GetValue(client)).Invoke(false, "SyncTimeout");
+        Assert.That(hud.Snapshot, Is.Null);
+        StringAssert.Contains("SyncTimeout", hud.ConnectionText);
+        composition.PresentRemoteSession(new FakeSessionPort(), true, "Reincorporado");
+        Assert.That(hud.Snapshot.Epoch, Is.Zero);
+        Assert.That(bootstrap.Session, Is.Null, "Client lifecycle never creates a local authority");
+        Assert.That(runner.IsBound, Is.False);
+    }
+
     [Test] public void MissionSceneHasOneCompositionOneAuthorityAndTheScenario()
     {
         Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
@@ -180,21 +214,44 @@ public sealed class MissionSceneCompositionTests
             var bootstraps = new List<MissionBootstrap>();
             var runners = new List<SimulationRunner>();
             var huds = new List<MissionHUD>();
+            var hosts = new List<SessionNetworkHost>();
+            var clients = new List<SessionNetworkClient>();
+            var rooms = new List<PowerRoomView>();
             foreach (GameObject root in scene.GetRootGameObjects())
             {
                 compositions.AddRange(root.GetComponentsInChildren<MissionSceneComposition>(true));
                 bootstraps.AddRange(root.GetComponentsInChildren<MissionBootstrap>(true));
                 runners.AddRange(root.GetComponentsInChildren<SimulationRunner>(true));
                 huds.AddRange(root.GetComponentsInChildren<MissionHUD>(true));
+                hosts.AddRange(root.GetComponentsInChildren<SessionNetworkHost>(true));
+                clients.AddRange(root.GetComponentsInChildren<SessionNetworkClient>(true));
+                rooms.AddRange(root.GetComponentsInChildren<PowerRoomView>(true));
             }
             Assert.That(compositions.Count, Is.EqualTo(1));
             Assert.That(bootstraps.Count, Is.EqualTo(1));
             Assert.That(runners.Count, Is.EqualTo(1), "A single clock per shared session.");
             Assert.That(huds.Count, Is.EqualTo(1));
+            Assert.That(hosts.Count, Is.EqualTo(1));
+            Assert.That(clients.Count, Is.EqualTo(1));
+            Assert.That(rooms.Count, Is.EqualTo(1));
 
             MissionSceneComposition root0 = compositions[0];
             Assert.That(root0.Bootstrap, Is.SameAs(bootstraps[0]));
             Assert.That(root0.Hud, Is.SameAs(huds[0]));
+            Assert.That(root0.NetworkClient, Is.SameAs(clients[0]));
+            Assert.That(root0.Room, Is.SameAs(rooms[0]));
+            Assert.That(root0.SceneCamera, Is.Not.Null);
+            CheckOutcome audit = PhaseOneAssetAudit.AuditComposition(root0);
+            Assert.That(audit.Status, Is.EqualTo(CheckStatus.Passed), audit.Detail);
+            Set(root0, "networkClient", null);
+            Assert.That(PhaseOneAssetAudit.AuditComposition(root0).Status, Is.EqualTo(CheckStatus.Failed), "Audit must reject a missing client");
+            Set(root0, "networkClient", clients[0]);
+            Set(root0, "room", null);
+            Assert.That(PhaseOneAssetAudit.AuditComposition(root0).Status, Is.EqualTo(CheckStatus.Failed), "Audit must reject a missing room");
+            Set(root0, "room", rooms[0]);
+            Set(hosts[0], "bootstrap", null);
+            Assert.That(PhaseOneAssetAudit.AuditComposition(root0).Status, Is.EqualTo(CheckStatus.Failed), "Audit must reject a detached host");
+            Set(hosts[0], "bootstrap", bootstraps[0]);
             Assert.That(PrefabUtility.IsPartOfPrefabInstance(huds[0]), Is.True, "The HUD comes from the D4 prefab.");
             Assert.That(AssetDatabase.GetAssetPath(bootstraps[0].Scenario), Is.EqualTo(ScenarioPath));
             var bootstrapData = new SerializedObject(bootstraps[0]);

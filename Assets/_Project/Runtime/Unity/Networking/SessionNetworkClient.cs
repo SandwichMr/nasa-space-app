@@ -10,7 +10,7 @@ namespace Trainer.Unity.Networking
     /// session or a SimulationRunner in a client process. Pumps the transport every frame on the main thread.
     /// If the link comes up but no authoritative state arrives within the synchronization timeout (e.g. the
     /// server rejects this client's protocol version), the link is ended as <see cref="SessionNetworkCodes.SyncTimeout"/>.
-    /// Launch arguments: desktop command line -trainer-server HOST -trainer-port N -trainer-path /p
+    /// Launch arguments: desktop command line -trainer-role client -trainer-server HOST -trainer-port N -trainer-path /p
     /// -trainer-secure -trainer-server-name NAME -trainer-connect; WebGL page query
     /// ?server=HOST&amp;port=N&amp;path=/p&amp;secure=1&amp;connect=1. In WebGL an empty address means "the host that served
     /// the page", with wss:// when the page is HTTPS.

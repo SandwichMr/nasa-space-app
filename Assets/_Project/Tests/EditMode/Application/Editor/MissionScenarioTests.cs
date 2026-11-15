@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using Trainer.Application;
 using Trainer.Simulation;
+using Trainer.Unity.Presentation;
+using Trainer.Unity.World;
 
 /// <summary>
 /// The phase 1 synthetic scenario (Data/Scenarios/Phase01_PowerCoop_Synthetic.asset) played end to end over
@@ -215,5 +217,96 @@ public sealed class MissionScenarioTests
         Assert.That(Current().ScienceEnabled, Is.False, "Last applied intention wins; the duplicate is not reapplied.");
         Assert.That(Current().Revision, Is.EqualTo(revision + 2));
         Assert.That(results.FindAll(r => r.CommandId == on.Id).TrueForAll(r => r.Accepted), Is.True);
+    }
+
+    [TestCase(false, 0)]
+    [TestCase(true, 60)]
+    public void HudReportsTimeExpiredWithActualWorkAndTarget(bool science, double expectedWork)
+    {
+        Send(SessionAction.SetScienceEnabled, science);
+        Send(SessionAction.Resume);
+        session.Tick(DurationSeconds);
+        Assert.That(session.Outcome, Is.EqualTo(MissionOutcome.TimeExpired));
+        Assert.That(Current().ScienceWorkSeconds, Is.EqualTo(expectedWork).Within(1e-9));
+        var panel = new ResultPanel();
+        panel.Show(Current(), session.Rules);
+        StringAssert.Contains("Tiempo agotado", panel.Text);
+        StringAssert.Contains("Objetivo pendiente", panel.Text);
+        StringAssert.Contains(expectedWork + " / 120 s", panel.Text);
+        StringAssert.DoesNotContain("Misión completada", panel.Text);
+    }
+
+    [Test] public void HudReportsObjectiveAndCleanProgressAfterRestart()
+    {
+        Send(SessionAction.SetScienceEnabled, true); Send(SessionAction.Resume); session.Tick(60);
+        Send(SessionAction.SetScienceEnabled, false); session.Tick(60);
+        Send(SessionAction.SetScienceEnabled, true); session.Tick(60);
+        var panel = new ResultPanel();
+        panel.Show(Current(), session.Rules, session.Outcome);
+        StringAssert.Contains("Objetivo logrado", panel.Text);
+        StringAssert.Contains("120 / 120 s", panel.Text);
+        Send(SessionAction.Restart);
+        panel.Show(Current(), session.Rules, session.Outcome);
+        StringAssert.Contains("Lista para iniciar", panel.Text);
+        StringAssert.Contains("0 / 120 s", panel.Text);
+        StringAssert.DoesNotContain("Objetivo logrado", panel.Text);
+    }
+
+    [Test] public void HudDistinguishesEssentialInterruptionFromTimeExpired()
+    {
+        var failed = new MissionSession(new PowerSystem(), new PowerConfiguration(0, 1, 0, 1, 1, 1, 1), new MissionRules(2, 10));
+        failed.Submit(new SessionCommand(Guid.NewGuid(), 0, SessionAction.Resume));
+        failed.Tick(1);
+        failed.TryGetSnapshot(out MissionSnapshot snapshot);
+        var panel = new ResultPanel(); panel.Show(snapshot, failed.Rules);
+        StringAssert.Contains("Misión interrumpida", panel.Text);
+        StringAssert.Contains("Servicio esencial insuficiente", panel.Text);
+        StringAssert.DoesNotContain("Tiempo agotado", panel.Text);
+    }
+
+    [Test] public void PausedAndReadyPowerIsLabelledAsLastMeasurementWithoutMutation()
+    {
+        Send(SessionAction.SetScienceEnabled, true);
+        var panel = new PowerPanel(); panel.Show(Current().Power);
+        Assert.That(Current().Power.ScienceRequestedWatts, Is.Zero, "Ready keeps the initial reading");
+        StringAssert.Contains("último paso medido", panel.Text);
+        Send(SessionAction.Resume); session.Tick(10); Send(SessionAction.Pause);
+        PowerSnapshot measured = Current().Power;
+        Send(SessionAction.SetScienceEnabled, false);
+        panel.Show(Current().Power);
+        Assert.That(Current().Power, Is.SameAs(measured));
+        Assert.That(Current().ScienceEnabled, Is.False);
+        Assert.That(measured.ScienceServedWatts, Is.EqualTo(80));
+        StringAssert.Contains("último paso medido", panel.Text);
+        session.Tick(120);
+        Assert.That(Current().Power, Is.SameAs(measured), "presentation does not introduce a clock or mutation");
+    }
+
+    [TestCase("Conectando con la base...")]
+    [TestCase("Recibiendo el estado de la misión...")]
+    [TestCase("Se perdió la conexión: la base no envió su estado a tiempo")]
+    public void UnconfirmedConnectionPanelKeepsTheReportedDetail(string detail)
+    {
+        var panel = new ConnectionPanel(); panel.Show(false, detail);
+        StringAssert.Contains(detail, panel.Text);
+        StringAssert.Contains("Sin datos vigentes", panel.Text);
+        StringAssert.DoesNotContain("Puerto asignado", panel.Text);
+    }
+
+    [TestCase(1280, 800)]
+    [TestCase(1440, 919)]
+    [TestCase(1920, 1080)]
+    public void RoomViewportReservesHudAndRoomControls(int width, int height)
+    {
+        var view = PowerRoomView.CalculateViewport(width, height, 442);
+        Assert.That(view.xMin, Is.GreaterThan(442));
+        Assert.That(view.yMin, Is.GreaterThanOrEqualTo(158));
+        Assert.That(height - view.yMax, Is.GreaterThanOrEqualTo(124));
+        Assert.That(view.width, Is.GreaterThan(620));
+        Assert.That(view.height, Is.GreaterThan(400));
+        // Existing stations are separated by 3.62 world units; their buttons must not overlap.
+        float cameraSize = Math.Max(4.4f, 6.4f / (view.width / view.height));
+        float projectedGap = 3.62f * view.height / (2 * cameraSize);
+        Assert.That(PowerRoomView.StationLabelWidth(projectedGap) + 12, Is.LessThanOrEqualTo(projectedGap + 1e-4f));
     }
 }
