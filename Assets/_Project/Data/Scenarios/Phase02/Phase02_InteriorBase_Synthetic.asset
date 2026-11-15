@@ -1,0 +1,153 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 583ff25fe25a4dbdb73509d55122784e, type: 3}
+  m_Name: Phase02_InteriorBase_Synthetic
+  m_EditorClassIdentifier: 
+  scenarioId: interior-base-synthetic
+  displayName: "Fase 2 \xB7 Base interior (escenario sint\xE9tico)"
+  provenance: "Valores sint\xE9ticos ilustrativos para ense\xF1ar que cada tarea ocupa tiempo, una persona, una estaci\xF3n y energ\xEDa. No representan hardware, datos ni requisitos de la NASA. Plano de 18 x 10 m con tres salas (h\xE1bitat, planta de agua, laboratorio) unidas por puertas de 3 m. La misi\xF3n termina al tratar agua dos veces y revisar el aire; la ciencia es opcional y debe hacerse antes. Con todas las estaciones activas la demanda supera a la generaci\xF3n en 230 W; c\xF3mo se reparte la energ\xEDa lo decide el modelo de D1."
+  bounds:
+    minX: 0
+    minY: 0
+    maxX: 18
+    maxY: 10
+  obstacles:
+  - minX: 5.85
+    minY: 0
+    maxX: 6.15
+    maxY: 3.5
+  - minX: 5.85
+    minY: 6.5
+    maxX: 6.15
+    maxY: 10
+  - minX: 11.85
+    minY: 0
+    maxX: 12.15
+    maxY: 3.5
+  - minX: 11.85
+    minY: 6.5
+    maxX: 12.15
+    maxY: 10
+  - minX: 2.2
+    minY: 9.3
+    maxX: 3.8
+    maxY: 10
+  - minX: 8.2
+    minY: 9.3
+    maxX: 9.8
+    maxY: 10
+  - minX: 14.2
+    minY: 9.3
+    maxX: 15.8
+    maxY: 10
+  - minX: 14.2
+    minY: 0
+    maxX: 15.8
+    maxY: 0.7
+  stations:
+  - id: air-scrubber
+    x: 3
+    y: 8.6
+    interactionRadiusMeters: 1.2
+  - id: water-recycler
+    x: 9
+    y: 8.6
+    interactionRadiusMeters: 1.2
+  - id: science-lab
+    x: 15
+    y: 8.6
+    interactionRadiusMeters: 1.2
+  - id: sample-analyzer
+    x: 15
+    y: 1.4
+    interactionRadiusMeters: 1.2
+  spawnPoints:
+  - x: 2
+    y: 2.5
+  - x: 3.5
+    y: 2.5
+  - x: 2
+    y: 4
+  - x: 3.5
+    y: 4
+  maxSpeedMetersPerSecond: 2
+  crewRadiusMeters: 0.35
+  tasks:
+  - id: check-cabin-air
+    station: air-scrubber
+    category: 0
+    durationSeconds: 10
+    powerWatts: 40
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: treat-water
+    station: water-recycler
+    category: 0
+    durationSeconds: 20
+    powerWatts: 150
+    completionChanges:
+    - kind: 1
+      deltaKilograms: -2.0
+    - kind: 0
+      deltaKilograms: 1.8
+    boundaryOutflowKilograms: 0.2
+  - id: run-experiment
+    station: science-lab
+    category: 1
+    durationSeconds: 30
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: analyze-sample
+    station: sample-analyzer
+    category: 1
+    durationSeconds: 25
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  initialEnergyJoules: 12000
+  capacityJoules: 20000
+  generationWatts: 80
+  essentialConsumptionWatts: 60
+  scienceConsumptionWatts: 60
+  maxChargeWatts: 100
+  maxDischargeWatts: 250
+  potableWaterKilograms: 20
+  untreatedWaterKilograms: 6
+  potableCapacityKilograms: 40
+  untreatedCapacityKilograms: 10
+  storedFoodKilograms: 15
+  foodCapacityKilograms: 30
+  cabinFreeGasVolumeCubicMeters: 40
+  cabinGasTemperatureKelvin: 295
+  initialOxygenPartialPressureKilopascals: 21
+  initialCarbonDioxidePartialPressureKilopascals: 0.4
+  missionDurationSeconds: 240
+  objectives:
+  - key: treat-water
+    tasks:
+    - treat-water
+    targetCount: 2
+    required: 1
+  - key: check-cabin-air
+    tasks:
+    - check-cabin-air
+    targetCount: 1
+    required: 1
+  - key: science
+    tasks:
+    - run-experiment
+    - analyze-sample
+    targetCount: 2
+    required: 0
+  timeScale: 1
+  maxStepSeconds: 0.25
