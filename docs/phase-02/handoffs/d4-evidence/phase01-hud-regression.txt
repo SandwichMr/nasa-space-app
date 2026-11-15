@@ -1,0 +1,2 @@
+Extracto de salida real de Unity. Se omiten detalles de máquina/licencia y stacktraces repetidos.
+MISSION_HUD_CHECKS_PASSED: 31

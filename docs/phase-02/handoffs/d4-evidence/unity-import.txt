@@ -1,0 +1,4 @@
+Extracto de salida real de Unity. Se omiten detalles de máquina/licencia y stacktraces repetidos.
+Initialize engine version: 6000.3.28f1 (8f082d2fe476)
+D4_PHASE02_ASSETS_BUILT: 16 sliced astronaut frames, 8 looping clips, controller, 4 real prefabs; Phase01 unchanged
+Exiting batchmode successfully now!

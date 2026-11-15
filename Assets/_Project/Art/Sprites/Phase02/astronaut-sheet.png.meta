@@ -1,0 +1,1067 @@
+fileFormatVersion: 2
+guid: 27e5cf0719b3f786291bf2458c86e716
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2329256134329943085
+    second: astronaut-sheet_0
+  - first:
+      213: 7924364572823505320
+    second: astronaut-sheet_1
+  - first:
+      213: 20614620709806362
+    second: astronaut-sheet_2
+  - first:
+      213: 935744993391435767
+    second: astronaut-sheet_3
+  - first:
+      213: -8991635999849802153
+    second: astronaut-sheet_4
+  - first:
+      213: 3277153808423795232
+    second: astronaut-sheet_5
+  - first:
+      213: 9218330422462645956
+    second: astronaut-sheet_6
+  - first:
+      213: 8102836842014999498
+    second: astronaut-sheet_7
+  - first:
+      213: 7386232498223646995
+    second: astronaut-sheet_8
+  - first:
+      213: 3412377367049354665
+    second: astronaut-sheet_9
+  - first:
+      213: -1212682237929734507
+    second: astronaut-sheet_10
+  - first:
+      213: -3151314591361153041
+    second: astronaut-sheet_11
+  - first:
+      213: 7957194854097889071
+    second: astronaut-sheet_12
+  - first:
+      213: -3817253428001370269
+    second: astronaut-sheet_13
+  - first:
+      213: 5261925781839460644
+    second: astronaut-sheet_14
+  - first:
+      213: 4730362281643207701
+    second: astronaut-sheet_15
+  - first:
+      213: -7905430888615408895
+    second: astronaut-sheet_16
+  - first:
+      213: 3680027616001513916
+    second: astronaut-sheet_17
+  - first:
+      213: -9005043697379611577
+    second: astronaut-sheet_18
+  - first:
+      213: 1576182471771544420
+    second: astronaut-sheet_19
+  - first:
+      213: -6323969747277023163
+    second: astronaut-sheet_20
+  - first:
+      213: 1743254532875876107
+    second: astronaut-sheet_21
+  - first:
+      213: 452046496124166600
+    second: astronaut-sheet_22
+  - first:
+      213: 2921525698379639571
+    second: astronaut-sheet_23
+  - first:
+      213: -793449970404835951
+    second: astronaut-sheet_24
+  - first:
+      213: -402520040336967564
+    second: astronaut-sheet_25
+  - first:
+      213: -1086531596574782234
+    second: astronaut-sheet_26
+  - first:
+      213: -247041721013270151
+    second: astronaut-sheet_27
+  - first:
+      213: 2190543372942823462
+    second: astronaut-sheet_28
+  - first:
+      213: -6297867821189529390
+    second: astronaut-sheet_29
+  - first:
+      213: -5278550856970851125
+    second: astronaut-sheet_30
+  - first:
+      213: -3491145763741182765
+    second: astronaut-sheet_31
+  - first:
+      213: -8716534060958809794
+    second: astronaut-sheet_32
+  - first:
+      213: -1057464150249215648
+    second: astronaut-sheet_33
+  - first:
+      213: 7783089073059928613
+    second: astronaut-sheet_34
+  - first:
+      213: -8954276846186260324
+    second: astronaut-sheet_35
+  - first:
+      213: -7007854917813214494
+    second: astronaut-sheet_36
+  - first:
+      213: 1874885297350460472
+    second: astronaut-sheet_37
+  - first:
+      213: -810691287005150434
+    second: astronaut-sheet_38
+  - first:
+      213: 6208924126997620081
+    second: astronaut-sheet_39
+  - first:
+      213: 6749349215886379074
+    second: astronaut-sheet_40
+  - first:
+      213: -5435096226916059553
+    second: astronaut-sheet_41
+  - first:
+      213: -8385613828511659606
+    second: astronaut-sheet_42
+  - first:
+      213: -789822580381104244
+    second: astronaut-sheet_43
+  - first:
+      213: -9033939527728989465
+    second: astronaut-sheet_44
+  - first:
+      213: -9212581202866948171
+    second: astronaut-sheet_45
+  - first:
+      213: 7233559276201730560
+    second: astronaut-sheet_46
+  - first:
+      213: -3207483818475974545
+    second: astronaut-sheet_47
+  - first:
+      213: -4346307458767783052
+    second: astronaut-sheet_48
+  - first:
+      213: -7070427165263054098
+    second: astronaut-sheet_49
+  - first:
+      213: -7417501830229344152
+    second: astronaut-sheet_50
+  - first:
+      213: 1595762896942888112
+    second: astronaut-sheet_51
+  - first:
+      213: -4087824182928395958
+    second: astronaut-sheet_52
+  - first:
+      213: 5760675405539364549
+    second: astronaut-sheet_53
+  - first:
+      213: -3093310912611434128
+    second: astronaut-sheet_54
+  - first:
+      213: 79555054572144122
+    second: astronaut-sheet_55
+  - first:
+      213: 4302516616074890571
+    second: astronaut-sheet_56
+  - first:
+      213: -6309434385278467008
+    second: astronaut-sheet_57
+  - first:
+      213: 6196465736076870704
+    second: astronaut-sheet_58
+  - first:
+      213: -6674351868538735684
+    second: astronaut-sheet_59
+  - first:
+      213: 7745522836873692174
+    second: astronaut-sheet_60
+  - first:
+      213: 3029007030528753222
+    second: astronaut-sheet_61
+  - first:
+      213: -2916530476741185370
+    second: astronaut-sheet_62
+  - first:
+      213: -5714662187493559698
+    second: astronaut-sheet_63
+  - first:
+      213: 8503690386475927460
+    second: astronaut-sheet_64
+  - first:
+      213: -3114474818098524206
+    second: astronaut-sheet_65
+  - first:
+      213: 8213612698082493179
+    second: astronaut-sheet_66
+  - first:
+      213: 1624609846039256293
+    second: astronaut-sheet_67
+  - first:
+      213: -7806979777767997389
+    second: astronaut-sheet_68
+  - first:
+      213: -22019806520200532
+    second: astronaut-sheet_69
+  - first:
+      213: 4956077153468161501
+    second: astronaut-sheet_70
+  - first:
+      213: 4183259353723906230
+    second: astronaut-sheet_71
+  - first:
+      213: -608992548586994622
+    second: astronaut-sheet_72
+  - first:
+      213: -763533718146288102
+    second: astronaut-sheet_73
+  - first:
+      213: 1745015199831499956
+    second: astronaut-sheet_74
+  - first:
+      213: -9137952847030974745
+    second: astronaut-sheet_75
+  - first:
+      213: -3449947493568629474
+    second: astronaut-sheet_76
+  - first:
+      213: 6406321673914071514
+    second: astronaut-sheet_77
+  - first:
+      213: -2762632610276730158
+    second: astronaut-sheet_78
+  - first:
+      213: 1721670606092023617
+    second: astronaut-sheet_79
+  - first:
+      213: -3483329747855619945
+    second: astronaut-sheet_80
+  - first:
+      213: 3810267840602808851
+    second: astronaut-sheet_81
+  - first:
+      213: -8641358686250983710
+    second: astronaut-sheet_82
+  - first:
+      213: 7858759997894252196
+    second: astronaut-sheet_83
+  - first:
+      213: -4064923279681505286
+    second: astronaut-sheet_84
+  - first:
+      213: -2054591342331769028
+    second: astronaut-sheet_85
+  - first:
+      213: -3607531605726743962
+    second: astronaut-sheet_86
+  - first:
+      213: 4921269094247061303
+    second: astronaut-sheet_87
+  - first:
+      213: 341314003357238192
+    second: astronaut-sheet_88
+  - first:
+      213: -8436502926510813581
+    second: astronaut-sheet_89
+  - first:
+      213: -5333057349179409953
+    second: astronaut-sheet_90
+  - first:
+      213: -7384250862287740563
+    second: astronaut-sheet_91
+  - first:
+      213: -798022904164518296
+    second: astronaut-sheet_92
+  - first:
+      213: -4264142923701296934
+    second: astronaut-sheet_93
+  - first:
+      213: -4171666482756791029
+    second: astronaut-sheet_94
+  - first:
+      213: 8559197041212830480
+    second: astronaut-sheet_95
+  - first:
+      213: -5078520202374565220
+    second: astronaut-sheet_96
+  - first:
+      213: 8932337991863085332
+    second: astronaut-sheet_97
+  - first:
+      213: -577228406789053925
+    second: astronaut-sheet_98
+  - first:
+      213: -1597631442638822605
+    second: astronaut-sheet_99
+  - first:
+      213: 3653248238460808180
+    second: astronaut-sheet_100
+  - first:
+      213: 8408510924310660120
+    second: astronaut-sheet_101
+  - first:
+      213: -1854906487503381230
+    second: astronaut-sheet_102
+  - first:
+      213: -6192832436885930287
+    second: astronaut-sheet_103
+  - first:
+      213: -4746972088677601979
+    second: astronaut-sheet_104
+  - first:
+      213: -6025866083365072504
+    second: astronaut-sheet_105
+  - first:
+      213: 4519403104691917902
+    second: astronaut-sheet_106
+  - first:
+      213: 7045759273671575344
+    second: astronaut-sheet_107
+  - first:
+      213: -6259387608071045949
+    second: astronaut-sheet_108
+  - first:
+      213: 3834291887165123716
+    second: astronaut-sheet_109
+  - first:
+      213: 7894006197895439224
+    second: astronaut-sheet_110
+  - first:
+      213: -5041742330836874419
+    second: astronaut-sheet_111
+  - first:
+      213: 7424659215411126881
+    second: astronaut-sheet_112
+  - first:
+      213: 6782138927131925216
+    second: astronaut-sheet_113
+  - first:
+      213: -4936622952993009741
+    second: astronaut-sheet_114
+  - first:
+      213: -1921619929799747574
+    second: astronaut-sheet_115
+  - first:
+      213: 8724556801576058764
+    second: astronaut-sheet_116
+  - first:
+      213: 8268244681382025483
+    second: astronaut-sheet_117
+  - first:
+      213: 8538107035282994664
+    second: astronaut-sheet_118
+  - first:
+      213: -8015828359117403677
+    second: astronaut-sheet_119
+  - first:
+      213: 2395453421226005020
+    second: astronaut-sheet_120
+  - first:
+      213: 3523278268251779976
+    second: astronaut-sheet_121
+  - first:
+      213: 5062492567327973328
+    second: astronaut-sheet_122
+  - first:
+      213: -6328514044847699611
+    second: astronaut-sheet_123
+  - first:
+      213: 3895628873699937185
+    second: astronaut-sheet_124
+  - first:
+      213: -6612311359831047037
+    second: astronaut-sheet_125
+  - first:
+      213: 1365578875409661897
+    second: astronaut-sheet_126
+  - first:
+      213: -7772375736616928944
+    second: crew-0-0
+  - first:
+      213: 6132081463768898950
+    second: crew-0-1
+  - first:
+      213: 43837063637288920
+    second: crew-0-2
+  - first:
+      213: -389534262327855946
+    second: crew-0-3
+  - first:
+      213: -138029158598352210
+    second: crew-1-0
+  - first:
+      213: 8391265283082442879
+    second: crew-1-1
+  - first:
+      213: -385184674528273050
+    second: crew-1-2
+  - first:
+      213: -6442245775256695759
+    second: crew-1-3
+  - first:
+      213: 8117684417255395879
+    second: crew-2-0
+  - first:
+      213: -1567197240709022344
+    second: crew-2-1
+  - first:
+      213: -7692309726282497188
+    second: crew-2-2
+  - first:
+      213: 7716012074079423525
+    second: crew-2-3
+  - first:
+      213: 5214017689090438647
+    second: crew-3-0
+  - first:
+      213: 7938634315781606531
+    second: crew-3-1
+  - first:
+      213: 991476821056165393
+    second: crew-3-2
+  - first:
+      213: 8012382988612511024
+    second: crew-3-3
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 0
+    wrapV: 0
+    wrapW: 0
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 244.53125
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: crew-0-0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 939
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05935168279f22490800000000000000
+      internalID: -7772375736616928944
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-0-1
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 939
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68dd3b52a97891550800000000000000
+      internalID: 6132081463768898950
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-0-2
+      rect:
+        serializedVersion: 2
+        x: 626
+        y: 939
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d7c81eb39dbb9000800000000000000
+      internalID: 43837063637288920
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-0-3
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 939
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6b4ba1af6a8189af0800000000000000
+      internalID: -389534262327855946
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-1-0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 626
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea26919263f951ef0800000000000000
+      internalID: -138029158598352210
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-1-1
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 626
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f78523ee053c37470800000000000000
+      internalID: 8391265283082442879
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-1-2
+      rect:
+        serializedVersion: 2
+        x: 626
+        y: 626
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 66d51dd449c87aaf0800000000000000
+      internalID: -385184674528273050
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-1-3
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 626
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 13c4012999b8896a0800000000000000
+      internalID: -6442245775256695759
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-2-0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 313
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7225b39d7fec7a070800000000000000
+      internalID: 8117684417255395879
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-2-1
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 313
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87df096b962304ae0800000000000000
+      internalID: -1567197240709022344
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-2-2
+      rect:
+        serializedVersion: 2
+        x: 626
+        y: 313
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5346ae3f0d6f3590800000000000000
+      internalID: -7692309726282497188
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-2-3
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 313
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52c0126a918c41b60800000000000000
+      internalID: 7716012074079423525
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-3-0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f5b6d29679eb5840800000000000000
+      internalID: 5214017689090438647
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-3-1
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 0
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 38c83e979d1bb2e60800000000000000
+      internalID: 7938634315781606531
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-3-2
+      rect:
+        serializedVersion: 2
+        x: 626
+        y: 0
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 116161a6aee62cd00800000000000000
+      internalID: 991476821056165393
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: crew-3-3
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 0
+        width: 313
+        height: 313
+      alignment: 9
+      pivot: {x: 0.5, y: 0.18}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 035a1a070e3b13f60800000000000000
+      internalID: 8012382988612511024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      astronaut-sheet_0: 2329256134329943085
+      astronaut-sheet_1: 7924364572823505320
+      astronaut-sheet_10: -1212682237929734507
+      astronaut-sheet_100: 3653248238460808180
+      astronaut-sheet_101: 8408510924310660120
+      astronaut-sheet_102: -1854906487503381230
+      astronaut-sheet_103: -6192832436885930287
+      astronaut-sheet_104: -4746972088677601979
+      astronaut-sheet_105: -6025866083365072504
+      astronaut-sheet_106: 4519403104691917902
+      astronaut-sheet_107: 7045759273671575344
+      astronaut-sheet_108: -6259387608071045949
+      astronaut-sheet_109: 3834291887165123716
+      astronaut-sheet_11: -3151314591361153041
+      astronaut-sheet_110: 7894006197895439224
+      astronaut-sheet_111: -5041742330836874419
+      astronaut-sheet_112: 7424659215411126881
+      astronaut-sheet_113: 6782138927131925216
+      astronaut-sheet_114: -4936622952993009741
+      astronaut-sheet_115: -1921619929799747574
+      astronaut-sheet_116: 8724556801576058764
+      astronaut-sheet_117: 8268244681382025483
+      astronaut-sheet_118: 8538107035282994664
+      astronaut-sheet_119: -8015828359117403677
+      astronaut-sheet_12: 7957194854097889071
+      astronaut-sheet_120: 2395453421226005020
+      astronaut-sheet_121: 3523278268251779976
+      astronaut-sheet_122: 5062492567327973328
+      astronaut-sheet_123: -6328514044847699611
+      astronaut-sheet_124: 3895628873699937185
+      astronaut-sheet_125: -6612311359831047037
+      astronaut-sheet_126: 1365578875409661897
+      astronaut-sheet_13: -3817253428001370269
+      astronaut-sheet_14: 5261925781839460644
+      astronaut-sheet_15: 4730362281643207701
+      astronaut-sheet_16: -7905430888615408895
+      astronaut-sheet_17: 3680027616001513916
+      astronaut-sheet_18: -9005043697379611577
+      astronaut-sheet_19: 1576182471771544420
+      astronaut-sheet_2: 20614620709806362
+      astronaut-sheet_20: -6323969747277023163
+      astronaut-sheet_21: 1743254532875876107
+      astronaut-sheet_22: 452046496124166600
+      astronaut-sheet_23: 2921525698379639571
+      astronaut-sheet_24: -793449970404835951
+      astronaut-sheet_25: -402520040336967564
+      astronaut-sheet_26: -1086531596574782234
+      astronaut-sheet_27: -247041721013270151
+      astronaut-sheet_28: 2190543372942823462
+      astronaut-sheet_29: -6297867821189529390
+      astronaut-sheet_3: 935744993391435767
+      astronaut-sheet_30: -5278550856970851125
+      astronaut-sheet_31: -3491145763741182765
+      astronaut-sheet_32: -8716534060958809794
+      astronaut-sheet_33: -1057464150249215648
+      astronaut-sheet_34: 7783089073059928613
+      astronaut-sheet_35: -8954276846186260324
+      astronaut-sheet_36: -7007854917813214494
+      astronaut-sheet_37: 1874885297350460472
+      astronaut-sheet_38: -810691287005150434
+      astronaut-sheet_39: 6208924126997620081
+      astronaut-sheet_4: -8991635999849802153
+      astronaut-sheet_40: 6749349215886379074
+      astronaut-sheet_41: -5435096226916059553
+      astronaut-sheet_42: -8385613828511659606
+      astronaut-sheet_43: -789822580381104244
+      astronaut-sheet_44: -9033939527728989465
+      astronaut-sheet_45: -9212581202866948171
+      astronaut-sheet_46: 7233559276201730560
+      astronaut-sheet_47: -3207483818475974545
+      astronaut-sheet_48: -4346307458767783052
+      astronaut-sheet_49: -7070427165263054098
+      astronaut-sheet_5: 3277153808423795232
+      astronaut-sheet_50: -7417501830229344152
+      astronaut-sheet_51: 1595762896942888112
+      astronaut-sheet_52: -4087824182928395958
+      astronaut-sheet_53: 5760675405539364549
+      astronaut-sheet_54: -3093310912611434128
+      astronaut-sheet_55: 79555054572144122
+      astronaut-sheet_56: 4302516616074890571
+      astronaut-sheet_57: -6309434385278467008
+      astronaut-sheet_58: 6196465736076870704
+      astronaut-sheet_59: -6674351868538735684
+      astronaut-sheet_6: 9218330422462645956
+      astronaut-sheet_60: 7745522836873692174
+      astronaut-sheet_61: 3029007030528753222
+      astronaut-sheet_62: -2916530476741185370
+      astronaut-sheet_63: -5714662187493559698
+      astronaut-sheet_64: 8503690386475927460
+      astronaut-sheet_65: -3114474818098524206
+      astronaut-sheet_66: 8213612698082493179
+      astronaut-sheet_67: 1624609846039256293
+      astronaut-sheet_68: -7806979777767997389
+      astronaut-sheet_69: -22019806520200532
+      astronaut-sheet_7: 8102836842014999498
+      astronaut-sheet_70: 4956077153468161501
+      astronaut-sheet_71: 4183259353723906230
+      astronaut-sheet_72: -608992548586994622
+      astronaut-sheet_73: -763533718146288102
+      astronaut-sheet_74: 1745015199831499956
+      astronaut-sheet_75: -9137952847030974745
+      astronaut-sheet_76: -3449947493568629474
+      astronaut-sheet_77: 6406321673914071514
+      astronaut-sheet_78: -2762632610276730158
+      astronaut-sheet_79: 1721670606092023617
+      astronaut-sheet_8: 7386232498223646995
+      astronaut-sheet_80: -3483329747855619945
+      astronaut-sheet_81: 3810267840602808851
+      astronaut-sheet_82: -8641358686250983710
+      astronaut-sheet_83: 7858759997894252196
+      astronaut-sheet_84: -4064923279681505286
+      astronaut-sheet_85: -2054591342331769028
+      astronaut-sheet_86: -3607531605726743962
+      astronaut-sheet_87: 4921269094247061303
+      astronaut-sheet_88: 341314003357238192
+      astronaut-sheet_89: -8436502926510813581
+      astronaut-sheet_9: 3412377367049354665
+      astronaut-sheet_90: -5333057349179409953
+      astronaut-sheet_91: -7384250862287740563
+      astronaut-sheet_92: -798022904164518296
+      astronaut-sheet_93: -4264142923701296934
+      astronaut-sheet_94: -4171666482756791029
+      astronaut-sheet_95: 8559197041212830480
+      astronaut-sheet_96: -5078520202374565220
+      astronaut-sheet_97: 8932337991863085332
+      astronaut-sheet_98: -577228406789053925
+      astronaut-sheet_99: -1597631442638822605
+      crew-0-0: -7772375736616928944
+      crew-0-1: 6132081463768898950
+      crew-0-2: 43837063637288920
+      crew-0-3: -389534262327855946
+      crew-1-0: -138029158598352210
+      crew-1-1: 8391265283082442879
+      crew-1-2: -385184674528273050
+      crew-1-3: -6442245775256695759
+      crew-2-0: 8117684417255395879
+      crew-2-1: -1567197240709022344
+      crew-2-2: -7692309726282497188
+      crew-2-3: 7716012074079423525
+      crew-3-0: 5214017689090438647
+      crew-3-1: 7938634315781606531
+      crew-3-2: 991476821056165393
+      crew-3-3: 8012382988612511024
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

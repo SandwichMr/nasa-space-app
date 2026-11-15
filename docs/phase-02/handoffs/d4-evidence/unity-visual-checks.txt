@@ -1,0 +1,107 @@
+Extracto de salida real de Unity. Se omiten detalles de máquina/licencia y stacktraces repetidos.
+D4_CHECK 1: Real prefab imported: Assets/_Project/Prefabs/World/Phase02/BaseInterior.prefab
+D4_CHECK 2: Real prefab imported: Assets/_Project/Prefabs/UI/Phase02/OutpostPanel.prefab
+D4_CHECK 3: Snapshot before Joined is not live
+D4_CHECK 4: Joined exposes confirmed snapshot
+D4_CHECK 5: Three distinguishable physical stations
+D4_CHECK 6: No invented blocking geometry
+D4_CHECK 7: Visible wall footprint equals authority rectangle
+D4_CHECK 8: Visible wall footprint equals authority rectangle
+D4_CHECK 9: Visuals add no second collision authority
+D4_CHECK 10: Imported renderer references present
+D4_CHECK 11: Imported renderer references present
+D4_CHECK 12: Imported renderer references present
+D4_CHECK 13: Imported renderer references present
+D4_CHECK 14: Imported renderer references present
+D4_CHECK 15: Imported renderer references present
+D4_CHECK 16: Imported renderer references present
+D4_CHECK 17: Imported renderer references present
+D4_CHECK 18: Imported renderer references present
+D4_CHECK 19: Imported renderer references present
+D4_CHECK 20: Imported renderer references present
+D4_CHECK 21: Imported renderer references present
+D4_CHECK 22: Imported renderer references present
+D4_CHECK 23: Imported renderer references present
+D4_CHECK 24: Imported renderer references present
+D4_CHECK 25: Imported renderer references present
+D4_CHECK 26: Imported renderer references present
+D4_CHECK 27: Imported renderer references present
+D4_CHECK 28: Remote station UI cannot send actions
+D4_CHECK 29: Real prefab imported: Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab
+D4_CHECK 30: Actual controller on astronaut prefab
+D4_CHECK 31: Real prefab imported: Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab
+D4_CHECK 32: Actual controller on astronaut prefab
+D4_CHECK 33: Real prefab imported: Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab
+D4_CHECK 34: Actual controller on astronaut prefab
+D4_CHECK 35: Real prefab imported: Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab
+D4_CHECK 36: Actual controller on astronaut prefab
+D4_CHECK 37: Real prefab imported: Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab
+D4_CHECK 38: Actual controller on astronaut prefab
+D4_CHECK 39: Real prefab imported: Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab
+D4_CHECK 40: Actual controller on astronaut prefab
+D4_CHECK 41: Real prefab imported: Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab
+D4_CHECK 42: Actual controller on astronaut prefab
+D4_CHECK 43: Real prefab imported: Assets/_Project/Prefabs/Crew/Phase02/AstronautVisual.prefab
+D4_CHECK 44: Actual controller on astronaut prefab
+D4_CHECK 45: Slot identity and local marker distinguish astronauts
+D4_CHECK 46: Crew prefab is visual only
+D4_CHECK 47: Sixteen real imported animation frames
+D4_CHECK 48: Real looping clip: IdleDown
+D4_CHECK 49: Clip drives sprite frames
+D4_CHECK 50: Real looping clip: IdleLeft
+D4_CHECK 51: Clip drives sprite frames
+D4_CHECK 52: Real looping clip: IdleRight
+D4_CHECK 53: Clip drives sprite frames
+D4_CHECK 54: Real looping clip: IdleUp
+D4_CHECK 55: Clip drives sprite frames
+D4_CHECK 56: Real looping clip: WalkDown
+D4_CHECK 57: Clip drives sprite frames
+D4_CHECK 58: Real looping clip: WalkLeft
+D4_CHECK 59: Clip drives sprite frames
+D4_CHECK 60: Real looping clip: WalkRight
+D4_CHECK 61: Clip drives sprite frames
+D4_CHECK 62: Real looping clip: WalkUp
+D4_CHECK 63: Clip drives sprite frames
+D4_CHECK 64: Absent and stale gas readings never become current zero
+D4_EDITOR_STARTUP_EXCEPTION: Unity Search indexing failed before use; outside D4 runtime. See original exception in this log.
+D4_PHASE02_CAPTURE_VIEWPORT: 1440x919
+D4_CHECK 65: Game view has usable capture resolution
+D4_CHECK 66: Nearby task panel blocks D3 input callback
+D4_CHECK 67: Start is an intention pending authority
+D4_CHECK 68: No duplicate submission while request pending
+D4_CHECK 69: No optimistic occupation or progress
+D4_CHECK 70: Result before snapshot does not fabricate progress
+D4_CHECK 71: Occupation and progress only from confirmed snapshot
+D4_CHECK 72: Only own nearby task can cancel
+D4_CHECK 73: Rejected command leaves confirmed task untouched
+D4_CHECK 74: Rejection never rolls back authoritative progress
+D4_CHECK 75: Cannot cancel another astronaut or start at occupied station
+D4_CHECK 76: Stalled progress explicitly labelled
+D4_CHECK 77: Closing panel releases D3 input callback
+D4_CHECK 78: Animator really switches to walking right
+D4_CHECK 79: Two different walk sprites rendered by the real Animator
+D4_CHECK 80: Animation does not move the root
+D4_CHECK 81: Confirmed idle selects idle animation
+D4_CHECK 82: Confirmed idle selects idle animation
+D4_CHECK 83: Confirmed idle selects idle animation
+D4_CHECK 84: Confirmed idle selects idle animation
+D4_CHECK 85: Reopen nearby panel
+D4_CHECK 86: Leaving confirmed reach closes panel and prevents UI actions
+D4_CHECK 87: Disable clears station readings
+D4_CHECK 88: Enable reads current port without duplicate bind
+D4_CHECK 89: Rebind preserves a single observer per event
+D4_CHECK 90: Disconnect invalidates every reading and input blocker
+D4_CHECK 91: New port with older epoch accepted after rebind
+D4_CHECK 92: Previous port detached
+D4_CHECK 93: Old port callbacks cannot revive stale state
+D4_CHECK 94: Terminal mission disables task panel
+D4_CHECK 95: No D4/runtime errors during animation, lifecycle and render
+D4_EDITOR_SEARCH_STARTUP_EXCEPTIONS: 1 (UnityEditor.Search.SearchDatabase, reported separately)
+D4_CHECK 96: Real capture saved: 01-base-and-eight-identities.png
+D4_CHECK 97: Real capture saved: 02-nearby-request-pending.png
+D4_CHECK 98: Real capture saved: 03-confirmed-occupation-and-task.png
+D4_CHECK 99: Real capture saved: 04-other-occupant-stalled.png
+D4_CHECK 100: Real capture saved: 05-walk-right-frame-a.png
+D4_CHECK 101: Real capture saved: 06-walk-right-frame-b.png
+D4_CHECK 102: Real capture saved: 07-disconnected.png
+D4_PHASE02_CHECKS_PASSED: 102

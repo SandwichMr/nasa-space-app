@@ -1,0 +1,12 @@
+D4 audit PASS
+Asset files incl. Unity metadata: 83
+New asset GUIDs: 46 (unique within delivery)
+Serialized GUID references checked: 28 (all resolve to D4, reused Phase01 or Unity builtins)
+Changed/untracked paths checked: 99 (all within the exclusive list)
+Tracked common, frozen, scene, package, settings and phase-one files: unchanged against 95caa315
+D3 sources and installed adapter: absent from the delivery branch
+No missing Unity metadata. No .asmdef, new package or scene.
+Animation/crew sprite subasset fileIDs: 16/16 resolve to current imported sheet metadata
+Asset manifest SHA-256 verification: 83/83
+Authored source whitespace/conflict markers: clean in 17 D4 files (Unity-serialized whitespace preserved)
+HANDOFF links: all resolve
