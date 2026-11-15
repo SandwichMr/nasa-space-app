@@ -100,8 +100,12 @@ public sealed class Phase03TransportSocketTests
         a.Session.Submit(ExpeditionCommand.Session(Guid.NewGuid(), 0, ExpeditionAction.Resume));
         PumpUntil(() => Seen(b).Outpost.State == SessionState.Running, "running on B");
         a.Session.SubmitMovement(new MovementInput(0, 1, MoveDirection.FromAxes(-1, 1)));
-        PumpUntil(() => authority.TryGetSnapshot(out ExpeditionSessionSnapshot s) && s.Outpost.Crew.First(m => m.Player == aId).LastInputSequence == 1,
-            "movement applied");
+        // A movement input publishes nothing by itself (phase 2 rule): the next authority step carries its sequence.
+        PumpUntil(() =>
+        {
+            authority.Tick(0.02);
+            return authority.TryGetSnapshot(out ExpeditionSessionSnapshot s) && s.Outpost.Crew.First(m => m.Player == aId).LastInputSequence == 1;
+        }, "movement applied");
         authority.Tick(0.5);
         authority.TryGetSnapshot(out ExpeditionSessionSnapshot truth);
         PumpUntil(() => Seen(a).Revision == truth.Revision && Seen(b).Revision == truth.Revision, "both clients at the same revision");
