@@ -297,6 +297,7 @@ GameObject:
   - component: {fileID: 277957736712995322}
   - component: {fileID: 9100553575783306173}
   - component: {fileID: 8715984138509774288}
+  - component: {fileID: 4718263519024837120}
   m_Layer: 0
   m_Name: AstronautVisual
   m_TagString: Untagged
@@ -360,3 +361,15 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &4718263519024837120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8175744984538422888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e49b512b48f47a7b68c551e66f66931, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.World.Outpost.D3CrewVisualAdapter

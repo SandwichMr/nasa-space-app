@@ -1,6 +1,6 @@
 # HANDOFF D2 — Tareas, misión y montaje de la escena (fase 2)
 
-**Estado: entrega aislada de D2 lista para integrar. La fase NO está cerrada.** La lógica de tareas, la
+**Estado: escena `Phase02_InteriorBase` montada en integración (ver [Escena compartida](#escena-compartida-montada-en-integración)). La fase NO está cerrada: falta la partida en Unity con dos procesos.** La lógica de tareas, la
 autoridad, el escenario y el bootstrap de autoridad están implementados y probados con dobles de prueba.
 La escena compartida y la prueba con dos clientes reales dependen de entregas de D1, D3 y D4 que todavía no
 existen en el repositorio (ver [Dependencias y bloqueos](#dependencias-y-bloqueos)).
@@ -182,34 +182,54 @@ Propuesta de verificación (de D5, no es una regla nueva):
 - coherencia entre el plano y el arte de D4;
 - regresión de los motivos de rechazo y de los fines de tarea con la autoridad real y la red real.
 
-## Escena compartida
+## Escena compartida (montada en integración)
 
-**No se creó `Scenes/Phase02_InteriorBase.unity`.** El mandato pide no duplicar componentes ausentes ni
-inventar contratos, y faltan estas piezas:
+Rama `feature/phase-02/d02-escena`, creada desde `origin/integration/phase-02` (`28472b8`, con D1–D5 ya
+fusionados). **Montada y verificada fuera de Unity; la partida en Unity y entre dos procesos sigue pendiente.**
 
-| Pieza | Dueño | Estado en el repositorio |
-| --- | --- | --- |
-| Implementación de `IOutpostSimulation` | D1 | no existe (`Runtime/Simulation/LifeSupport/` vacío) |
-| Implementación de `ICrewRoster`, entrada de movimiento, puente de host, cliente de red y cable de fase 2 | D3 | no existe (`Application/Crew/` y `Networking/Outpost/` vacíos) |
-| Prefabs de base, estaciones y astronautas; paneles de recursos y progreso | D4 | no existen (`Prefabs/Crew`, `World/Outpost`, `Presentation/Outpost` vacíos) |
+| Archivo (prefijo `Assets/_Project/`) | Qué hace |
+| --- | --- |
+| `Scenes/Phase02_InteriorBase.unity` | Cámara ortográfica existente (misma configuración que fase 1) + `LocalCameraFraming` (D4), luz global 2D, `OutpostComposition`, `OutpostAuthority` (inactivo: `OutpostRunner`, `OutpostBootstrap`, `OutpostNetworkHost`), `OutpostClient` (inactivo: `OutpostNetworkClient`), `CrewPresentation` (`CrewKeyboardInput`, `CrewAvatarSync` → `AstronautVisual`, padre `Crew` en el origen, sigue a la cámara) y las instancias de `BaseInterior` y `OutpostPanel` (D4). Sin `Collider2D`, `Rigidbody2D`, Canvas ni EventSystem. |
+| `Runtime/Unity/Bootstrap/Outpost/OutpostSceneComposition.cs` | Rol con la misma regla y argumento que fase 1 (`MissionSceneComposition.ResolveRole`, `-trainer-role authority\|client`; WebGL siempre cliente). Autoridad: `OutpostBootstrap.Compose(OutpostBaseSimulation(SyntheticTraining), CrewRoster.For)` → `OutpostNetworkHost.Attach`; fuera de `-batchmode` el anfitrión también juega con `CreateLocalPort()`. Cliente: `OutpostNetworkClient.Prepare()`. El mismo puerto va a la entrada y avatares de D3, al panel/interior de D4 y a los controles de sesión. `[DefaultExecutionOrder(100)]`: si `Prepare` corriera antes que el `Start` del cliente de red, este ignoraría `-trainer-server/-trainer-connect`. |
+| `Runtime/Unity/Bootstrap/Outpost/OutpostSessionControls.cs` | Franja IMGUI (fila libre y = 102–132 del lienzo 1280×720 del panel): **Iniciar misión** (`Resume` desde `Ready`), Pausar/Reanudar, Reiniciar y, en el cliente, Conectar/Desconectar. La autoridad empieza cada época en `Ready` y el panel de D4 solo cubre tareas: sin esto nadie podía empezar ni reintentar. Solo envía comandos con la época confirmada; una solicitud en vuelo. D4 puede sustituirla por botones diseñados. |
+| `Runtime/Unity/World/Outpost/D3CrewVisualAdapter.cs` + `AstronautVisual.prefab` | Paso de integración que el HANDOFF de D4 asigna a D2 (menús *Install D3 visual adapter* y *Attach D3 adapter*), hecho a mano: copia byte a byte de `D3CrewVisualAdapter.cs.txt` y el componente añadido a la raíz del prefab. Repetir los menús en Unity es idempotente. |
+| `Tests/EditMode/Bootstrap/Editor/Phase02InteriorMatchTests.cs` | Partida completa de dos jugadores sobre la pila real (ver abajo). |
 
-Plan de montaje en `integration/phase-02`. D2 es el único editor de la escena y no hace merges unilaterales.
+`FakeOutpostSessionPort` y `OutpostFixtures` no aparecen en `Runtime/Unity`. `Phase01_PowerCoop` no cambia.
+`ProjectSettings/EditorBuildSettings.asset` (común) no se tocó: las builds usan listas explícitas de escenas.
 
-1. Crear la escena con:
-   - `OutpostBootstrap` + `OutpostRunner` (solo autoridad), con `Phase02_InteriorBase_Synthetic` asignado;
-   - los prefabs de D4;
-   - los componentes de red de D3.
-2. Escribir en `Runtime/Unity/Bootstrap/Outpost/` la composición de escena de fase 2:
-   - rol autoridad/cliente, con el mismo argumento `-trainer-role` que fase 1;
-   - fábricas reales de D1/D3 en `Compose`;
-   - el puerto local o remoto para la presentación de D4.
-3. Retirar `FakeOutpostSessionPort` del flujo real.
-4. Mantener `Phase01_PowerCoop` intacta y en la lista de build.
-5. Probar con **dos clientes reales** sobre la misma build:
-   - uno trata agua y revisa el aire; el otro hace ciencia;
-   - comprobar que ambos chocan con `StationOccupied`/`PlayerBusy`;
-   - una desconexión libera la estación;
-   - la misión termina con `ObjectiveAchieved` y se reinicia.
+### Partida de dos jugadores comprobada (memoria, un proceso)
+
+`Phase02InteriorMatch.Play` usa el asset real, la autoridad compuesta con las **mismas fábricas que la escena**,
+el `OutpostCommandBridge`, el cable `'T' 'O'`, el controlador/adaptador de cliente y `CrewInputSender` reales de D3,
+y el `LocalOutpostSessionPort` del anfitrión. Solo el transporte es en memoria (`InMemoryOutpostNetwork` de D3).
+Recorre: unión con identidades distintas en sus spawns; tarea en `Ready` → `InvalidState`; iniciar; estación lejana →
+`OutOfRange`; caminar por las puertas sin atravesar paredes y verse mutuamente; `StationOccupied` y `PlayerBusy`;
+agua (−2,0/+1,8 kg una sola vez) dos veces y ciencia en paralelo; mismo estado en ambos jugadores; desconexión durante
+una tarea → estación libre (`PerformerLeft`) y sin fantasma; reconexión con id nuevo en su hueco; alejarse →
+`PerformerMovedAway` sin efecto; revisar el aire → `ObjectiveAchieved` antes de 240 s; `SessionEnded` tras el fin;
+`Restart` por el cliente → época nueva, `Ready`, stocks y posiciones iniciales; el movimiento sigue en la época nueva.
+
+Cómo jugarla de verdad (pendiente, necesita Unity):
+
+```sh
+# En el Editor: abrir Phase02_InteriorBase y pulsar Play = anfitrión que juega (puerto 7777).
+# Build con la herramienta de D5 y dos procesos:
+Unity -batchmode -nographics -projectPath <repo> -executeMethod Trainer.Tooling.BuildChecks.Phase02.Phase02BuildChecks.BuildFromCommandLine \
+  -phase2Scenes Assets/_Project/Scenes/Phase02_InteriorBase.unity -logFile Logs/phase2-build.log
+<build> -trainer-role authority -trainer-port 7777
+<build> -trainer-role client -trainer-server 127.0.0.1 -trainer-port 7777 -trainer-connect
+```
+
+Son los argumentos por defecto de `Tools/Trainer/Phase 2/Launch last build twice` de D5. Rellenar la lista de
+comprobación de `05_VALIDATION_HANDOFF.md` con dos personas.
+
+Limitaciones conocidas:
+
+- El arte de estaciones se genera en `Configure` al componer; en la escena guardada solo está la vista previa de D4,
+  así que la auditoría «station drawn on plan» de D5 quedará Pending fuera de Play.
+- La cámara sigue al astronauta local (D3) con altura visible de 9,5 m (D4); el plano mide 18 × 10 m.
+- Los textos de tarea de `OutpostPanel` no traducen `analyze-sample` (muestra la clave); es de D4.
 
 ## Verificación ejecutada
 
@@ -245,11 +265,29 @@ Para ejecutarlo desde una terminal normal:
   -runTests -testPlatform EditMode -testResults /tmp/d2-editmode.xml -logFile /tmp/d2-editmode.log
 ```
 
+### Verificación del montaje de la escena (2026-11-14)
+
+Fuera de Unity, con el Roslyn y el .NET 6.0.21 del Editor 6000.3.28f1. Burst, Collections, Mathematics, Transport
+2.7.4 e Input System 1.20.1 se compilaron como referencias desde los `.tgz` del Editor, en una carpeta temporal fuera
+del repositorio. Nada de esto equivale a importar en Unity ni al Test Runner.
+
+| Comprobación | Resultado |
+| --- | --- |
+| `Assembly-CSharp` completo (todo `Assets/` salvo carpetas `Editor/`) como player Linux, WebGL y con `UNITY_EDITOR` | exit 0 en los tres; 0 errores; los 51 avisos son CS0649/CS0414 de campos serializados |
+| Integridad del YAML de la escena: referencias locales y anclas | 35 objetos, 0 referencias rotas, 0 anclas duplicadas |
+| GUID de los `.meta` nuevos | únicos en `Assets/` |
+| `Phase02InteriorMatch.Play` con el asset real (cargado por reflexión, sin `AssetDatabase`) | **pasa** |
+| Sensibilidad: puente que no llama a `Leave` al desconectar; expectativa cambiada `StationOccupied`→`PlayerBusy` | ambos detectados |
+| Contratos congelados, `Phase01_PowerCoop`, `ProjectSettings`, `Packages`, `Runtime/Application`, `Runtime/Simulation` | sin cambios |
+
+**No ejecutado (bloqueado):** el Editor no arranca desde esta sesión: el sandbox impide acceder a `libGL.so.1`/GTK
+y a la carpeta de licencia de Unity. Sin verificar: importación de la escena, prefab y `.meta`; Test Runner (incluida
+la nueva prueba con `AssetDatabase`); `Assembly-CSharp-Editor`; render, teclado, cámara; build; sockets; dos procesos.
+
 ## Dependencias y bloqueos
 
-- **Cierre de la fase bloqueado**: la escena, la integración y la prueba con dos clientes reales necesitan
-  las entregas de D1, D3 y D4 (tabla de arriba). Una escena YAML o una compilación aislada no lo demuestran,
-  y esta entrega no lo afirma.
+- **Cierre de la fase bloqueado por Unity**, ya no por entregas: falta importar, ejecutar el Test Runner, abrir la
+  escena, generar la build y jugar con dos procesos. Ni la escena YAML ni la partida en memoria lo demuestran.
 - No se pidió ningún cambio de contrato. Las decisiones que el contrato deja a D2 están documentadas arriba:
   - no hay estaciones `Unavailable`;
   - no se llama a `Apply` con efectos vacíos;
