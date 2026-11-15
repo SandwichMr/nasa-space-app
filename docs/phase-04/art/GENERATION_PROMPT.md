@@ -1,0 +1,9 @@
+# Generación de la base optimizada
+
+Herramienta: imagegen integrada. Referencia de materiales y paleta: imagen original del usuario, `LunarBaseInterior.png`. Resultado: `Assets/_Project/Art/Sprites/Environment/LunarBase/LunarBaseOptimized.png`. El terreno `LunarRegolith.png` es la imagen del usuario, copiada sin modificaciones.
+
+Prompt enviado:
+
+> Use case: stylized-concept. Create a production 2D top-down lunar base game asset: NEW practical RECTANGULAR lunar habitat interior, grayscale palette only, slate gray square metal floor tiles, silver/off-white beveled modular wall panels with graphite seams matching the attached reference's materials. Strict orthographic view from directly above, no isometric perspective. Transparent outside. Landscape aspect 1.8:1. Entire outer rectangular footprint visible. Interior is a single spacious empty rectangle with NO internal partitions, NO equipment, NO characters, NO furniture, NO text, NO colored lights. Its proportions are 18 metres wide by 10 metres high, with outer wall thickness 0.25 metres. Only entrance: large 3 metre wide doorway centered in RIGHT wall at 65% height from bottom; clear opening from 50% to 80% height. Top, left and bottom walls continuous and closed. Right wall segments above and below that gap. Broad, open usable floor for placing runtime water/air/science/supply stations and runtime internal modular walls. Thin consistent silver walls, subtle panel shading, regular evenly spaced square gray floor tiles. Fill image nearly edge to edge, minimal transparent margin. This will be scaled to exactly 18x10 game units and collision geometry drawn separately, so keep floor layout absolutely rectangular. Reference is palette/material guidance only, replace its irregular silhouette completely.
+
+El acceso y las divisiones interiores se montan con geometría y sprites en Unity para coincidir con las dimensiones autoritativas, sin depender de la precisión de un borde generado.

@@ -25,7 +25,7 @@ namespace Trainer.Unity.Presentation.BaseOperations.Editor
         private const string RunKey = "D4.Phase04.FakeChecks";
         private static readonly PlayerId Me = new PlayerId(1), Other = new PlayerId(2);
         private static readonly List<string> passed = new List<string>();
-        private static string Evidence => Path.GetFullPath("docs/phase-04/handoffs/d4-evidence");
+        private static string Evidence => Phase04RenderEvidence.DirectoryPath("docs/phase-04/handoffs/d4-evidence");
         private static BaseOperationsScenario scenario;
         private static BaseOperationsSnapshot snapshot;
         private static FakeBaseOperationsSessionPort fake;
@@ -70,9 +70,7 @@ namespace Trainer.Unity.Presentation.BaseOperations.Editor
         }
         private static void Setup()
         {
-            var type = Type.GetType("UnityEditor.GameView,UnityEditor");
-            var window = (EditorWindow)ScriptableObject.CreateInstance(type);
-            window.ShowUtility(); window.position = new Rect(40, 40, 1440, 930); window.Focus();
+            Phase04RenderEvidence.OpenGameView();
             root = new GameObject("D4 Phase04 COMMON FAKE — temporary, not production");
             root.AddComponent<BaseOperationsPresentationTests>();
             camera = new GameObject("Temporary fixture camera").AddComponent<Camera>();
@@ -206,6 +204,21 @@ namespace Trainer.Unity.Presentation.BaseOperations.Editor
                         camera.transform.position = new Vector3(20, 5, -10);
                         Capture("10-exterior-fake.png"); break;
                     case 10:
+                        panel.ToggleDetails(); break;
+                    case 11:
+                        typeof(BaseOperationsPanel).GetField("scroll", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                            .SetValue(panel, new Vector2(0, 10000));
+                        Capture("11-eva-details-fake.png"); break;
+                    case 12:
+                        panel.ClosePanel();
+                        const string warning = "d4-render-fixture-warning";
+                        Publish(BaseOperationsFixtures.Edit(scenario, snapshot).Expedition(e => e
+                            .Issue(new AdvisoryMessage(warning, AdvisoryKind.ShelterInstruction, 120, 150, 190, null, "particle-warning"))
+                            .Receive(warning, Me, 130)));
+                        intents.Emit(Trainer.Application.Outpost.OutpostReasons.Accepted);
+                        Check(panel.Advisory.Contains("AVISO"), "received fixture advisory remains visible alongside accepted feedback");
+                        Capture("12-advisory-and-feedback-fake.png"); break;
+                    case 13:
                         End(true, "Native PlayMode smoke checks with COMMON FAKE only. Captures are scripted states, not authority, networking, build or human play."); break;
                 }
             }
@@ -243,6 +256,8 @@ namespace Trainer.Unity.Presentation.BaseOperations.Editor
         private static void Capture(string name)
         {
             Check(Screen.width >= 1000 && Screen.height >= 600, "render capture has a usable Game view size");
+            Check(Screen.width == Phase04RenderEvidence.Width && Screen.height == Phase04RenderEvidence.Height,
+                $"fixed capture resolution {Screen.width}x{Screen.height}");
             ScreenCapture.CaptureScreenshot(Path.Combine(Evidence, name));
             Debug.Log("D4_PHASE04_CAPTURE " + name);
         }
@@ -268,6 +283,7 @@ namespace Trainer.Unity.Presentation.BaseOperations.Editor
                 + detail + "\n" + string.Join("\n", passed) + "\n");
             Debug.Log("D4_PHASE04_RESULT " + (success ? "PASS" : "FAIL") + " checks=" + passed.Count + "\n" + detail);
             panel?.Unbind(); world?.Unbind(); exterior?.Unbind(); intents?.Dispose();
+            Phase04RenderEvidence.CloseGameView();
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-d4-ci") >= 0) EditorApplication.Exit(success ? 0 : 1);
             else { if (root != null) UnityEngine.Object.Destroy(root); EditorApplication.ExitPlaymode(); }
         }

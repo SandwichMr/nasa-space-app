@@ -4,10 +4,12 @@ using Trainer.Application.Outpost;
 using Trainer.Unity.Presentation.Expedition;
 using Trainer.Unity.World.Outpost;
 using UnityEngine;
+using Trainer.Unity.Configuration;
 namespace Trainer.Unity.World.Expedition
 {
     public sealed class ExpeditionWorldView : ExpeditionBoundView
     {
+        [SerializeField] private Sprite lunarSurface;
         [SerializeField] private Sprite regolith, rock, route, hatchOpen, hatchClosed, hatchCycle, shelter, antenna;
         [SerializeField] private Material material;
         [SerializeField] private OutpostStationView sciencePrefab, optionalPrefab;
@@ -37,24 +39,31 @@ namespace Trainer.Unity.World.Expedition
                         station.SetCaption(caption, .05f);
                     }
                 }
-            foreach (var z in s.Zones)
+            if (lunarSurface != null)
+            {
+                var surface = new GameObject("World anchored lunar surface");
+                surface.transform.SetParent(generated,false);
+                surface.AddComponent<LunarSurfaceView>().Configure(lunarSurface,material);
+            }
+            else foreach (var z in s.Zones)
                 if (z.Zone == CrewZone.Exterior) Draw("Regolith", z.Area, regolith, -950, true);
             foreach (var r in s.Layout.Obstacles)
             {
+                if(lunarSurface!=null && r.MinX<LunarBasePlan.OuterHatch.MaxX)continue;
                 var p = new BasePosition((r.MinX+r.MaxX)/2,(r.MinY+r.MaxY)/2);
                 if (s.TryGetZone(p, out var zone) && zone == CrewZone.Exterior) Draw("Rock — exact blocking footprint",r,rock,-798);
             }
-            Draw("Airlock chamber",s.Airlock.Chamber,regolith,-940,true);
+            if(lunarSurface==null) Draw("Airlock chamber",s.Airlock.Chamber,regolith,-940,true);
             inner = Draw("Inner hatch",s.Airlock.InnerHatch,hatchClosed,1500);
             outer = Draw("Outer hatch",s.Airlock.OuterHatch,hatchClosed,1500);
-            airlockLabel = Text("ESCLUSA · sin datos",Center(s.Airlock.Chamber)+Vector3.up*2,.14f);
+            airlockLabel = Text("ESCLUSA · sin datos",Center(s.Airlock.Chamber)+Vector3.up*(float)(s.Airlock.Chamber.Height/2-.8),.18f);
             foreach (var z in s.Zones) if (z.Zone == CrewZone.Shelter)
             {
                 Vector3 p = Center(z.Area);
-                Icon("Shelter sign",shelter,p,1.2f,-790);
-                shelterLabel = Text("REFUGIO · sin datos",p+Vector3.up*1.2f,.16f);
+                if(lunarSurface==null) Icon("Shelter sign",shelter,p,1.2f,-790);
+                shelterLabel = Text("REFUGIO · sin datos",lunarSurface!=null ? new Vector3(p.x,(float)z.Area.MaxY-3.5f,0) : p+Vector3.up*1.2f,.16f);
             }
-            Icon("Antenna",antenna,At(s.Comms.Antenna),1.2f,900);
+            if(lunarSurface==null) Icon("Antenna",antenna,At(s.Comms.Antenna),1.2f,900);
             foreach (var p in s.Layout.Stations)
             {
                 if (p.Id.Value != "regolith-site" && p.Id.Value != "crater-rim") continue;

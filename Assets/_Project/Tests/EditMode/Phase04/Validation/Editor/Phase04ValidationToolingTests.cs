@@ -232,6 +232,27 @@ namespace Trainer.Tests.Phase04.Validation
 
         // ---- fake port and discovery ----------------------------------------------------------------------------------
 
+        [TestCase(SessionState.Ready, 1)]
+        [TestCase(SessionState.Running, 0)]
+        [TestCase(SessionState.Paused, 0)]
+        public void UnattendedPilotStartsOnlyAReadyJoinedSession(SessionState state, int expectedCommands)
+        {
+            var scenario = BaseOperationsFixtures.Scenario();
+            var fake = new FakeBaseOperationsSessionPort();
+            fake.Publish(BaseOperationsFixtures.Edit(scenario, BaseOperationsFixtures.Initial(scenario, 7, P1))
+                .Expedition(e => e.Session(state)).Build());
+            BaseOperationsAutopilot.RequestInitialStart(fake);
+            Assert.That(fake.PendingExpeditionCommands, Is.Empty, "no start before confirmed membership");
+            fake.Join(P1);
+            BaseOperationsAutopilot.RequestInitialStart(fake);
+            Assert.That(fake.PendingExpeditionCommands.Count, Is.EqualTo(expectedCommands));
+            if (expectedCommands == 1)
+            {
+                Assert.That(fake.PendingExpeditionCommands[0].Action, Is.EqualTo(ExpeditionAction.Resume));
+                Assert.That(fake.PendingExpeditionCommands[0].Epoch, Is.EqualTo(7));
+            }
+        }
+
         [Test]
         public void StreamValidatorRunsOverTheFakePortWithoutCountingItAsAnImplementation()
         {
@@ -239,9 +260,9 @@ namespace Trainer.Tests.Phase04.Validation
             var fake = new FakeBaseOperationsSessionPort();
             var v = new BaseOperationsStreamValidator(s, Phase04Kinds.FixtureFake);
             fake.BaseOperationsChanged += v.Observe;
-            fake.Join(P1);
             BaseOperationsSnapshot s0 = BaseOperationsFixtures.Initial(s, 0, P1);
             fake.Publish(s0);
+            fake.Join(P1);
             fake.Publish(BaseOperationsFixtures.Edit(s, s0).Expedition(e => e.Session(SessionState.Running).AtTime(5)).Build());
             Assert.That(v.Observed, Is.EqualTo(2));
             Assert.That(v.HasViolations, Is.False);

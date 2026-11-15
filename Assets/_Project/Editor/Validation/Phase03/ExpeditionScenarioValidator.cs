@@ -41,6 +41,12 @@ namespace Trainer.Tooling.Validation.Phase03
             OutpostLayout open = s.Layout, closed = s.LayoutWithHatches(true, true);
             List<BasePosition> points = GridPoints(open, r);
 
+            if(s.Layout.Bounds.Width*s.Layout.Bounds.Height/(Grid*Grid)>1000000)
+            {
+                bool covered=s.Zones.Any(z=>z.Zone==CrewZone.Exterior&&z.Area.Contains(s.Layout.Bounds));
+                checks.Add(new Phase03Check("extended open terrain coverage",covered,"finite obstacle/station neighbourhood sampled; exterior fallback must cover the entire extended bounds"));
+                if(!covered)return checks;
+            }
             int uncovered = points.Count(p => !s.TryGetZone(p, out _));
             checks.Add(new Phase03Check("zones cover every admissible position", uncovered == 0,
                 $"{points.Count} admissible grid points, {uncovered} without zone"));
@@ -172,10 +178,22 @@ namespace Trainer.Tooling.Validation.Phase03
 
         // ---- grid ------------------------------------------------------------------------------------------
 
+        private static BaseRect AuditBounds(OutpostLayout layout)
+        {
+            var world=layout.Bounds;
+            if(world.Width*world.Height/(Grid*Grid)<=1000000)return world;
+            double minX=0,minY=0,maxX=0,maxY=0;
+            foreach(var r in layout.Obstacles)
+            {minX=Math.Min(minX,r.MinX);minY=Math.Min(minY,r.MinY);maxX=Math.Max(maxX,r.MaxX);maxY=Math.Max(maxY,r.MaxY);}
+            foreach(var station in layout.Stations)
+            {minX=Math.Min(minX,station.Position.X);minY=Math.Min(minY,station.Position.Y);maxX=Math.Max(maxX,station.Position.X);maxY=Math.Max(maxY,station.Position.Y);}
+            return new BaseRect(Math.Max(world.MinX,minX-4),Math.Max(world.MinY,minY-4),Math.Min(world.MaxX,maxX+4),Math.Min(world.MaxY,maxY+4));
+        }
+
         private static List<BasePosition> GridPoints(OutpostLayout layout, double r)
         {
             var list = new List<BasePosition>();
-            BaseRect b = layout.Bounds;
+            BaseRect b = AuditBounds(layout);
             for (double y = b.MinY + Grid / 2; y < b.MaxY; y += Grid)
                 for (double x = b.MinX + Grid / 2; x < b.MaxX; x += Grid)
                 {
@@ -187,7 +205,7 @@ namespace Trainer.Tooling.Validation.Phase03
 
         private static int Key(OutpostLayout layout, BasePosition p)
         {
-            int i = (int)Math.Floor((p.X - layout.Bounds.MinX) / Grid), j = (int)Math.Floor((p.Y - layout.Bounds.MinY) / Grid);
+            int i = (int)Math.Floor((p.X - AuditBounds(layout).MinX) / Grid), j = (int)Math.Floor((p.Y - AuditBounds(layout).MinY) / Grid);
             return j * 100000 + i;
         }
 
@@ -197,7 +215,7 @@ namespace Trainer.Tooling.Validation.Phase03
         private static HashSet<int> Flood(OutpostLayout layout, double r, BasePosition start)
         {
             var seen = new HashSet<int>();
-            BaseRect b = layout.Bounds;
+            BaseRect b = AuditBounds(layout);
             int nx = (int)Math.Ceiling(b.Width / Grid), ny = (int)Math.Ceiling(b.Height / Grid);
             BasePosition At(int i, int j) => new BasePosition(b.MinX + (i + 0.5) * Grid, b.MinY + (j + 0.5) * Grid);
             int si = (int)Math.Floor((start.X - b.MinX) / Grid), sj = (int)Math.Floor((start.Y - b.MinY) / Grid);

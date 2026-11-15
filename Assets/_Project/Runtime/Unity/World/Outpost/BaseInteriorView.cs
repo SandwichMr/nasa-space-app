@@ -24,6 +24,9 @@ namespace Trainer.Unity.World.Outpost
         public IReadOnlyList<OutpostStationView> Stations => stations;
         public IReadOnlyList<SpriteRenderer> Blockers => blockers;
         public OutpostScenario Scenario { get; private set; }
+        private Sprite lunarArtwork;
+        public bool HasLunarStyle => lunarArtwork != null;
+        public void SetLunarArtwork(Sprite sprite) => lunarArtwork = sprite;
 
         public void Configure(OutpostScenario scenario)
         {
@@ -31,22 +34,25 @@ namespace Trainer.Unity.World.Outpost
             Scenario = scenario ?? throw new ArgumentNullException(nameof(scenario));
             generated = new GameObject("Layout projection (D2 geometry)").transform;
             generated.SetParent(transform, false);
-            BaseRect b = scenario.Layout.Bounds;
-            Draw("Floor", b, floor, -1000, Color.white, true);
-            // This trim lies OUTSIDE the walkable bounds, never narrows a doorway.
-            const double t = .18;
-            Draw("Outside west", new BaseRect(b.MinX-t,b.MinY-t,b.MinX,b.MaxY+t), wall, -850, Color.white);
-            Draw("Outside east", new BaseRect(b.MaxX,b.MinY-t,b.MaxX+t,b.MaxY+t), wall, -850, Color.white);
-            Draw("Outside south", new BaseRect(b.MinX,b.MinY-t,b.MaxX,b.MinY), wall, -850, Color.white);
-            Draw("Outside north", new BaseRect(b.MinX,b.MaxY,b.MaxX,b.MaxY+t), wall, -850, Color.white);
-            foreach (BaseRect obstacle in scenario.Layout.Obstacles)
+            if (HasLunarStyle)
             {
-                SpriteRenderer r = Draw("Blocking rectangle", obstacle, wall, -800, Color.white);
-                blockers.Add(r);
-                // Bevel stays inside the exact physical footprint.
-                double inset = Math.Min(.06, Math.Min(obstacle.Width, obstacle.Height) / 4);
-                Draw("Wall inset", new BaseRect(obstacle.MinX+inset,obstacle.MinY+inset,
-                    obstacle.MaxX-inset,obstacle.MaxY-inset), stripe, -799, new Color(.31f,.43f,.54f));
+                generated.gameObject.AddComponent<LunarInteriorArchitecture>().Configure(scenario,material);
+            }
+            else
+            {
+                BaseRect b=scenario.Layout.Bounds;
+                Draw("Floor",b,floor,-1000,Color.white,true);
+                const double t=.18;
+                Draw("Outside west",new BaseRect(b.MinX-t,b.MinY-t,b.MinX,b.MaxY+t),wall,-850,Color.white);
+                Draw("Outside east",new BaseRect(b.MaxX,b.MinY-t,b.MaxX+t,b.MaxY+t),wall,-850,Color.white);
+                Draw("Outside south",new BaseRect(b.MinX,b.MinY-t,b.MaxX,b.MinY),wall,-850,Color.white);
+                Draw("Outside north",new BaseRect(b.MinX,b.MaxY,b.MaxX,b.MaxY+t),wall,-850,Color.white);
+                foreach(var obstacle in scenario.Layout.Obstacles)
+                {
+                    blockers.Add(Draw("Blocking rectangle",obstacle,wall,-800,Color.white));
+                    double inset=Math.Min(.06,Math.Min(obstacle.Width,obstacle.Height)/4);
+                    Draw("Wall inset",new BaseRect(obstacle.MinX+inset,obstacle.MinY+inset,obstacle.MaxX-inset,obstacle.MaxY-inset),stripe,-799,new Color(.31f,.43f,.54f));
+                }
             }
             foreach (StationPlacement p in scenario.Layout.Stations)
             {
@@ -65,6 +71,7 @@ namespace Trainer.Unity.World.Outpost
                 var station = Instantiate(stationPrefab, generated, false);
                 station.name = "Station " + key;
                 station.Configure(p, label, sprite, color);
+                if(HasLunarStyle && p.Position.X<Trainer.Unity.Configuration.LunarBasePlan.InnerHatch.MinX) station.ApplyLunarLabelStyle();
                 stations.Add(station);
             }
         }

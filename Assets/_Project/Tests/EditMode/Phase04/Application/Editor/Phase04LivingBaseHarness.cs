@@ -41,14 +41,17 @@ public sealed class Phase04LivingBaseHarness
     public static readonly BasePosition OutsideHatch = new BasePosition(15.8, 5.0);
     public static readonly BasePosition AtRegolith = new BasePosition(21, 5);
 
-    public Phase04LivingBaseHarness(BaseOperationsScenario scenario = null, BaseSessionMode mode = BaseSessionMode.Continuous)
+    public Phase04LivingBaseHarness(BaseOperationsScenario scenario = null, BaseSessionMode mode = BaseSessionMode.Continuous,
+        Func<BaseEquipmentSimulation, IBaseEquipmentModel> equipmentDecorator = null,
+        Func<EvaSuitSimulation, IEvaSimulation> evaDecorator = null)
     {
         Scenario = scenario ?? BaseOperationsFixtures.Scenario(null);
         Base = new OutpostBaseSimulation(OutpostSimulationParameters.SyntheticTraining());
         Equipment = new BaseEquipmentSimulation();
         Eva = new EvaSuitSimulation();
         Roster = CrewRoster.For(Scenario.Expedition.Outpost);
-        Authority = new BaseOperationsAuthority(Scenario, Base, Equipment, Eva, Roster, mode);
+        Authority = new BaseOperationsAuthority(Scenario, Base, equipmentDecorator?.Invoke(Equipment) ?? Equipment,
+            evaDecorator?.Invoke(Eva) ?? Eva, Roster, mode);
         Authority.SnapshotChanged += s => Published.Add(s);
         Authority.CommandCompleted += (sender, result) => Results.Add((sender, result));
     }
@@ -212,7 +215,7 @@ public sealed class Phase04LivingBaseHarness
             Now.Expedition.Airlock.CycleSequence));
 
     /// <summary>Whole sortie of one member: suit checklist, egress, regolith sample, ingress, suit back to Worn.</summary>
-    public void Sortie(PlayerId p)
+    public void Sortie(PlayerId p, bool completeScience = true)
     {
         if (!(Now.Expedition.TryGetSuitOf(p, out SuitState worn) && worn.Status == SuitStatus.Worn))
         {
@@ -229,7 +232,15 @@ public sealed class Phase04LivingBaseHarness
         Assert.That(Cycle(p).Accepted);
         Until(() => Now.Expedition.Airlock.State == AirlockState.DepressurizedOuterOpen, 30);
         Walk(p, OutsideHatch, AtRegolith);
-        DoTask(p, ExpeditionFixtures.RegolithSite, ExpeditionFixtures.CollectRegolith);
+        if (completeScience) DoTask(p, ExpeditionFixtures.RegolithSite, ExpeditionFixtures.CollectRegolith);
+        else
+        {
+            Assert.That(Send(p, ExpeditionCommand.StartTask(Guid.NewGuid(), Now.Epoch, ExpeditionFixtures.RegolithSite,
+                ExpeditionFixtures.CollectRegolith, Crew(p).ZoneSequence)).Accepted);
+            Tick(1);
+            Assert.That(Send(p, ExpeditionCommand.CancelTask(Guid.NewGuid(), Now.Epoch, ExpeditionFixtures.RegolithSite)).Accepted);
+            Assert.That(Send(p, ExpeditionCommand.DeclareReturn(Guid.NewGuid(), Now.Epoch)).Accepted);
+        }
         Walk(p, OutsideHatch, new BasePosition(14.2, ChamberA.Y), ChamberA);
         Assert.That(Cycle(p).Accepted);
         Until(() => Now.Expedition.Airlock.State == AirlockState.PressurizedInnerOpen, 30);

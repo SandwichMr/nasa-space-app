@@ -190,7 +190,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e0b51facd68dac223a3dd2c77e87db11, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Presentation.BaseOperations.BaseOperationsPanel
 --- !u!1 &496560927
 GameObject:
@@ -252,7 +252,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f3c0814f70b497381fdf4a73b369f9c, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Validation.Phase04.BaseOperationsAutopilot
 --- !u!114 &561702544
 MonoBehaviour:
@@ -264,7 +264,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d59616d8d40d410eab847e5bd48ef948, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.BaseOperations.BaseOperationsSceneComposition
   role: 0
   readCommandLine: 1
@@ -278,6 +278,7 @@ MonoBehaviour:
   operationsInput: {fileID: 1624164576}
   crewPresenter: {fileID: 1624164575}
   baseView: {fileID: 924289264}
+  lunarInteriorArtwork: {fileID: 21300000, guid: 52a0fd801f816852491624fb0353cae6, type: 3}
   sessionControls: {fileID: 918466744}
   phase3Mount: {fileID: 496560928}
   phase4Mount: {fileID: 1992628014}
@@ -381,10 +382,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9437a80aacfb0b868bac12828522645b, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Presentation.BaseOperations.BaseOperationsCameraFraming
   panel: {fileID: 304555344}
-  visibleHeightMeters: 10.8
+  visibleHeightMeters: 12.5
 --- !u!114 &756347202
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -395,7 +396,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
@@ -471,7 +472,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4c70d856a22c439795a675a0b2350931, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.OutpostSessionControls
 --- !u!4 &918466745
 Transform:
@@ -554,7 +555,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 31f5743398641672ba013a487c4009d1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.World.Outpost.BaseInteriorView
 --- !u!1 &929317447
 GameObject:
@@ -583,7 +584,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.2D.Runtime::UnityEngine.Rendering.Universal.Light2D
   m_ComponentVersion: 3
   m_LightType: 4
@@ -667,14 +668,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8db5814ac26653e8db9df7bba2bab80c, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.BaseOperations.BaseOperationsNetworkClient
   options:
     Address: 127.0.0.1
     Port: 7777
     Path: /
     Secure: 0
-    ServerName: 
+    ServerName:
     ConnectTimeoutMs: 1000
     MaxConnectAttempts: 10
     DisconnectTimeoutMs: 30000
@@ -759,7 +760,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1bc2d36b547783c1b09a0b7c67535ae, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.Expedition.ExpeditionCrewPresenter
   avatars: {fileID: 1624164578}
 --- !u!114 &1624164576
@@ -772,7 +773,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 08d8157457aea8588895da8f34500564, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Controls.BaseOperationsInteractionInput
   interactWithE: 1
 --- !u!114 &1624164577
@@ -785,7 +786,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 60438bce73214523d8ea588fc1ffa796, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Controls.ExpeditionInteractionInput
   interactWithE: 0
   declareReturnWithR: 1
@@ -799,7 +800,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1c5347ada6294a948a5d216ad4ecbc6b, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.Outpost.CrewAvatarSync
   avatarPrefab: {fileID: 8386218846017305754, guid: 375e72ef9803e558ba1837740d14a955, type: 3}
   avatarParent: {fileID: 1047317570}
@@ -818,7 +819,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ebf0037a07a74edaa04c7a64b43f6484, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Controls.CrewKeyboardInput
   interactWithE: 0
 --- !u!4 &1624164580
@@ -890,7 +891,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6106454983425843380, guid: b3789ac1a217311db9d30919fae24d47, type: 3}
       propertyPath: baseInterior
-      value: 
+      value:
       objectReference: {fileID: 924289264}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -964,14 +965,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 87eeb26a798fa038abf69f6c4fe56bb5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Networking.BaseOperations.BaseOperationsNetworkHost
   options:
     BindAddress: 0.0.0.0
     Port: 7777
     Path: /
-    CertificatePemPath: 
-    PrivateKeyPemPath: 
+    CertificatePemPath:
+    PrivateKeyPemPath:
     DisconnectTimeoutMs: 30000
   listenOnStart: 1
   readCommandLine: 1
@@ -988,7 +989,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: de4cf4b6b8a54f83940c92e08472c450, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.BaseOperations.BaseOperationsBootstrap
   scenario: {fileID: 11400000, guid: 211ef56f239948e4ae53d87b1abb9008, type: 2}
   runner: {fileID: 2032939825}
@@ -1002,7 +1003,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3d7801a5f94c4e559a5238c7a69b99b7, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Bootstrap.BaseOperations.BaseOperationsRunner
 --- !u!4 &2032939826
 Transform:
@@ -1033,8 +1034,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5736760841334246956, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
       propertyPath: baseView
-      value: 
+      value:
       objectReference: {fileID: 924289264}
+    - target: {fileID: 5736760841334246956, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
+      propertyPath: lunarSurface
+      value:
+      objectReference: {fileID: 21300000, guid: 2e492de9956568b8cbec26725da78682, type: 3}
     - target: {fileID: 6400238151197472432, guid: e8d8cfbfb65fee158bd42a39782bee2f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

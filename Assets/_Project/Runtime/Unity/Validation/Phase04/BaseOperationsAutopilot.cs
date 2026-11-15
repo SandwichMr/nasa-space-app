@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using Trainer.Application.BaseOperations;
+using Trainer.Application.Expedition;
 using Trainer.Unity.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -57,6 +58,7 @@ namespace Trainer.Unity.Validation.Phase04
             }
             role = string.Equals(Value(args, "-trainer-autopilot-role"), "air", StringComparison.OrdinalIgnoreCase)
                 ? ContinuityRole.AirAndLogistics : ContinuityRole.Water;
+            UnityEngine.Application.targetFrameRate = 60;
             if (double.TryParse(Value(args, "-trainer-autopilot-minutes"), NumberStyles.Float, CultureInfo.InvariantCulture, out double m) && m > 0)
                 minutes = m;
             if (double.TryParse(Value(args, "-trainer-autopilot-timeout"), NumberStyles.Float, CultureInfo.InvariantCulture, out double t) && t > 0)
@@ -89,6 +91,7 @@ namespace Trainer.Unity.Validation.Phase04
                 actor = new PortIntentsActor(port, intents);
                 script = new BaseOperationsContinuityScript(actor, scenario, role, minutes * 60);
                 Debug.Log($"[Autopilot] Bound to {port.GetType().Name} / {intents.GetType().Name}, scenario '{scenario.Id}'.");
+                RequestInitialStart(port);
             }
             if (script != null)
             {
@@ -116,6 +119,14 @@ namespace Trainer.Unity.Validation.Phase04
         }
 
         private void OnDestroy() => actor?.Dispose();
+
+        /// <summary>The unattended build starts through the same session command as the UI. Never resumes a paused game.</summary>
+        public static void RequestInitialStart(IBaseOperationsSessionPort port)
+        {
+            if (port != null && port.Membership.IsJoined && port.TryGetBaseOperations(out BaseOperationsSnapshot state)
+                && state.Outpost.State == Trainer.Application.SessionState.Ready)
+                port.Submit(ExpeditionCommand.Session(Guid.NewGuid(), state.Epoch, ExpeditionAction.Resume));
+        }
 
         /// <summary>First component in the loaded scenes exposing the port, the intents and the scenario (all non-null).</summary>
         public static bool TryFindSession(out IBaseOperationsSessionPort port, out IBaseOperationsIntents intents, out BaseOperationsScenario scenario)

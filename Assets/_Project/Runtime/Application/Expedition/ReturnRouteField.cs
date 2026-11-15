@@ -20,14 +20,20 @@ namespace Trainer.Application.Expedition
         private readonly int nx, ny;
         private readonly double[] distance;
         private readonly BasePosition entry;
+        private readonly ExpeditionScenario scenario;
+        private readonly OutpostLayout layout;
+        private readonly double crewRadius;
+        private readonly List<(BasePosition point, double distance)> frontier = new List<(BasePosition, double)>();
 
         public int ReachableCells { get; }
 
         public ReturnRouteField(ExpeditionScenario scenario)
         {
             if (scenario == null) throw new ArgumentNullException(nameof(scenario));
-            OutpostLayout layout = scenario.Layout;
+            this.scenario = scenario;
+            layout = scenario.Layout;
             double radius = scenario.Outpost.Movement.CrewRadiusMeters;
+            crewRadius=radius;
             entry = scenario.Airlock.ExteriorEntry;
 
             double x0 = double.PositiveInfinity, y0 = double.PositiveInfinity, x1 = double.NegativeInfinity, y1 = double.NegativeInfinity;
@@ -39,6 +45,15 @@ namespace Trainer.Application.Expedition
                 }
             x0 = Math.Max(x0, layout.Bounds.MinX); y0 = Math.Max(y0, layout.Bounds.MinY);
             x1 = Math.Min(x1, layout.Bounds.MaxX); y1 = Math.Min(y1, layout.Bounds.MaxY);
+            // Keep a detailed field around authored obstacles. Open terrain beyond that field uses visible
+            // connections to its reachable perimeter instead of allocating a planet-sized array.
+            if ((x1-x0)*(y1-y0)/(CellMeters*CellMeters)>1000000)
+            {
+                double left=entry.X,right=entry.X,bottom=entry.Y,top=entry.Y;
+                foreach(var obstacle in layout.Obstacles)
+                {left=Math.Min(left,obstacle.MinX);right=Math.Max(right,obstacle.MaxX);bottom=Math.Min(bottom,obstacle.MinY);top=Math.Max(top,obstacle.MaxY);}
+                x0=Math.Max(x0,left-4);x1=Math.Min(x1,right+4);y0=Math.Max(y0,bottom-4);y1=Math.Min(y1,top+4);
+            }
             minX = x0;
             minY = y0;
             nx = Math.Max(1, (int)Math.Ceiling((x1 - x0) / CellMeters));
@@ -88,6 +103,9 @@ namespace Trainer.Application.Expedition
             int reachable = 0;
             foreach (double d in distance) if (!double.IsInfinity(d)) reachable++;
             ReachableCells = reachable;
+            for(int j=0;j<ny;j++)for(int i=0;i<nx;i++)
+                if((i==0||j==0||i==nx-1||j==ny-1)&&!double.IsInfinity(distance[j*nx+i]))
+                    frontier.Add((Center(i,j),distance[j*nx+i]));
         }
 
         /// <summary>Route length in metres from <paramref name="position"/> to the entry; false when no reachable cell is
@@ -95,7 +113,16 @@ namespace Trainer.Application.Expedition
         public bool TryGetPathMeters(BasePosition position, out double meters)
         {
             meters = double.PositiveInfinity;
-            if (!TryCell(position, out int ci, out int cj)) return false;
+            if (!TryCell(position, out int ci, out int cj))
+            {
+                if(!layout.IsAdmissible(position,crewRadius)||!scenario.TryGetZone(position,out var zone)||zone!=CrewZone.Exterior)return false;
+                foreach(var candidate in frontier)
+                {
+                    double total=candidate.distance+candidate.point.DistanceTo(position);
+                    if(total<meters&&ClearSegment(position,candidate.point))meters=total;
+                }
+                return !double.IsInfinity(meters);
+            }
             for (int dj = -1; dj <= 1; dj++)
                 for (int di = -1; di <= 1; di++)
                 {
@@ -108,6 +135,24 @@ namespace Trainer.Application.Expedition
             if (double.IsInfinity(meters)) return false;
             meters = Math.Max(meters, position.DistanceTo(entry)); // never shorter than the straight line
             return true;
+        }
+
+        private bool ClearSegment(BasePosition from,BasePosition to)
+        {
+            foreach(var obstacle in layout.Obstacles)
+            {
+                double lo=0,hi=1;
+                if(Clip(from.X,to.X-from.X,obstacle.MinX-crewRadius,obstacle.MaxX+crewRadius,ref lo,ref hi)
+                    &&Clip(from.Y,to.Y-from.Y,obstacle.MinY-crewRadius,obstacle.MaxY+crewRadius,ref lo,ref hi))return false;
+            }
+            return true;
+        }
+        private static bool Clip(double origin,double delta,double min,double max,ref double lo,ref double hi)
+        {
+            if(Math.Abs(delta)<1e-12)return origin>=min&&origin<=max;
+            double a=(min-origin)/delta,b=(max-origin)/delta;
+            if(a>b){double swap=a;a=b;b=swap;}
+            lo=Math.Max(lo,a);hi=Math.Min(hi,b);return lo<=hi;
         }
 
         private BasePosition Center(int i, int j) => new BasePosition(minX + (i + 0.5) * CellMeters, minY + (j + 0.5) * CellMeters);

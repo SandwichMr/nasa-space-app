@@ -25,7 +25,13 @@ namespace Trainer.Unity.Validation.Phase04
             if (scenario == null) throw new ArgumentNullException(nameof(scenario));
             layout = scenario.LayoutWithHatches(true, true);
             radius = scenario.Outpost.Movement.CrewRadiusMeters;
-            BaseRect bounds = layout.Bounds;
+            // This pilot navigates the inhabited area; an extended exterior must not allocate a planet-sized grid.
+            double maxX=0,maxY=0,minStationY=0;
+            foreach(var station in layout.Stations)
+            { maxX=Math.Max(maxX,station.Position.X);maxY=Math.Max(maxY,station.Position.Y);minStationY=Math.Min(minStationY,station.Position.Y); }
+            BaseRect world=layout.Bounds;
+            BaseRect bounds=new BaseRect(Math.Max(world.MinX,-4),Math.Max(world.MinY,minStationY-4),
+                Math.Min(world.MaxX,maxX+4),Math.Min(world.MaxY,maxY+4));
             minX = bounds.MinX;
             minY = bounds.MinY;
             nx = (int)Math.Floor((bounds.MaxX - bounds.MinX) / Grid) + 1;

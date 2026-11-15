@@ -34,6 +34,7 @@ namespace Trainer.Unity.Validation.Phase04
         public int RechecksStarted;
         public int Inspections;
         public int AirServices;
+        public int PowerStallsCancelled;
         public int RepairsRestored;
         public int OrdersPlaced;
         public int UnloadsStarted;
@@ -50,9 +51,9 @@ namespace Trainer.Unity.Validation.Phase04
             refusals.Sort(StringComparer.Ordinal);
             return string.Format(CultureInfo.InvariantCulture,
                 "driver={0:0.0}s sim={1:0.0}s epoch={2} requests={3} accepted={4} batches={5} routes={6} offSpecReprocess={7} rechecks={8} " +
-                "inspections={9} airServices={10} repairs={11} orders={12} unloads={13} ordersUnloaded={14} faultSeen={15} refusals=[{16}]",
+                "inspections={9} airServices={10} powerStallsCancelled={11} repairs={12} orders={13} unloads={14} ordersUnloaded={15} faultSeen={16} refusals=[{17}]",
                 DriverSeconds, SimulatedSeconds, Epoch, Requests, Accepted, BatchesStarted, RoutesAccepted, RoutesRejectedOffSpec,
-                RechecksStarted, Inspections, AirServices, RepairsRestored, OrdersPlaced, UnloadsStarted, OrdersSeenUnloaded, FaultSeen,
+                RechecksStarted, Inspections, AirServices, PowerStallsCancelled, RepairsRestored, OrdersPlaced, UnloadsStarted, OrdersSeenUnloaded, FaultSeen,
                 string.Join(",", refusals));
         }
     }
@@ -92,6 +93,9 @@ namespace Trainer.Unity.Validation.Phase04
         private double lastWaterInspect = double.NegativeInfinity, lastAirInspect = double.NegativeInfinity;
         private double lastOrderAt = double.NegativeInfinity;
         private bool waterNeedsTest, airNeedsTest;
+        private bool recoveringAirPower;
+        private double airPowerRecoveryTarget;
+        private double stalledAirSince = -1;
         private readonly HashSet<long> unloadedSeen = new HashSet<long>();
 
         private StationId pathStation;
@@ -150,7 +154,35 @@ namespace Trainer.Unity.Validation.Phase04
             {
                 actor.Move(0, 0);
                 Activity = "operating " + own.Action + (own.Stalled ? " (stalled: power not served)" : "");
+                if (Role == ContinuityRole.AirAndLogistics && own.Action == BaseOperationAction.ServiceAir
+                    && own.Choice == OperationChoice.RegenerateStandbyBed && own.Stalled)
+                {
+                    if (stalledAirSince < 0) stalledAirSince = Metrics.DriverSeconds;
+                    if (!waiting && Metrics.DriverSeconds - stalledAirSince >= 3
+                        && actor.Request(BaseOperationAction.CancelOperation, own.Station, OperationChoice.None, null, BaseOperationCommand.Unstated))
+                    {
+                        waiting = true;
+                        waitingAction = BaseOperationAction.CancelOperation;
+                        waitingChoice = OperationChoice.None;
+                        Note(s, "cancelled stalled air regeneration to release power and recharge");
+                    }
+                }
+                else if (!own.Stalled) stalledAirSince = -1;
                 return;
+            }
+            stalledAirSince = -1;
+            if (recoveringAirPower)
+            {
+                double energy = s.Outpost.Resources.Power.EnergyJoules;
+                if (energy < airPowerRecoveryTarget)
+                {
+                    actor.Move(0, 0);
+                    Activity = "waiting for power recharge (" + energy.ToString("0", CultureInfo.InvariantCulture) + "/"
+                               + airPowerRecoveryTarget.ToString("0", CultureInfo.InvariantCulture) + " J)";
+                    return;
+                }
+                recoveringAirPower = false;
+                Note(s, "battery recovered to " + energy.ToString("0", CultureInfo.InvariantCulture) + " J; retrying air regeneration");
             }
             if (Metrics.DriverSeconds < retryAt) return;
             Goal goal = Role == ContinuityRole.Water ? NextWater(s) : NextAirOrLogistics(s);
@@ -221,13 +253,25 @@ namespace Trainer.Unity.Validation.Phase04
                 Metrics.Accepted++;
                 switch (waitingAction)
                 {
+                    case BaseOperationAction.CancelOperation:
+                        if (Role == ContinuityRole.AirAndLogistics)
+                        {
+                            recoveringAirPower = true;
+                            Metrics.PowerStallsCancelled++;
+                            airPowerRecoveryTarget = RequiredAirRegenerationEnergy() * 1.1;
+                        }
+                        break;
                     case BaseOperationAction.ProcessBatch: Metrics.BatchesStarted++; break;
                     case BaseOperationAction.RouteProduct:
                         Metrics.RoutesAccepted++;
                         if (waitingChoice == OperationChoice.Reprocess) Metrics.RoutesRejectedOffSpec++;
                         break;
                     case BaseOperationAction.RecheckPotable: Metrics.RechecksStarted++; break;
-                    case BaseOperationAction.Inspect: Metrics.Inspections++; break;
+                    case BaseOperationAction.Inspect:
+                        Metrics.Inspections++;
+                        if (Role == ContinuityRole.Water) lastWaterInspect = s.SimulatedTimeSeconds;
+                        else lastAirInspect = s.SimulatedTimeSeconds;
+                        break;
                     case BaseOperationAction.ServiceAir: Metrics.AirServices++; break;
                     case BaseOperationAction.Restore: Metrics.RepairsRestored++; break;
                     case BaseOperationAction.PlaceOrder:
@@ -367,6 +411,15 @@ namespace Trainer.Unity.Validation.Phase04
             return null;
         }
 
+        private double RequiredAirRegenerationEnergy()
+        {
+            foreach (OperationDefinition operation in scenario.Operations)
+                if (operation.Action == BaseOperationAction.ServiceAir
+                    && operation.Choice == OperationChoice.RegenerateStandbyBed)
+                    return operation.DurationSeconds * operation.PowerWatts;
+            return 0;
+        }
+
         /// <summary>Low stock (reserve or exhausted band), a missing free spare, or simply the periodic resupply of a living base.</summary>
         private bool NeedsResupply(BaseOperationsSnapshot s)
         {
@@ -379,7 +432,7 @@ namespace Trainer.Unity.Validation.Phase04
         private static Goal Inspect(StationId station, double now, ref double last, bool force)
         {
             if (!force && now - last < InspectEverySimSeconds) return null;
-            last = now;
+            // Planning a walk is not an inspection. Start the cooldown only after the authority accepts it.
             return At(station, BaseOperationAction.Inspect);
         }
 

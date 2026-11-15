@@ -56,6 +56,7 @@ namespace Trainer.Unity.Bootstrap.BaseOperations
         [SerializeField] private BaseOperationsInteractionInput operationsInput;
         [SerializeField] private ExpeditionCrewPresenter crewPresenter;
         [SerializeField] private BaseInteriorView baseView;
+        [SerializeField] private Sprite lunarInteriorArtwork;
         [SerializeField] private OutpostSessionControls sessionControls;
         [SerializeField, Tooltip("Parent of every IExpeditionView bound on the same port.")] private Transform phase3Mount;
         [SerializeField, Tooltip("Parent of every IBaseOperationsView (D4 views).")] private Transform phase4Mount;
@@ -95,7 +96,11 @@ namespace Trainer.Unity.Bootstrap.BaseOperations
 #endif
             string[] args = readCommandLine && !webGl ? Environment.GetCommandLineArgs() : null;
             ApplyRole(MissionSceneComposition.ResolveRole(role, args, webGl));
-            if (sessionControls != null) sessionControls.ConfigureCanvas(CanvasWidth, CanvasHeight, SessionStripY);
+            if (sessionControls != null)
+            {
+                sessionControls.ConfigureCanvas(CanvasWidth, CanvasHeight, SessionStripY);
+                sessionControls.ConfigureDrawDepth(BaseOperationsPanel.SessionControlsDepth);
+            }
         }
 
         private void Start()
@@ -182,7 +187,11 @@ namespace Trainer.Unity.Bootstrap.BaseOperations
                 ? operationsInput.Bind(port, port == null ? null : built, phase3Intents) : null;
             SubscribeStationKey(port != null ? operationsInput : null);
             if (crewPresenter != null) crewPresenter.Bind(port, avatarSync);
-            if (baseView != null && port != null && expedition != null) baseView.Configure(expedition.Outpost);
+            if (baseView != null && port != null && expedition != null)
+            {
+                baseView.SetLunarArtwork(lunarInteriorArtwork);
+                baseView.Configure(expedition.Outpost);
+            }
             if (sessionControls != null) sessionControls.Bind(port);
             if (port != null && phase3Intents != null)
             {

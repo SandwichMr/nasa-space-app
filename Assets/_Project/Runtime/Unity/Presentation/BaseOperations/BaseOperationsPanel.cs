@@ -16,6 +16,7 @@ namespace Trainer.Unity.Presentation.BaseOperations
     {
         /// <summary>Row of the 1440×900 canvas left free for the scene's session strip (start, pause, restart, connect).</summary>
         public const float SessionStripY = 42f;
+        public const int HudDepth = -10, SessionControlsDepth = HudDepth - 1;
         private const float GaugeTop = 80f, GaugeHeight = 93f;
         [SerializeField] private Texture2D battery, water, food, oxygen, carbonDioxide;
         private static readonly GaugeKind[] Essential = { GaugeKind.BatteryEnergy, GaugeKind.PotableWater, GaugeKind.StoredFood, GaugeKind.CabinOxygen, GaugeKind.CabinCarbonDioxide };
@@ -113,12 +114,15 @@ namespace Trainer.Unity.Presentation.BaseOperations
             int previousDepth = GUI.depth;
             float scale = Mathf.Min(Screen.width / 1440f, Screen.height / 900f);
             GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - 1440 * scale) / 2, (Screen.height - 900 * scale) / 2, 0), Quaternion.identity, Vector3.one * scale);
-            GUI.depth = -10;
+            GUI.depth = HudDepth;
             try
             {
                 if ((opened.IsValid || details) && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
                 { ClosePanel(); Event.current.Use(); }
-                Paint(new Rect(0, 0, 1440, 193), Background);
+                // Session controls are a separate IMGUI component. Leave their row transparent even if Unity sorts
+                // this HUD in front of them; a free layout row alone is not enough when its background is opaque.
+                Paint(new Rect(0, 0, 1440, SessionStripY), Background);
+                Paint(new Rect(0, SessionStripY + 34, 1440, 193 - SessionStripY - 34), Background);
                 Paint(new Rect(0, 800, 1440, 100), Background);
                 Label(new Rect(22, 12, 900, 24), "BASE VIVA  /  " + (Live ? State(Shown.Outpost.State) + "  ·  " + BaseOperationsText.Number(Shown.SimulatedTimeSeconds) + " s" : "SIN CONEXIÓN"), heading);
                 GUI.enabled = Live;

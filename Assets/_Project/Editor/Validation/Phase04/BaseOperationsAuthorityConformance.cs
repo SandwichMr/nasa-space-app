@@ -33,18 +33,17 @@ namespace Trainer.Tooling.Validation.Phase04
                 {
                     AuthorityInstance i = d.CreateAuthority(BaseOperationsFixtures.Scenario());
                     (i.Authority as IDisposable)?.Dispose();
-                    return i.Composition + (i.Base == null || i.Equipment == null ? " (concrete arguments: no spies, balance checks use snapshots only)" : "");
+                    return i.Composition + (i.Base == null ? " (concrete base ledger; equipment effects recorded by the forwarding spy)" : "");
                 }),
                 Run("stable operation: two players keep the base for 15 simulated minutes; balances through the composed flow", K, () => StableOperation(d)),
                 Run("low reserve by real consumption, then resupply and recovery", K, () => ReserveAndResupply(d)),
                 Run("recycler fault: diagnose, isolate, spare, test, restore; lost water stays lost", K, () => RecyclerRepair(d)),
                 Run("two station interactions: distinct confirmed decisions; forged or out-of-order intents refused without effect", K, () => Interactions(d)),
                 Run("several activities completed and cancelled without closing or resetting the session", K, () => Activities(d)),
-                Pending("EVA sortie completed and cancelled inside the continuous session", K,
-                    "pendiente: guion de salida por esclusa sobre la autoridad de D2 (phase 3 flow reused once D2 publishes how a sortie closes back to Preparing)"),
+                Run("EVA sortie completed and aborted inside the continuous session", K, () => Phase04EvaConformance.Run(d)),
                 Run("two users compete for a station and a spare; repeated and conflicting command ids", K, () => Competition(d)),
                 Run("pause, leaving during a repair, late join with current state, restart to a new epoch", K, () => PauseLeaveJoinRestart(d)),
-                Run("single interior/EVA consumption: one clock, base and equipment advanced once per step", K, () => SingleConsumption(d)),
+                Run("one clock and no duplicate cabin consumption (suit consumption also exercised by the EVA check)", K, () => SingleConsumption(d)),
                 Run("unknown or old readings are never zero or normal", K, () => UnknownReadings(d))
             };
         }
@@ -72,16 +71,29 @@ namespace Trainer.Tooling.Validation.Phase04
 
         private static string ReserveAndResupply(Phase04ImplementationDiscovery d)
         {
-            BaseOperationsScenario scenario = BaseOperationsFixtures.Scenario(null);
+            // Same synthetic model/rates, with initial water just above reserve so real consumption reaches it in a bounded run.
+            BaseOperationsScenario original = BaseOperationsFixtures.Scenario(null);
+            var oldExpedition = original.Expedition;
+            var oldOutpost = oldExpedition.Outpost;
+            var life = oldOutpost.Simulation.LifeSupport;
+            var water = life.InitialWater;
+            var stocks = new WaterStock(original.GaugeRuleOf(GaugeKind.PotableWater).ReserveAt.Value + .1,
+                water.UntreatedKilograms, water.PotableCapacityKilograms, water.UntreatedCapacityKilograms);
+            var outpost = new OutpostScenario(oldOutpost.Id, oldOutpost.Provenance, oldOutpost.Layout, oldOutpost.Movement, oldOutpost.Tasks,
+                new OutpostConfiguration(oldOutpost.Simulation.Power, new LifeSupportConfiguration(stocks, life.InitialFood, life.Cabin)));
+            var expedition = new Trainer.Application.Expedition.ExpeditionScenario(outpost, oldExpedition.Zones, oldExpedition.Airlock,
+                oldExpedition.Racks, oldExpedition.Eva, oldExpedition.TaskRules, oldExpedition.Shelter, oldExpedition.Comms,
+                oldExpedition.Episode, oldExpedition.Rules, oldExpedition.SuitedSpeedFactor);
+            var scenario = new BaseOperationsScenario(expedition, original.Equipment, original.WaterStation, original.AirStation,
+                original.Operations, original.ObservationValiditySeconds, original.Logistics, original.Manifests, original.Gauges,
+                original.Irreversible, original.ReportIntervalSeconds, original.Science, original.Provenance);
             using (Phase04Session s = Phase04Session.Create(d, scenario, K))
             {
                 AuthorityActor a = s.Join(), b = s.Join();
                 s.Resume(a);
                 bool Low(BaseOperationsSnapshot x, GaugeKind kind) => x.GaugeOf(kind).Band == GaugeBand.Reserve || x.GaugeOf(kind).Band == GaugeBand.Exhausted;
                 bool reached = s.AdvanceUntil(x => Low(x, GaugeKind.PotableWater) || Low(x, GaugeKind.StoredFood), 4 * 3600, null, 1.0);
-                if (!reached)
-                    throw new Phase04CheckPending($"the fixture's consumption does not reach a reserve line in 4 simulated hours " +
-                        $"(potable {Stock(s.State, GaugeKind.PotableWater):0.##} kg, food {Stock(s.State, GaugeKind.StoredFood):0.##} kg)");
+                Require(reached, "scarcity fixture did not reach reserve through consumption in 4 simulated hours");
                 BaseOperationsSnapshot low = s.State;
                 GaugeKind lowKind = Low(low, GaugeKind.PotableWater) ? GaugeKind.PotableWater : GaugeKind.StoredFood;
                 double before = Stock(low, lowKind);
@@ -99,7 +111,7 @@ namespace Trainer.Tooling.Validation.Phase04
                 after.TryGetOrder(order, out ResupplyOrder done);
                 Require(done != null && (done.State == OrderState.Unloaded || done.Remaining.Count > 0), "order state " + done?.State);
                 RequireNoStreamViolation(s);
-                return $"{lowKind} reached {low.GaugeOf(lowKind).Band} at {low.SimulatedTimeSeconds:0} s ({before:0.##}); " +
+                return $"synthetic scarcity fixture starts with {stocks.PotableKilograms:0.##} kg potable; {lowKind} reached {low.GaugeOf(lowKind).Band} at {low.SimulatedTimeSeconds:0} s ({before:0.##}); " +
                        $"after unloading {Stock(after, lowKind):0.##} ({after.GaugeOf(lowKind).Band}); order {done.State}";
             }
         }
@@ -400,8 +412,26 @@ namespace Trainer.Tooling.Validation.Phase04
             BaseOperationsScenario scenario = BaseOperationsFixtures.Scenario();
             using (Phase04Session s = Phase04Session.Create(d, scenario, K))
             {
+                if (s.Instance.Base == null && s.Instance.PhysicalBase != null && s.Instance.Equipment != null && s.Instance.Eva != null)
+                {
+                    AuthorityActor first = s.Join(); s.Join(); s.Resume(first);
+                    s.Advance(300);
+                    var model = s.Instance.PhysicalBase;
+                    double time = s.State.SimulatedTimeSeconds;
+                    Near(time, model.Snapshot.Power.SimulatedTimeSeconds, 1e-8, "base clock");
+                    Near(time, s.Instance.Equipment.Advances.Sum(x => x.Elapsed), 1e-8, "equipment steps sum");
+                    Near(time, s.Instance.Eva.Snapshot.SimulatedTimeSeconds, 1e-8, "suit model clock");
+                    Require(s.Instance.Equipment.Advances.All(x => x.Crew == 2), "equipment counts exactly two aboard");
+                    Near(2 * time * model.Parameters.Crew.PotableWaterIntakeKilogramsPerSecond,
+                        model.Ledger.CrewPotableWaterIntakeKilograms, 1e-8, "one water intake per member-second");
+                    Near(2 * time * model.Parameters.Crew.OxygenConsumptionKilogramsPerSecond,
+                        model.Ledger.CrewOxygenIntakeKilograms, 1e-8, "one oxygen intake per member-second");
+                    Near(0, s.Instance.Eva.Ledger.OxygenConsumedKilograms, 1e-10, "unsealed suits do not also consume");
+                    Near(model.CarbonDioxideRemovalFactor, s.Instance.Equipment.Snapshot.Air.RemovalFactor, 1e-10, "same air capacity");
+                    return $"concrete base ledger audit, not a base-call spy: {time:0.###} s on all three models; exactly 600 cabin member-seconds; no suit debit while unsealed";
+                }
                 if (s.Instance.Base == null || s.Instance.Equipment == null)
-                    throw new Phase04CheckPending("the authority takes concrete model types: no spies to count steps (" + s.Instance.Composition + ")");
+                    throw new Phase04CheckPending("no base spy or supported concrete model ledger: " + s.Instance.Composition);
                 AuthorityActor a = s.Join(), b = s.Join();
                 s.Resume(a);
                 double t0 = s.State.SimulatedTimeSeconds;
@@ -504,7 +534,24 @@ namespace Trainer.Tooling.Validation.Phase04
         {
             RecordingBaseSimulation b = s.Instance.Base;
             RecordingEquipmentModel e = s.Instance.Equipment;
-            if (b == null || e == null) return "balances: snapshots only (no spies)";
+            if (b == null && s.Instance.PhysicalBase != null && e != null)
+            {
+                var model = s.Instance.PhysicalBase;
+                var life = s.Scenario.Expedition.Outpost.Simulation.LifeSupport;
+                double initial = life.InitialWater.PotableKilograms + life.InitialWater.UntreatedKilograms + life.InitialFood.StoredKilograms;
+                double delivered = s.State.Orders.Where(o => o.State == OrderState.Unloaded)
+                    .Sum(o => s.Scenario.Manifests.Single(m => m.Key == o.ManifestKey).Items
+                        .Where(item => item.Resource == ResourceKind.PotableWater || item.Resource == ResourceKind.StoredFood).Sum(item => item.Kilograms));
+                Require(s.Instance.Eva == null || s.Instance.Eva.Ledger.FeedwaterFilledKilograms == 0, "interior continuity run unexpectedly filled a suit");
+                Near(0, BaseOperationsBalances.WaterAndFoodResidualKilograms(initial, model.Snapshot.LifeSupport,
+                    model.Ledger, e.Snapshot, delivered, 0), 1e-7, "base plus processor mass ledger, including delivery and brine");
+                Near(0, BaseOperationsBalances.ProcessorResidualKilograms(e.Snapshot), 1e-8, "processor mass ledger");
+                Near(e.Snapshot.Ledger.BatchInputKilograms - e.Snapshot.Ledger.ReleasedToPotableKilograms
+                    - e.Snapshot.Ledger.ReleasedForReprocessKilograms - delivered, model.Ledger.TransferBoundaryOutflowKilograms,
+                    1e-8, "paired base/equipment flows and declared delivery");
+                return $"concrete base + processor ledger closed; delivery {delivered:0.###} kg, brine {e.Snapshot.Ledger.BrineOutflowKilograms:0.###} kg; no base-call spy";
+            }
+            if (b == null || e == null) throw new Phase04CheckPending("no observable base/equipment balance ledger");
             var applied = b.Applies.Where(x => x.Status == ResourceTransferStatus.Applied).ToList();
             var duplicated = applied.GroupBy(x => x.Id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
             Require(duplicated.Count == 0, "a base transfer id applied twice: " + string.Join(",", duplicated));

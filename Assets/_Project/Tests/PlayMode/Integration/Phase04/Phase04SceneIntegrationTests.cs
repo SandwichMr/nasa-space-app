@@ -60,12 +60,12 @@ namespace Trainer.Tests.Phase04.Integration
                 spawned.Add(instance);
                 views.AddRange(instance.GetComponentsInChildren<IBaseOperationsView>(true));
             }
-            fake.Join(player);
             BaseOperationsSnapshot s0 = BaseOperationsFixtures.Initial(scenario, 0, player);
+            fake.Publish(s0);
+            fake.Join(player);
             BaseOperationsSnapshot unknown = BaseOperationsFixtures.Edit(scenario, s0).Expedition(e => e.Session(Trainer.Application.SessionState.Running).AtTime(5)
                 .Resources(UnknownCabin(s0.Outpost.Resources))).Build();
             foreach (IBaseOperationsView view in views) view.Bind(context);
-            fake.Publish(s0);
             fake.Publish(unknown);
             Assert.That(unknown.GaugeOf(GaugeKind.CabinCarbonDioxide).Band, Is.EqualTo(GaugeBand.Unknown), "fixture sanity");
             Assert.That(intents.Calls, Is.EqualTo(0), "a view sent an intent by itself");

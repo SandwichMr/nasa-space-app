@@ -20,6 +20,8 @@ namespace Trainer.Tooling.Validation.Phase04
         /// <summary>Spies when the constructor takes the interfaces (null when it takes concrete types).</summary>
         public RecordingBaseSimulation Base;
         public RecordingEquipmentModel Equipment;
+        public OutpostBaseSimulation PhysicalBase;
+        public IEvaSimulation Eva;
         /// <summary>How each constructor argument was obtained (for the report).</summary>
         public string Composition;
     }
@@ -85,6 +87,9 @@ namespace Trainer.Tooling.Validation.Phase04
 
         private static bool IsExcludedByName(Type t)
         {
+            // The project's tests share the default assemblies; some network fixtures use the global namespace.
+            if (t.DeclaringType != null && IsExcludedByName(t.DeclaringType)) return true;
+            if (t.Name.EndsWith("Tests", StringComparison.Ordinal) || t.Name.EndsWith("TestAuthority", StringComparison.Ordinal)) return true;
             string ns = t.Namespace ?? string.Empty;
             if (ns.StartsWith("Trainer.Tooling", StringComparison.Ordinal)) return true;
             if (ns == "Trainer.Tests" || ns.StartsWith("Trainer.Tests.", StringComparison.Ordinal)) return true;
@@ -276,6 +281,7 @@ namespace Trainer.Tooling.Validation.Phase04
             if (t == typeof(IOutpostSimulation))
             {
                 instance.Base = new RecordingBaseSimulation(CreateBaseModel(scenario));
+                instance.PhysicalBase = instance.Base.Inner as OutpostBaseSimulation;
                 notes.Add("spy(" + BaseModelType.Name + ")");
                 return instance.Base;
             }
@@ -284,6 +290,16 @@ namespace Trainer.Tooling.Validation.Phase04
                 instance.Equipment = new RecordingEquipmentModel(CreateEquipmentModel(scenario));
                 notes.Add("spy(" + EquipmentModelType.Name + ")");
                 return instance.Equipment;
+            }
+            if (t == typeof(OutpostBaseSimulation))
+            {
+                instance.PhysicalBase = (OutpostBaseSimulation)Build(t, scenario, notes);
+                return instance.PhysicalBase;
+            }
+            if (t == typeof(IEvaSimulation))
+            {
+                instance.Eva = (IEvaSimulation)Build(t, scenario, notes);
+                return instance.Eva;
             }
             if (TryScenario(t, scenario, out object view))
             {

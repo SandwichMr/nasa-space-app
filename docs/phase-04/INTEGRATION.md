@@ -1,5 +1,7 @@
 # Fase 4 — Integración (montaje D1–D5)
 
+> **Evidencia posterior, 2026-11-15:** el usuario autorizó ejecutar las pruebas pendientes. El estado actual está en [integration-evidence/PENDING_TESTS.md](integration-evidence/PENDING_TESTS.md) y [el informe de ejecución](integration-evidence/RUN_RESULTS_2026-11-15.md). Los apartados siguientes conservan el registro histórico del montaje y su antigua restricción de ejecución.
+
 **Estado: montaje real hecho y compilado; puertas de prueba NO ejecutadas.** La escena productiva existe y está conectada
 a la autoridad continua (D2), la red (D3), las vistas (D4) y el piloto (D5). A mitad del trabajo el usuario pidió **no
 ejecutar más pruebas de Unity salvo lo imprescindible**. Por eso solo se ejecutó el builder, que compila todo el proyecto

@@ -13,5 +13,177 @@ MonoBehaviour:
   m_Name: Phase04_LivingBase_Synthetic
   m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Configuration.BaseOperationsScenarioDefinition
   scenarioId: living-base-synthetic
-  expedition: {fileID: 11400000, guid: c1153266c84bf17b891d4087a2bb1ea3, type: 2}
+  displayName: "Fase 4 \xB7 Base viva (escenario sint\xE9tico)"
+  provenance: "ESCENARIO SINT\xC9TICO de fase 4 (base viva): plano de fase 3 + consola
+    log\xEDstica; reciclador con lote de 2 kg y una aver\xEDa programada reproducible;
+    unidad de aire de dos lechos; un manifiesto de reposici\xF3n. Valores de juego
+    ilustrativos: no son datos de la NASA, de hardware, de calidad de agua ni umbrales
+    cl\xEDnicos."
+  expedition: {fileID: 11400000, guid: 4ce5c7717952c2af98e7768a3ebc84e4, type: 2}
   keepPhase3Episode: 0
+  removedPhase2Tasks:
+  - treat-water
+  - check-cabin-air
+  waterStation: water-recycler
+  airStation: air-scrubber
+  logisticsStation: logistics-console
+  logisticsX: 8
+  logisticsY: 10
+  logisticsRadius: 1.2
+  batchKilograms: 2
+  holdCapacityKilograms: 2
+  nominalRecovery: 0.9
+  degradedRecovery: 0.75
+  nominalConductivity: 20
+  degradedConductivity: 80
+  productSpecLimit: 40
+  scheduleFault: 1
+  degradeAtSeconds: 240
+  failAfterDegraded: 1
+  failAfterDegradedSeconds: 300
+  processorFilterKey: processor-filter
+  loadingPerCrewSecond: 0.002
+  kneeLoading: 0.6
+  saturatedFactor: 0.2
+  initialActiveLoading: 0.3
+  initialStandbyLoading: 0
+  scheduleInletRestriction: 0
+  inletRestrictedAtSeconds: 600
+  restrictedFlowFraction: 0.5
+  inletFilterKey: inlet-filter
+  spares:
+  - key: processor-filter
+    count: 1
+    capacity: 3
+  - key: inlet-filter
+    count: 1
+    capacity: 3
+  operations:
+  - action: 0
+    choice: 0
+    durationSeconds: 4
+    powerWatts: 0
+  - action: 1
+    choice: 0
+    durationSeconds: 20
+    powerWatts: 150
+  - action: 2
+    choice: 1
+    durationSeconds: 3
+    powerWatts: 20
+  - action: 2
+    choice: 2
+    durationSeconds: 3
+    powerWatts: 20
+  - action: 3
+    choice: 0
+    durationSeconds: 15
+    powerWatts: 60
+  - action: 4
+    choice: 3
+    durationSeconds: 5
+    powerWatts: 30
+  - action: 4
+    choice: 4
+    durationSeconds: 25
+    powerWatts: 200
+  - action: 5
+    choice: 0
+    durationSeconds: 0
+    powerWatts: 0
+  - action: 6
+    choice: 5
+    durationSeconds: 20
+    powerWatts: 0
+  - action: 6
+    choice: 6
+    durationSeconds: 12
+    powerWatts: 0
+  - action: 7
+    choice: 0
+    durationSeconds: 8
+    powerWatts: 50
+  - action: 8
+    choice: 0
+    durationSeconds: 0
+    powerWatts: 0
+  - action: 9
+    choice: 0
+    durationSeconds: 3
+    powerWatts: 10
+  - action: 11
+    choice: 0
+    durationSeconds: 10
+    powerWatts: 0
+  observationValiditySeconds: 60
+  maxOrdersInFlight: 1
+  minSecondsBetweenOrders: 120
+  manifests:
+  - key: standard-resupply
+    leadSeconds: 180
+    cancelWindowSeconds: 30
+    items:
+    - kind: 1
+      kilograms: 6
+      spareKey:
+      count: 0
+    - kind: 0
+      kilograms: 10
+      spareKey:
+      count: 0
+    - kind: 2
+      kilograms: 0
+      spareKey: processor-filter
+      count: 1
+  gauges:
+  - kind: 0
+    hasReserve: 1
+    reserveAt: 4000
+    hasLimit: 0
+    limitAt: 0
+  - kind: 1
+    hasReserve: 0
+    reserveAt: 0
+    hasLimit: 0
+    limitAt: 0
+  - kind: 2
+    hasReserve: 1
+    reserveAt: 8
+    hasLimit: 0
+    limitAt: 0
+  - kind: 3
+    hasReserve: 0
+    reserveAt: 0
+    hasLimit: 0
+    limitAt: 0
+  - kind: 4
+    hasReserve: 0
+    reserveAt: 0
+    hasLimit: 0
+    limitAt: 0
+  - kind: 5
+    hasReserve: 1
+    reserveAt: 4
+    hasLimit: 0
+    limitAt: 0
+  - kind: 6
+    hasReserve: 1
+    reserveAt: 19
+    hasLimit: 0
+    limitAt: 0
+  - kind: 7
+    hasReserve: 0
+    reserveAt: 0
+    hasLimit: 1
+    limitAt: 0.7
+  essentialUnservedGraceSeconds: 60
+  reportIntervalSeconds: 120
+  science:
+  - key: regolith-sample
+    tasks:
+    - collect-regolith
+  - key: crater-core
+    tasks:
+    - crater-core
+  timeScale: 1
+  maxStepSeconds: 0.25

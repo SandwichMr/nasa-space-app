@@ -39,6 +39,12 @@ namespace Trainer.Unity.World.Outpost
             Clear();
         }
 
+        public void ApplyLunarLabelStyle()
+        {
+            if(title!=null){title.characterSize=.055f;title.anchor=TextAnchor.MiddleCenter;title.transform.localPosition=new Vector3(0,1.02f,0);}
+            if(status!=null){status.characterSize=.04f;status.anchor=TextAnchor.MiddleCenter;status.transform.localPosition=new Vector3(0,-1.03f,0);}
+        }
+
         public void Present(StationState state, OutpostSessionSnapshot snapshot, PlayerId local, bool nearby)
         {
             ConfirmedFraction = state.ActiveTask == null ? 0 : state.ActiveTask.WorkSeconds / state.ActiveTask.DurationSeconds;

@@ -1,0 +1,520 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6714987cdd43735498e30694949011d, type: 3}
+  m_Name: Phase03_EvaAndShelter_Synthetic
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Configuration.ExpeditionScenarioDefinition
+  scenarioId: eva-shelter-synthetic
+  displayName: "Fase 3 \xB7 Salida exterior, regreso y refugio (escenario sint\xE9tico)"
+  provenance: "ESCENARIO SINT\xC9TICO de fase 3: base de fase 2 + ala EVA (preparaci\xF3n
+    y refugio) + esclusa de 2 plazas + exterior de 29 x 22 m. Valores ilustrativos
+    y comprimidos para que una salida dure minutos; no representan trajes, hardware,
+    datos ni procedimientos de la NASA. La preparaci\xF3n es un checklist educativo,
+    no un protocolo EVA real."
+  bounds:
+    minX: -100000
+    minY: -100000
+    maxX: 100000
+    maxY: 100000
+  obstacles:
+  - minX: 0
+    minY: 0
+    maxX: 0.6
+    maxY: 40
+  - minX: 0
+    minY: 0
+    maxX: 68.4
+    maxY: 0.6
+  - minX: 0
+    minY: 39.4
+    maxX: 68.4
+    maxY: 40
+  - minX: 67.8
+    minY: 0
+    maxX: 68.4
+    maxY: 18.8
+  - minX: 67.8
+    minY: 21.2
+    maxX: 68.4
+    maxY: 40
+  - minX: 0.6
+    minY: 23.7
+    maxX: 8
+    maxY: 24.3
+  - minX: 12
+    minY: 23.7
+    maxX: 28
+    maxY: 24.3
+  - minX: 32
+    minY: 23.7
+    maxX: 49
+    maxY: 24.3
+  - minX: 53
+    minY: 23.7
+    maxX: 67.8
+    maxY: 24.3
+  - minX: 19.7
+    minY: 24.3
+    maxX: 20.3
+    maxY: 39.4
+  - minX: 39.7
+    minY: 24.3
+    maxX: 40.3
+    maxY: 39.4
+  - minX: 0.6
+    minY: 15.7
+    maxX: 10
+    maxY: 16.3
+  - minX: 14
+    minY: 15.7
+    maxX: 32
+    maxY: 16.3
+  - minX: 36
+    minY: 15.7
+    maxX: 54
+    maxY: 16.3
+  - minX: 58
+    minY: 15.7
+    maxX: 67.8
+    maxY: 16.3
+  - minX: 23.7
+    minY: 0.6
+    maxX: 24.3
+    maxY: 15.7
+  - minX: 43.7
+    minY: 0.6
+    maxX: 44.3
+    maxY: 15.7
+  - minX: 55.7
+    minY: 16.3
+    maxX: 56.3
+    maxY: 18
+  - minX: 55.7
+    minY: 22
+    maxX: 56.3
+    maxY: 23.7
+  - minX: 68.4
+    minY: 16.6
+    maxX: 74.8
+    maxY: 17
+  - minX: 68.4
+    minY: 23
+    maxX: 74.8
+    maxY: 23.4
+  - minX: 74.4
+    minY: 17
+    maxX: 74.8
+    maxY: 18.8
+  - minX: 74.4
+    minY: 21.2
+    maxX: 74.8
+    maxY: 23.4
+  - minX: 84
+    minY: 28
+    maxX: 87
+    maxY: 31
+  - minX: 91
+    minY: 10
+    maxX: 94
+    maxY: 13
+  - minX: 102
+    minY: 36
+    maxX: 105
+    maxY: 39
+  - minX: 31
+    minY: 7
+    maxX: 37
+    maxY: 9
+  - minX: 30
+    minY: 5
+    maxX: 32
+    maxY: 6
+  - minX: 36
+    minY: 5
+    maxX: 38
+    maxY: 6
+  - minX: 3
+    minY: 3
+    maxX: 7
+    maxY: 5
+  - minX: 13
+    minY: 3
+    maxX: 17
+    maxY: 5
+  - minX: 45
+    minY: 27
+    maxX: 51
+    maxY: 29
+  - minX: 57
+    minY: 27
+    maxX: 63
+    maxY: 29
+  stations:
+  - id: air-scrubber
+    x: 29
+    y: 35
+    interactionRadiusMeters: 1.2
+  - id: water-recycler
+    x: 7
+    y: 35
+    interactionRadiusMeters: 1.2
+  - id: science-lab
+    x: 49
+    y: 34
+    interactionRadiusMeters: 1.2
+  - id: sample-analyzer
+    x: 61
+    y: 34
+    interactionRadiusMeters: 1.2
+  - id: suit-rack-a
+    x: 57
+    y: 21
+    interactionRadiusMeters: 1
+  - id: suit-rack-b
+    x: 60
+    y: 21
+    interactionRadiusMeters: 1
+  - id: suit-charger
+    x: 63
+    y: 21
+    interactionRadiusMeters: 1
+  - id: consumables-panel
+    x: 66
+    y: 21
+    interactionRadiusMeters: 1
+  - id: suit-check
+    x: 64
+    y: 18
+    interactionRadiusMeters: 1
+  - id: airlock-inner-panel
+    x: 68.2
+    y: 20
+    interactionRadiusMeters: 1.3
+  - id: airlock-outer-panel
+    x: 74.6
+    y: 20
+    interactionRadiusMeters: 1.3
+  - id: shelter-panel
+    x: 59
+    y: 9
+    interactionRadiusMeters: 1.2
+  - id: regolith-site
+    x: 85
+    y: 20
+    interactionRadiusMeters: 1.4
+  - id: crater-rim
+    x: 103
+    y: 29
+    interactionRadiusMeters: 1.4
+  spawnPoints:
+  - x: 32
+    y: 19
+  - x: 33.5
+    y: 19
+  - x: 32
+    y: 20.5
+  - x: 33.5
+    y: 20.5
+  maxSpeedMetersPerSecond: 2
+  crewRadiusMeters: 0.35
+  suitedSpeedFactor: 0.6
+  tasks:
+  - id: check-cabin-air
+    station: air-scrubber
+    category: 0
+    durationSeconds: 10
+    powerWatts: 40
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: treat-water
+    station: water-recycler
+    category: 0
+    durationSeconds: 20
+    powerWatts: 150
+    completionChanges:
+    - kind: 1
+      deltaKilograms: -2
+    - kind: 0
+      deltaKilograms: 1.8
+    boundaryOutflowKilograms: 0.2
+  - id: run-experiment
+    station: science-lab
+    category: 1
+    durationSeconds: 30
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: analyze-sample
+    station: sample-analyzer
+    category: 1
+    durationSeconds: 25
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: don-suit-a
+    station: suit-rack-a
+    category: 0
+    durationSeconds: 5
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: don-suit-b
+    station: suit-rack-b
+    category: 0
+    durationSeconds: 5
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: charge-suit
+    station: suit-charger
+    category: 0
+    durationSeconds: 12
+    powerWatts: 200
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: fill-suit
+    station: consumables-panel
+    category: 0
+    durationSeconds: 6
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: check-suit
+    station: suit-check
+    category: 0
+    durationSeconds: 5
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: prepare-shelter
+    station: shelter-panel
+    category: 0
+    durationSeconds: 6
+    powerWatts: 30
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: collect-regolith
+    station: regolith-site
+    category: 0
+    durationSeconds: 15
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  - id: crater-core
+    station: crater-rim
+    category: 0
+    durationSeconds: 20
+    powerWatts: 0
+    completionChanges: []
+    boundaryOutflowKilograms: 0
+  initialEnergyJoules: 12000
+  capacityJoules: 20000
+  generationWatts: 80
+  essentialConsumptionWatts: 60
+  scienceConsumptionWatts: 60
+  maxChargeWatts: 100
+  maxDischargeWatts: 400
+  potableWaterKilograms: 20
+  untreatedWaterKilograms: 6
+  potableCapacityKilograms: 40
+  untreatedCapacityKilograms: 10
+  storedFoodKilograms: 15
+  foodCapacityKilograms: 30
+  cabinFreeGasVolumeCubicMeters: 40
+  cabinGasTemperatureKelvin: 295
+  initialOxygenPartialPressureKilopascals: 21
+  initialCarbonDioxidePartialPressureKilopascals: 0.4
+  zones:
+  - zone: 1
+    area:
+      minX: 44.3
+      minY: 0.6
+      maxX: 67.8
+      maxY: 15.7
+  - zone: 2
+    area:
+      minX: 68.4
+      minY: 17
+      maxX: 74.4
+      maxY: 23
+  - zone: 0
+    area:
+      minX: 0
+      minY: 0
+      maxX: 68.4
+      maxY: 40
+  - zone: 3
+    area:
+      minX: -100000
+      minY: -100000
+      maxX: 100000
+      maxY: 100000
+  chamber:
+    minX: 68.4
+    minY: 17
+    maxX: 74.4
+    maxY: 23
+  innerHatch:
+    minX: 68
+    minY: 18.8
+    maxX: 68.4
+    maxY: 21.2
+  outerHatch:
+    minX: 74.4
+    minY: 18.8
+    maxX: 74.8
+    maxY: 21.2
+  innerPanel: airlock-inner-panel
+  outerPanel: airlock-outer-panel
+  airlockCapacity: 2
+  depressurizeSeconds: 8
+  repressurizeSeconds: 8
+  pumpPowerWatts: 120
+  makeupGasPerCycleKilograms: 0.3
+  exteriorEntry:
+    x: 75.4
+    y: 20
+  suitModelProvenance: "SINT\xC9TICO: modelo reducido de tres servicios con capacidades,
+    reserva declarada y consumos comprimidos; no es un traje real."
+  services:
+  - service: 0
+    capacity: 0.4
+    reserve: 0.08
+    restRate: 0.0016
+    walkRate: 0.0022
+    workRate: 0.003
+  - service: 1
+    capacity: 5000
+    reserve: 1000
+    restRate: 18
+    walkRate: 20
+    workRate: 22
+  - service: 2
+    capacity: 0.8
+    reserve: 0.16
+    restRate: 0.0012
+    walkRate: 0.0028
+    workRate: 0.0045
+  suits:
+  - key: suit-a
+    rackStation: suit-rack-a
+    oxygenKilograms: 0.12
+    batteryJoules: 2600
+    feedwaterKilograms: 0
+  - key: suit-b
+    rackStation: suit-rack-b
+    oxygenKilograms: 0.12
+    batteryJoules: 2600
+    feedwaterKilograms: 0
+  oxygenRechargeKilograms: 2
+  oxygenRechargeCapacityKilograms: 2
+  makeupGasKilograms: 3
+  makeupGasCapacityKilograms: 3
+  rules:
+  - task: don-suit-a
+    kind: 0
+    suitKey: suit-a
+    chargeEfficiency: 1
+    toolWatts: 0
+  - task: don-suit-b
+    kind: 0
+    suitKey: suit-b
+    chargeEfficiency: 1
+    toolWatts: 0
+  - task: charge-suit
+    kind: 1
+    suitKey: 
+    chargeEfficiency: 1
+    toolWatts: 0
+  - task: fill-suit
+    kind: 2
+    suitKey: 
+    chargeEfficiency: 1
+    toolWatts: 0
+  - task: check-suit
+    kind: 3
+    suitKey: 
+    chargeEfficiency: 1
+    toolWatts: 0
+  - task: prepare-shelter
+    kind: 5
+    suitKey: 
+    chargeEfficiency: 1
+    toolWatts: 0
+  - task: collect-regolith
+    kind: 4
+    suitKey: 
+    chargeEfficiency: 1
+    toolWatts: 10
+  - task: crater-core
+    kind: 4
+    suitKey: 
+    chargeEfficiency: 1
+    toolWatts: 20
+  shelterPanel: shelter-panel
+  shelterPrepareTask: prepare-shelter
+  shelterVentilationWatts: 40
+  antenna:
+    x: 70
+    y: 42
+  radioRangeMeters: 20
+  hasEpisode: 1
+  episodeId: synthetic-particle-episode
+  episodeSynthetic: 1
+  episodeProvenance: "EPISODIO SINT\xC9TICO autorado (reproducible, sin Internet):
+    no es un evento real. Evento oculto 140\u2013220 s; aviso a 150 s, actualizaci\xF3n
+    a 195 s y fin del periodo de refugio indicado por control a 235 s. Sin dosis,
+    sin clase X ni pfu."
+  eventOnsetSeconds: 140
+  eventEndSeconds: 220
+  messages:
+  - id: spe-warning-1
+    kind: 0
+    issuedAtSeconds: 150
+    hasShelterBy: 1
+    shelterBySeconds: 210
+    validUntilSeconds: 280
+    supersedes: 
+    textKey: particle-warning
+  - id: spe-update-1
+    kind: 1
+    issuedAtSeconds: 195
+    hasShelterBy: 1
+    shelterBySeconds: 210
+    validUntilSeconds: 300
+    supersedes: spe-warning-1
+    textKey: particle-update
+  - id: spe-end-1
+    kind: 2
+    issuedAtSeconds: 235
+    hasShelterBy: 0
+    shelterBySeconds: 0
+    validUntilSeconds: 600
+    supersedes: spe-update-1
+    textKey: shelter-period-end
+  missionDurationSeconds: 360
+  objectives:
+  - key: crew-safe
+    role: 0
+    tasks: []
+    targetCount: 1
+  - key: regolith-sample
+    role: 1
+    tasks:
+    - collect-regolith
+    targetCount: 1
+  - key: crater-core
+    role: 2
+    tasks:
+    - crater-core
+    targetCount: 1
+  timeScale: 1
+  maxStepSeconds: 0.25

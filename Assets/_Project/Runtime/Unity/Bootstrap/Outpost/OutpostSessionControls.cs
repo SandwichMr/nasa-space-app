@@ -31,6 +31,7 @@ namespace Trainer.Unity.Bootstrap
         private Func<SessionConnectionState> connectionState;
         private GUIStyle label, button;
         private float canvasWidth = DefaultCanvasWidth, canvasHeight = DefaultCanvasHeight, stripY = DefaultStripY;
+        private int drawDepth;
 
         /// <summary>Phase 2/3 layout: 1280×720 virtual canvas, strip at y 102.</summary>
         public const float DefaultCanvasWidth = 1280f, DefaultCanvasHeight = 720f, DefaultStripY = 102f;
@@ -38,6 +39,10 @@ namespace Trainer.Unity.Bootstrap
         public OutpostCommand Pending => pending;
         public string Feedback => feedback;
         public string Status => status;
+        public int DrawDepth => drawDepth;
+
+        /// <summary>Optional overlay depth for a scene whose HUD paints a background behind this strip.</summary>
+        public void ConfigureDrawDepth(int value) => drawDepth = value;
 
         /// <summary>Connects to the presentation port (host-local or network adapter). Null unbinds.</summary>
         public void Bind(IOutpostSessionPort value)
@@ -139,11 +144,13 @@ namespace Trainer.Unity.Bootstrap
                 button = new GUIStyle(GUI.skin.button) { fontSize = 15 };
             }
             Matrix4x4 previous = GUI.matrix;
+            int previousDepth = GUI.depth;
+            GUI.depth = drawDepth;
             float scale = Mathf.Min(Screen.width / canvasWidth, Screen.height / canvasHeight);
             GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - canvasWidth * scale) / 2, (Screen.height - canvasHeight * scale) / 2, 0),
                 Quaternion.identity, new Vector3(scale, scale, 1));
             try { Draw(); }
-            finally { GUI.matrix = previous; GUI.enabled = true; GUI.color = Color.white; }
+            finally { GUI.matrix = previous; GUI.depth = previousDepth; GUI.enabled = true; GUI.color = Color.white; }
         }
 
         private void Draw()

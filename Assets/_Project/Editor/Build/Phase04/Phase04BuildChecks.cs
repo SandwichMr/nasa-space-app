@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Trainer.Application.BaseOperations;
 using Trainer.Tooling.Validation.Phase04;
@@ -76,7 +77,8 @@ namespace Trainer.Tooling.BuildChecks.Phase04
             {
                 string result = BuildGated(ReadScenes(), HasArgument("-phase4BuildAnyway"));
                 Debug.Log(result);
-                code = result.StartsWith("Succeeded", StringComparison.Ordinal) ? Phase04Checks.ExitPassed : Phase04Checks.ExitFailed;
+                code = result.StartsWith("DiagnosticSucceeded", StringComparison.Ordinal) ? Phase04Checks.ExitPending
+                    : result.StartsWith("Succeeded", StringComparison.Ordinal) ? Phase04Checks.ExitPassed : Phase04Checks.ExitFailed;
             }
             catch (Exception e) { Debug.LogException(e); }
             EditorApplication.Exit(code);
@@ -251,7 +253,8 @@ namespace Trainer.Tooling.BuildChecks.Phase04
             BuildTarget target = EditorUserBuildSettings.activeBuildTarget;
             if (!BuildPipeline.IsBuildTargetSupported(BuildPipeline.GetBuildTargetGroup(target), target))
                 throw new InvalidOperationException("Build target not installed: " + target);
-            string output = PlayerPath(target);
+            // A forced build never overwrites the candidate used by RunBuild, even when its quick gates happen to pass.
+            string output = PlayerPath(target, force);
             Directory.CreateDirectory(Path.GetDirectoryName(output));
             BuildReport report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = scenes, locationPathName = output, target = target, options = BuildOptions.None });
             string gateText = gate == Phase04Checks.ExitPassed ? "passed" : gate == Phase04Checks.ExitPending ? "pending" : "FAILED (forced build)";
@@ -259,11 +262,12 @@ namespace Trainer.Tooling.BuildChecks.Phase04
                 $"commit {Git("rev-parse --verify HEAD")}\nworking tree {(string.IsNullOrEmpty(Git("status --porcelain")) ? "clean" : "MODIFIED")}\n" +
                 $"editor {UnityEngine.Application.unityVersion}\ntarget {target}\nscenes {string.Join(";", scenes)}\n" +
                 $"scenario {ScenarioAssetPath} guid {AssetDatabase.AssetPathToGUID(ScenarioAssetPath)}\ngates {gateText}\n" +
-                $"result {report.summary.result}\nutc {DateTime.UtcNow:O}\n");
-            return report.summary.result + ": " + output + " (gates " + gateText + ")";
+                $"purpose {(force ? "diagnostic-only" : "acceptance-candidate (quick gates only)")}\n" +
+                $"result {report.summary.result}\nsha256 {(File.Exists(output) ? Sha256(output) : "unavailable")}\nutc {DateTime.UtcNow:O}\n");
+            return (force ? "Diagnostic" : "") + report.summary.result + ": " + output + " (gates " + gateText + ")";
         }
 
-        public static string PlayerPath(BuildTarget target)
+        public static string PlayerPath(BuildTarget target, bool diagnostic = false)
         {
             string name;
             switch (target)
@@ -274,7 +278,14 @@ namespace Trainer.Tooling.BuildChecks.Phase04
                 case BuildTarget.StandaloneOSX: name = "Phase4LivingBase.app"; break;
                 default: name = "Phase4LivingBase"; break;
             }
-            return Path.Combine(BuildRoot, target.ToString(), name);
+            return diagnostic ? Path.Combine(BuildRoot, "Diagnostic", target.ToString(), name) : Path.Combine(BuildRoot, target.ToString(), name);
+        }
+
+        private static string Sha256(string path)
+        {
+            using (var hash = SHA256.Create())
+            using (var stream = File.OpenRead(path))
+                return BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
         }
 
         /// <summary>
