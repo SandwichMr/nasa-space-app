@@ -82,6 +82,7 @@ namespace Trainer.Application.BaseOperations
             EssentialUnservedGraceSeconds = OutpostGuard.Positive(essentialUnservedGraceSeconds, nameof(essentialUnservedGraceSeconds));
             EndCause = OutpostGuard.Defined(endCause, nameof(endCause));
             if (endedAtSeconds.HasValue) OutpostGuard.NonNegative(endedAtSeconds.Value, nameof(endedAtSeconds));
+            EndedAtSeconds = endedAtSeconds;
             if (endedAtSeconds.HasValue != (endCause != IrreversibleCause.None))
                 throw new ArgumentException("An end time exists exactly with an end cause.", nameof(endedAtSeconds));
             if (endCause == IrreversibleCause.EssentialPowerLost && essentialUnservedSeconds < essentialUnservedGraceSeconds)
@@ -146,6 +147,7 @@ namespace Trainer.Application.BaseOperations
             }
             if (endedAtSeconds.HasValue == (status == ActivityStatus.Active))
                 throw new ArgumentException("An end time exists exactly when the activity is no longer active.", nameof(endedAtSeconds));
+            EndedAtSeconds = endedAtSeconds;
             if (resultKey != null) StableKey.Require(resultKey, nameof(resultKey));
             ResultKey = resultKey;
         }
