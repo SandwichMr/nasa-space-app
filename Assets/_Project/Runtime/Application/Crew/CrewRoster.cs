@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Trainer.Application.Expedition;
 using Trainer.Application.Outpost;
 
 namespace Trainer.Application.Crew
@@ -16,8 +17,12 @@ namespace Trainer.Application.Crew
     /// - <see cref="Members"/> is replaced by a new immutable list exactly when something visible changed
     ///   (reference comparison tells the authority whether to publish a new revision).
     /// Crew discs do not block each other.
+    ///
+    /// Phase 3 (<see cref="IZonedCrewRoster"/>, optional): an obstacle overlay (closed hatches) is added to the layout
+    /// for collision, and a per-member speed factor (sealed suit) scales the walking speed. Without those calls the
+    /// behaviour is exactly the phase 2 one. Still the only mover and the only collision authority.
     /// </summary>
-    public sealed class CrewRoster : ICrewRoster
+    public sealed class CrewRoster : IZonedCrewRoster
     {
         private sealed class Member
         {
@@ -28,19 +33,23 @@ namespace Trainer.Application.Crew
             public MoveDirection Facing;
             public CrewMotion Motion;
             public long LastSequence;
+            public double Speed = 1d;
         }
 
         private static readonly IReadOnlyList<CrewMemberState> Empty =
             new ReadOnlyCollection<CrewMemberState>(Array.Empty<CrewMemberState>());
+        private static readonly IReadOnlyList<BaseRect> NoOverlay = new ReadOnlyCollection<BaseRect>(Array.Empty<BaseRect>());
 
         private readonly OutpostLayout layout;
         private readonly CrewMovementSettings movement;
         private readonly List<Member> members = new List<Member>();
+        private OutpostLayout collision;
         private int lastId;
 
         public IReadOnlyList<CrewMemberState> Members { get; private set; } = Empty;
         public OutpostLayout Layout => layout;
         public CrewMovementSettings Movement => movement;
+        public IReadOnlyList<BaseRect> ObstacleOverlay { get; private set; } = NoOverlay;
 
         public CrewRoster(OutpostLayout layout, CrewMovementSettings movement)
         {
@@ -49,6 +58,7 @@ namespace Trainer.Application.Crew
             foreach (BasePosition spawn in layout.SpawnPoints)
                 if (!layout.IsAdmissible(spawn, movement.CrewRadiusMeters))
                     throw new ArgumentException("Every spawn point must be admissible for the crew radius.", nameof(layout));
+            collision = layout;
         }
 
         public static CrewRoster For(OutpostScenario scenario)
@@ -111,8 +121,8 @@ namespace Trainer.Application.Crew
                 MoveDirection facing = member.Facing;
                 if (!member.Held.IsZero)
                 {
-                    double distance = member.Held.Magnitude * movement.MaxSpeedMetersPerSecond * elapsedSeconds;
-                    member.Position = CrewMotionSolver.Move(layout, movement.CrewRadiusMeters, before, member.Held, distance);
+                    double distance = member.Held.Magnitude * movement.MaxSpeedMetersPerSecond * member.Speed * elapsedSeconds;
+                    member.Position = CrewMotionSolver.Move(collision, movement.CrewRadiusMeters, before, member.Held, distance);
                     facing = Unit(member.Held);
                     if (!member.Position.Equals(before)) motion = CrewMotion.Walking;
                 }
@@ -131,9 +141,47 @@ namespace Trainer.Application.Crew
                 member.Held = MoveDirection.Zero;
                 member.Facing = CrewPose.DefaultFacing;
                 member.Motion = CrewMotion.Idle;
+                member.Speed = 1d;
             }
             Publish();
         }
+
+        public bool IsClear(BaseRect area)
+        {
+            foreach (Member member in members)
+                if (area.DistanceTo(member.Position) < movement.CrewRadiusMeters) return false;
+            return true;
+        }
+
+        public void SetObstacleOverlay(IEnumerable<BaseRect> rectangles)
+        {
+            if (rectangles == null) throw new ArgumentNullException(nameof(rectangles));
+            var extra = new List<BaseRect>(rectangles);
+            OutpostLayout next = layout;
+            if (extra.Count > 0)
+            {
+                var obstacles = new List<BaseRect>(layout.Obstacles);
+                obstacles.AddRange(extra);
+                next = new OutpostLayout(layout.Bounds, obstacles, layout.Stations, layout.SpawnPoints);
+            }
+            // Never cut anyone in two: every present disc must stay admissible with the new obstacles.
+            foreach (Member member in members)
+                if (!next.IsAdmissible(member.Position, movement.CrewRadiusMeters))
+                    throw new InvalidOperationException($"{member.Id} at {member.Position} would overlap a new obstacle.");
+            collision = next;
+            ObstacleOverlay = new ReadOnlyCollection<BaseRect>(extra.ToArray());
+        }
+
+        public bool SetSpeedFactor(PlayerId player, double factor)
+        {
+            if (double.IsNaN(factor) || factor <= 0d || factor > 1d) throw new ArgumentOutOfRangeException(nameof(factor), "In (0, 1].");
+            Member member = members.Find(m => m.Id == player);
+            if (member == null) return false;
+            member.Speed = factor;
+            return true;
+        }
+
+        public double SpeedFactorOf(PlayerId player) => members.Find(m => m.Id == player)?.Speed ?? 1d;
 
         private static MoveDirection Unit(MoveDirection direction)
         {
