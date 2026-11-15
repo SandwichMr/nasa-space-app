@@ -15,7 +15,8 @@ namespace Trainer.Tooling.Validation.Phase02
     /// <list type="bullet">
     /// <item>ICrewRoster: ctor (OutpostLayout, CrewMovementSettings) or (OutpostScenario).</item>
     /// <item>IOutpostSimulation: public parameterless ctor.</item>
-    /// <item>IOutpostAuthority: ctor (OutpostScenario, IOutpostSimulation, ICrewRoster) or (OutpostScenario,
+    /// <item>D2 OutpostAuthority: explicit constructor with D5 fixture mission rules, model and roster.</item>
+    /// <item>Other IOutpostAuthority: ctor (OutpostScenario, IOutpostSimulation, ICrewRoster) or (OutpostScenario,
     /// IOutpostSimulation); tick = public instance void method Advance/Step/Tick(double).</item>
     /// </list>
     /// </summary>
@@ -45,13 +46,22 @@ namespace Trainer.Tooling.Validation.Phase02
         public static bool IsProductionCandidate(Type t)
         {
             if (t == null || !t.IsClass || t.IsAbstract || t.ContainsGenericParameters) return false;
+            // The frozen project uses the predefined runtime assembly, including its contracts. Editor
+            // assemblies (also Assembly-CSharp-Editor) cannot supply production implementations. This also
+            // excludes global/nested test doubles whose names contain neither Fake nor a test namespace.
+            if (t.Assembly != typeof(IOutpostAuthority).Assembly || !t.IsVisible) return false;
             string ns = t.Namespace ?? string.Empty;
             if (ns.StartsWith("Trainer.Tooling", StringComparison.Ordinal)) return false;
+            if (ns == "Trainer.Tests" || ns.StartsWith("Trainer.Tests.", StringComparison.Ordinal)) return false;
             if (ns.StartsWith("Trainer.Application.Development", StringComparison.Ordinal)) return false;
             if (t.Name.IndexOf("Fake", StringComparison.OrdinalIgnoreCase) >= 0) return false;
             if (t.Assembly.GetName().Name.IndexOf("Test", StringComparison.OrdinalIgnoreCase) >= 0) return false;
             return true;
         }
+
+        /// <summary>Unity excludes Editor directory segments from player compilation, even under Runtime.</summary>
+        public static bool IsPlayerSourcePath(string path) => !string.IsNullOrEmpty(path)
+            && !path.Replace('\\', '/').Split('/').Any(s => string.Equals(s, "Editor", StringComparison.OrdinalIgnoreCase));
 
         private void FindRoster(List<Type> types)
         {
@@ -99,7 +109,13 @@ namespace Trainer.Tooling.Validation.Phase02
                 var harness = new AuthorityHarness { Label = t.Name, CreateSimulation = Simulation };
                 ConstructorInfo three = t.GetConstructor(new[] { typeof(OutpostScenario), typeof(IOutpostSimulation), typeof(ICrewRoster) });
                 ConstructorInfo two = t.GetConstructor(new[] { typeof(OutpostScenario), typeof(IOutpostSimulation) });
-                if (three != null && Roster != null)
+                if (t == typeof(OutpostAuthority) && Roster != null)
+                {
+                    harness.Create = (s, sim) => new OutpostAuthority(s, Phase02Fixtures.MissionRules(s), sim, Roster(s.Layout, s.Movement));
+                    Checks.Add(new Phase02Check("D2 validation mission rules", Phase02CheckKinds.Discovery, Phase02CheckStatus.Info,
+                        "Real OutpostAuthority with D5's labelled fixture rules; these are not the shipped mission's rules."));
+                }
+                else if (three != null && Roster != null)
                     harness.Create = (s, sim) => (IOutpostAuthority)Invoke(three, s, sim, Roster(s.Layout, s.Movement));
                 else if (two != null)
                     harness.Create = (s, sim) => (IOutpostAuthority)Invoke(two, s, sim);

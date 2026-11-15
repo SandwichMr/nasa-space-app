@@ -7,6 +7,9 @@ using System.Reflection;
 using Trainer.Application.Development;
 using Trainer.Application.Outpost;
 using Trainer.Tooling.Validation.Phase02;
+using Trainer.Unity.Bootstrap;
+using Trainer.Unity.Configuration;
+using Trainer.Unity.World.Outpost;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
@@ -83,8 +86,7 @@ namespace Trainer.Tooling.BuildChecks.Phase02
             checks.AddRange(ValidateScenarios());
             Phase02ImplementationDiscovery discovery = Phase02ImplementationDiscovery.Discover();
             checks.AddRange(discovery.RunConformance());
-            checks.Add(new Phase02Check("two real ports in one Editor process", Phase02CheckKinds.TwoPortSession, Phase02CheckStatus.Pending,
-                "Wire TwoPortSessionScript to D3's host-local + client adapters at integration/phase-02."));
+            checks.AddRange(TwoPortSessionScript.RunIntegrated(discovery));
             checks.AddRange(AuditScenes(explicitScenes));
             checks.Add(ScanProductionFakeUsage());
             checks.AddRange(PhaseOneRegression());
@@ -265,7 +267,23 @@ namespace Trainer.Tooling.BuildChecks.Phase02
                         eventSystems == 1 ? Phase02CheckStatus.Passed : Phase02CheckStatus.Failed, eventSystems + " EventSystem(s)"));
                 checks.Add(UiCaptureRisk(label, components));
 
-                if (scenario == null)
+                var compositions = components.OfType<OutpostSceneComposition>().ToList();
+                checks.Add(new Phase02Check(label + "single phase 2 composition", kind,
+                    compositions.Count == 1 ? Phase02CheckStatus.Passed : Phase02CheckStatus.Failed,
+                    compositions.Count + " OutpostSceneComposition(s); the declared runtime projection requires exactly one."));
+                if (compositions.Count == 1)
+                {
+                    // In Edit mode the saved prefab is only a preview. Execute the actual projection on
+                    // a disposable clone, using THIS composition's assigned scenario and view, not names
+                    // from the old preview and not a fabricated pass for absent runtime objects.
+                    var serialized = new SerializedObject(compositions[0]);
+                    var definition = serialized.FindProperty("scenario")?.objectReferenceValue as OutpostScenarioDefinition;
+                    var interior = serialized.FindProperty("interior")?.objectReferenceValue as BaseInteriorView;
+                    checks.Add(definition == null
+                        ? new Phase02Check(label + "configured geometry", kind, Phase02CheckStatus.Failed, "Composition has no assigned scenario.")
+                        : AuditConfiguredInterior(interior, definition.ToScenario(), label));
+                }
+                else if (scenario == null)
                     checks.Add(new Phase02Check(label + "art matches the plan", kind, Phase02CheckStatus.Pending,
                         "Needs exactly one D2 scenario source to compare positions."));
                 else checks.AddRange(ArtMatchesPlan(label, objects, scenario));
@@ -276,6 +294,75 @@ namespace Trainer.Tooling.BuildChecks.Phase02
             }
             return checks;
         }
+
+        /// <summary>Executes the production projection in a temporary scene; checks station positions
+        /// and obstacle rectangles. Does not run the mission, render, save the source scene or mutate assets.</summary>
+        public static Phase02Check AuditConfiguredInterior(BaseInteriorView source, OutpostScenario scenario, string label = "") =>
+            Phase02Checks.Check(label + "configured station/obstacle geometry (temporary scene, no render)", Phase02CheckKinds.SceneAudit, () =>
+            {
+                Phase02Checks.Require(source != null && scenario != null, "Assigned interior and scenario required.");
+                Phase02Checks.Require(new SerializedObject(source).FindProperty("stationPrefab")?.objectReferenceValue != null,
+                    "Assigned station prefab required; an empty projection cannot certify station geometry.");
+                Scene previous = SceneManager.GetActiveScene();
+                // Preview scenes do not require an untitled user scene to be saved. Keep the
+                // user's active scene; parenting the generated geometry places it with the clone.
+                Scene preview = EditorSceneManager.NewPreviewScene();
+                GameObject clone = null;
+                try
+                {
+                    Phase02Checks.Require(preview.IsValid() && EditorSceneManager.IsPreviewScene(preview),
+                        "Cannot create the temporary validation preview scene.");
+                    clone = UnityEngine.Object.Instantiate(source.gameObject);
+                    clone.hideFlags = HideFlags.HideAndDontSave;
+                    if (clone.scene != preview) SceneManager.MoveGameObjectToScene(clone, preview);
+                    var view = clone.GetComponent<BaseInteriorView>();
+                    view.Configure(scenario);
+                    Phase02Checks.Require(view.Stations.All(s => s.gameObject.scene == preview)
+                        && view.Blockers.All(b => b.gameObject.scene == preview), "Generated geometry escaped the validation preview scene.");
+                    Phase02Checks.Require(view.Stations.Count == scenario.Layout.Stations.Count && view.Stations.Count > 0,
+                        "Every declared station must actually be instantiated.");
+                    foreach (StationPlacement at in scenario.Layout.Stations)
+                    {
+                        var matches = view.Stations.Where(s => s.Placement != null && s.Placement.Id == at.Id).ToList();
+                        Phase02Checks.Require(matches.Count == 1, "Station " + at.Id + " missing or duplicated.");
+                        Vector3 p = matches[0].transform.position;
+                        double distance = Math.Sqrt(Math.Pow(p.x - at.Position.X, 2) + Math.Pow(p.y - at.Position.Y, 2));
+                        Phase02Checks.Require(distance <= ArtTolerance, "Station " + at.Id + " is off the plan: " + distance + " m.");
+                    }
+                    Phase02Checks.Require(view.Blockers.Count == scenario.Layout.Obstacles.Count, "Obstacle count differs from the plan.");
+                    for (int i = 0; i < view.Blockers.Count; i++)
+                    {
+                        BaseRect obstacle = scenario.Layout.Obstacles[i];
+                        SpriteRenderer drawn = view.Blockers[i];
+                        Phase02Checks.Near(obstacle.Width, drawn.size.x, 1e-4, "Obstacle width");
+                        Phase02Checks.Near(obstacle.Height, drawn.size.y, 1e-4, "Obstacle height");
+                        Phase02Checks.Near((obstacle.MinX + obstacle.MaxX) / 2, drawn.transform.position.x, 1e-4, "Obstacle X");
+                        Phase02Checks.Near((obstacle.MinY + obstacle.MaxY) / 2, drawn.transform.position.y, 1e-4, "Obstacle Y");
+                    }
+                    return view.Stations.Count + " instantiated stations and " + view.Blockers.Count
+                        + " obstacle rectangles match the assigned plan; rendering and live scene startup are not certified.";
+                }
+                finally
+                {
+                    try
+                    {
+                        if (clone != null) UnityEngine.Object.DestroyImmediate(clone);
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            if (previous.IsValid() && previous.isLoaded && SceneManager.GetActiveScene() != previous)
+                                SceneManager.SetActiveScene(previous);
+                        }
+                        finally
+                        {
+                            if (preview.IsValid()) Phase02Checks.Require(EditorSceneManager.ClosePreviewScene(preview),
+                                "Cannot close the temporary validation preview scene.");
+                        }
+                    }
+                }
+            });
 
         /// <summary>Full-screen raycast targets over screen-space canvases can swallow clicks on the world. Keyboard
         /// movement is not affected by raycasts; focus-stealing fields are checked by name of type. Heuristic only:
@@ -325,13 +412,17 @@ namespace Trainer.Tooling.BuildChecks.Phase02
             const string root = "Assets/_Project/Runtime/Unity";
             var hits = Directory.Exists(root)
                 ? Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories)
-                    .Where(f => File.ReadAllText(f).Contains("FakeOutpostSessionPort") || File.ReadAllText(f).Contains("OutpostFixtures"))
+                    .Where(f => UsesDevelopmentSessionInPlayerSource(f, File.ReadAllText(f)))
                     .Select(f => f.Replace('\\', '/')).ToList()
                 : new List<string>();
             return new Phase02Check("no phase 2 fake/fixtures in Runtime/Unity", Phase02CheckKinds.SceneAudit,
                 hits.Count == 0 ? Phase02CheckStatus.Passed : Phase02CheckStatus.Failed,
                 hits.Count == 0 ? "" : string.Join(", ", hits) + " (allowed on feature branches; must be gone at integration)");
         }
+
+        public static bool UsesDevelopmentSessionInPlayerSource(string path, string source) =>
+            Phase02ImplementationDiscovery.IsPlayerSourcePath(path) && source != null
+            && (source.Contains("FakeOutpostSessionPort") || source.Contains("OutpostFixtures"));
 
         // ---------------------------------------------------------------- phase 1 regression
 

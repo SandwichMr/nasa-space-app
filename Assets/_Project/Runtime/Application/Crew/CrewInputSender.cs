@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Trainer.Application.Outpost;
 
 namespace Trainer.Application.Crew
@@ -14,7 +15,17 @@ namespace Trainer.Application.Crew
     /// </summary>
     public sealed class CrewInputSender
     {
+        private sealed class SequenceHistory
+        {
+            public PlayerId Player;
+            public long Issued;
+        }
+        // A binding may be replaced before its inputs are acknowledged. Keep the high-water mark with
+        // the port, weakly held, so another session with the same numeric PlayerId cannot inherit it.
+        private static readonly ConditionalWeakTable<IOutpostSessionPort, SequenceHistory> histories =
+            new ConditionalWeakTable<IOutpostSessionPort, SequenceHistory>();
         private readonly IOutpostSessionPort port;
+        private readonly SequenceHistory history;
         private readonly HashSet<object> blockers = new HashSet<object>();
         private PlayerId identity = PlayerId.None;
         private long sequence;
@@ -24,6 +35,7 @@ namespace Trainer.Application.Crew
         public CrewInputSender(IOutpostSessionPort port)
         {
             this.port = port ?? throw new ArgumentNullException(nameof(port));
+            history = histories.GetValue(port, _ => new SequenceHistory());
         }
 
         public bool IsBlocked => blockers.Count > 0;
@@ -66,9 +78,17 @@ namespace Trainer.Application.Crew
                 Forget();
                 identity = membership.Player;
             }
+            if (!snapshot.TryGetCrew(identity, out CrewMemberState local)) return false;
+            if (history.Player != identity)
+            {
+                history.Player = identity;
+                history.Issued = 0;
+            }
+            sequence = Math.Max(sequence, Math.Max(local.LastInputSequence, history.Issued));
             bool epochChanged = snapshot.Epoch != sentEpoch;
-            // After a new identity or epoch the authority holds Zero, so only a nonzero wish needs sending.
-            bool needed = epochChanged ? !wanted.IsZero : !wanted.Equals(sent);
+            // A fresh binding with prior inputs must be able to stop an unknown held direction. Restart
+            // clears direction but preserves sequences; a new identity with no inputs already holds Zero.
+            bool needed = epochChanged ? !wanted.IsZero || (sentEpoch < 0 && sequence > 0) : !wanted.Equals(sent);
             if (!needed)
             {
                 if (epochChanged)
@@ -79,6 +99,7 @@ namespace Trainer.Application.Crew
                 return false;
             }
             sequence = checked(sequence + 1);
+            history.Issued = sequence; // Reserve even if delivery throws after the input was sent.
             port.SubmitMovement(new MovementInput(snapshot.Epoch, sequence, wanted));
             sentEpoch = snapshot.Epoch;
             sent = wanted;

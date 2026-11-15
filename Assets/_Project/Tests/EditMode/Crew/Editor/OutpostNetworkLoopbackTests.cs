@@ -17,6 +17,112 @@ using Trainer.Unity.Networking.Outpost;
 /// </summary>
 public sealed class OutpostNetworkLoopbackTests
 {
+    private sealed class FailingSend : ISessionClientTransport
+    {
+        private readonly ISessionClientTransport inner;
+        public bool Fail, EnqueueBeforeFailure;
+        public Action DeliverBeforeFailure;
+        public FailingSend(ISessionClientTransport inner) => this.inner = inner;
+        public event Action<long> Connected { add => inner.Connected += value; remove => inner.Connected -= value; }
+        public event Action<long, string> Disconnected { add => inner.Disconnected += value; remove => inner.Disconnected -= value; }
+        public event Action<long, byte[]> MessageReceived { add => inner.MessageReceived += value; remove => inner.MessageReceived -= value; }
+        public void Connect(long link) => inner.Connect(link);
+        public void Disconnect(long link) => inner.Disconnect(link);
+        public void SendToHost(long link, byte[] bytes)
+        {
+            if (!Fail) { inner.SendToHost(link, bytes); return; }
+            if (EnqueueBeforeFailure) inner.SendToHost(link, bytes);
+            DeliverBeforeFailure?.Invoke();
+            throw new InvalidOperationException("Injected send failure; delivery may be unknown.");
+        }
+    }
+
+    [Test] public void TerminalWaterSnapshotMatchesTheRealModelOnBothPortsWithoutAnotherTick()
+    {
+        var scenario = NearStationScenario();
+        var model = new OutpostBaseSimulation(OutpostSimulationParameters.SyntheticTraining());
+        var authority = new OutpostAuthority(scenario, new OutpostMissionRules(240, new[] {
+            new OutpostObjectiveRule("water", new[] { OutpostFixtures.TreatWater }, 1, true)
+        }), model, CrewRoster.For(scenario));
+        var net = new InMemoryOutpostNetwork();
+        using (var bridge = new OutpostCommandBridge(authority, net.HostTransport))
+        using (var host = new LocalOutpostSessionPort(authority))
+        using (var client = new OutpostConnectionController(net.CreateClient()))
+        {
+            void Pump() { for (int i = 0; i < 4; i++) { bridge.FlushSnapshots(); net.Pump(); } }
+            host.Join(); client.Connect(); Pump();
+            host.Submit(new OutpostCommand(Guid.NewGuid(), 0, OutpostAction.Resume));
+            host.Submit(OutpostCommand.StartTask(Guid.NewGuid(), 0, OutpostFixtures.WaterProcessor, OutpostFixtures.TreatWater));
+            host.TryGetSnapshot(out var before);
+            authority.Tick(20); Pump();
+            host.TryGetSnapshot(out var local); client.Session.TryGetSnapshot(out var remote);
+            Assert.That(local.State, Is.EqualTo(SessionState.Completed));
+            foreach (var observed in new[] { local, remote })
+            {
+                Assert.That(observed.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(model.Snapshot.LifeSupport.Water.PotableKilograms));
+                Assert.That(observed.Resources.LifeSupport.Water.UntreatedKilograms, Is.EqualTo(model.Snapshot.LifeSupport.Water.UntreatedKilograms));
+            }
+            Assert.That(model.Ledger.TransferBoundaryOutflowKilograms, Is.EqualTo(.2), "Exactly one real Apply.");
+            Assert.That(local.Revision, Is.EqualTo(before.Revision + 1));
+            Assert.That(before.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(20), "The earlier snapshot is immutable.");
+            authority.Join(); Pump(); host.TryGetSnapshot(out var afterJoin);
+            Assert.That(afterJoin.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(local.Resources.LifeSupport.Water.PotableKilograms));
+            Assert.That(afterJoin.SimulatedTimeSeconds, Is.EqualTo(local.SimulatedTimeSeconds));
+        }
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public void SendFailureTerminatesOnlyItsPendingRequestAndLateResultsDoNotReviveIt(bool enqueued, bool answered)
+    {
+        var scenario = NearStationScenario();
+        var authority = new OutpostAuthority(scenario, new OutpostMissionRules(240, new[] {
+            new OutpostObjectiveRule("water", new[] { OutpostFixtures.TreatWater }, 2, true)
+        }), new OutpostBaseSimulation(OutpostSimulationParameters.SyntheticTraining()), CrewRoster.For(scenario));
+        var net = new InMemoryOutpostNetwork();
+        using (var bridge = new OutpostCommandBridge(authority, net.HostTransport))
+        {
+            void Pump() { for (int i = 0; i < 4; i++) { bridge.FlushSnapshots(); net.Pump(); } }
+            var raw = net.CreateClient();
+            var fault = new FailingSend(raw);
+            using (var controller = new OutpostConnectionController(fault))
+            {
+                controller.Connect(); Pump();
+                var port = controller.Session;
+                port.Submit(new OutpostCommand(Guid.NewGuid(), 0, OutpostAction.Resume)); Pump();
+                using (var interaction = new StationInteractionClient(port, scenario))
+                {
+                    int completed = 0, abandoned = 0;
+                    var abandonmentReasons = new List<string>();
+                    interaction.Completed += (c, r) => completed++;
+                    interaction.Abandoned += (c, r) => { abandoned++; abandonmentReasons.Add(r); };
+                    fault.Fail = true; fault.EnqueueBeforeFailure = enqueued;
+                    fault.DeliverBeforeFailure = answered ? (Action)net.Pump : null;
+                    Assert.Throws<InvalidOperationException>(() => interaction.RequestStart(OutpostFixtures.WaterProcessor, OutpostFixtures.TreatWater));
+                    Assert.That(interaction.Pending, Is.Null, "The UI must not keep an orphan pending.");
+                    Assert.That(port.PendingCommandCount, Is.EqualTo(0), "No negative counter after a synchronous result.");
+                    Assert.That(completed, Is.EqualTo(answered ? 1 : 0));
+                    Assert.That(abandoned, Is.EqualTo(answered ? 0 : 1), "Unknown delivery is abandoned, never a fabricated server rejection.");
+                    Assert.That(abandonmentReasons, Is.EqualTo(answered ? Array.Empty<string>() : new[] { OutpostReasons.ConnectionLost }));
+                    Assert.That(interaction.LastResult == null, Is.EqualTo(!answered));
+                    fault.Fail = false; Pump();
+                    Assert.That(completed + abandoned, Is.EqualTo(1), "A late result cannot complete an abandoned request.");
+                    Assert.That(interaction.RequestCancel(OutpostFixtures.WaterProcessor), Is.True, "The UI remains usable.");
+                    controller.Disconnect(); Pump();
+                    Assert.That(interaction.Pending, Is.Null);
+                    Assert.That(port.PendingCommandCount, Is.EqualTo(0));
+                    Assert.That(completed + abandoned, Is.EqualTo(2), "Link loss terminates the new request exactly once.");
+                    Assert.That(abandonmentReasons.Last(), Is.EqualTo(OutpostReasons.LocalDisconnect));
+                    controller.Connect(); Pump();
+                    Assert.That(interaction.RequestStart(OutpostFixtures.WaterProcessor, OutpostFixtures.TreatWater), Is.True);
+                    Pump();
+                    Assert.That(interaction.Pending, Is.Null, "Reconnect can request again without recreating the interaction.");
+                }
+            }
+        }
+    }
+
     private sealed class Rig
     {
         public readonly InMemoryOutpostNetwork Net = new InMemoryOutpostNetwork();

@@ -66,6 +66,7 @@ namespace Trainer.Unity.Bootstrap
         private LocalOutpostSessionPort localPort;
         private IOutpostSessionPort presented;
         private OutpostNetworkClient subscribedClient;
+        private OutpostAuthority composedAuthority;
 
         public MissionProcessRole Role { get; private set; }
         public IOutpostSessionPort PresentedPort => presented;
@@ -116,8 +117,10 @@ namespace Trainer.Unity.Bootstrap
 
             // The only place the authoritative model and roster are created; the authority is their only caller.
             OutpostAuthority authority = bootstrap.Compose(CreateSimulation, CreateRoster);
+            composedAuthority = authority;
             OutpostScenarioDefinition definition = bootstrap.ScenarioDefinition;
             Debug.Log($"[OutpostSceneComposition] Mission composed: '{definition.DisplayName}'. {definition.Provenance}");
+            bootstrap.ShutDown -= OnAuthorityShutDown;
             bootstrap.ShutDown += OnAuthorityShutDown;
 
             if (networkHost != null) networkHost.Attach(authority);
@@ -216,18 +219,27 @@ namespace Trainer.Unity.Bootstrap
 
         private void OnAuthorityShutDown(OutpostAuthority released)
         {
+            if (!ReferenceEquals(composedAuthority, released)) return; // A late callback cannot close a new session.
+            composedAuthority = null;
             if (bootstrap != null) bootstrap.ShutDown -= OnAuthorityShutDown;
-            ReleaseLocalPlayer();
-            SetStatus(false, "La misión local se detuvo");
+            try { ReleaseLocalPlayer(); }
+            finally
+            {
+                if (networkHost != null && ReferenceEquals(networkHost.Authority, released)) networkHost.Detach();
+                if (composedAuthority == null) SetStatus(false, "La misión local se detuvo");
+            }
         }
 
         private void ReleaseLocalPlayer()
         {
             if (localPort == null) return;
-            if (ReferenceEquals(presented, localPort)) Present(null, null);
             LocalOutpostSessionPort port = localPort;
             localPort = null;
-            port.Dispose(); // Leave at the authority: its task ends there, no ghost.
+            try
+            {
+                if (ReferenceEquals(presented, port)) Present(null, null);
+            }
+            finally { port.Dispose(); } // Leave even if a presentation subscriber fails during teardown.
         }
 
         private void OnDestroy()

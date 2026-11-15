@@ -25,6 +25,7 @@ namespace Trainer.Unity.Networking.Outpost
         [SerializeField] private bool runInBackground = true;
 
         private IOutpostAuthority authority;
+        private long bindingVersion;
 
         public UnityTransportHost Transport { get; private set; }
         public OutpostCommandBridge Bridge { get; private set; }
@@ -77,12 +78,18 @@ namespace Trainer.Unity.Networking.Outpost
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             if (ReferenceEquals(value, authority) && (Bridge != null || !IsListening)) return;
+            long version = ++bindingVersion;
             Release(SessionNetworkCodes.AuthorityReplaced);
+            if (bindingVersion != version) return; // A synchronous Leave/diagnostic callback attached a newer session.
             authority = value;
             if (IsListening) Bind(value);
         }
 
-        public void Detach() => Release(SessionNetworkCodes.AuthorityUnavailable);
+        public void Detach()
+        {
+            ++bindingVersion;
+            Release(SessionNetworkCodes.AuthorityUnavailable);
+        }
 
         /// <summary>Port for a player in this process. The caller joins it (<see cref="LocalOutpostSessionPort.Join"/>)
         /// and disposes it when that player leaves.</summary>
@@ -94,7 +101,9 @@ namespace Trainer.Unity.Networking.Outpost
 
         public void StopHost()
         {
+            long version = ++bindingVersion;
             Release(SessionNetworkCodes.HostStopped);
+            if (bindingVersion != version) return;
             if (Transport == null) return;
             Transport.ConnectionClosed -= OnConnectionClosed;
             Transport.Dispose();
@@ -121,18 +130,24 @@ namespace Trainer.Unity.Networking.Outpost
 
         private void Release(string reason)
         {
-            if (Transport != null)
-            {
-                Transport.AcceptClients = false;
-                Transport.DisconnectAll(reason);
-            }
-            if (Bridge != null)
-            {
-                Bridge.ProtocolError -= OnProtocolError;
-                Bridge.Dispose(); // Members of the closed connections leave the authority here.
-                Bridge = null;
-            }
+            OutpostCommandBridge released = Bridge;
+            Bridge = null;
             authority = null;
+            if (released != null) released.ProtocolError -= OnProtocolError;
+            try
+            {
+                if (Transport != null)
+                {
+                    Transport.AcceptClients = false;
+                    Transport.DisconnectAll(reason);
+                }
+            }
+            finally
+            {
+                // Clear ownership before callbacks, and dispose only the captured bridge. Reentrant Attach
+                // must not have its new bridge/authority erased by the old release finishing later.
+                released?.Dispose();
+            }
         }
 
         private void OnProtocolError(ulong connectionId, string code)

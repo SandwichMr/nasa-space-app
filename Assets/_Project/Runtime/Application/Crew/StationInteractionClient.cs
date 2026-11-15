@@ -108,7 +108,14 @@ namespace Trainer.Application.Crew
             OutpostCommand command = build(snapshot.Epoch);
             Pending = command; // Before Submit: the answer may arrive synchronously.
             LastAbandonReason = null;
-            port.Submit(command);
+            try { port.Submit(command); }
+            catch
+            {
+                // Other ports can also throw after an ambiguous delivery. Clear only this request if
+                // no synchronous completion/abandonment already did it; never manufacture a result.
+                if (ReferenceEquals(Pending, command)) OnAbandoned(command, OutpostReasons.ConnectionLost);
+                throw;
+            }
             return true;
         }
 

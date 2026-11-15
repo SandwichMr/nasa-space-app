@@ -79,6 +79,46 @@ public sealed class CrewClientHelpersTests
         Assert.Throws<ArgumentNullException>(() => sender.Block(null));
     }
 
+    [Test] public void ReplacementSenderContinuesConfirmedAndUnacknowledgedSequences()
+    {
+        var s = JoinAs(P1, P1);
+        port.Publish(OutpostFixtures.Next(s, crew: OutpostFixtures.WithMember(s, P1, s.Crew[0].Pose, 12)));
+        var first = new CrewInputSender(port);
+        first.Update(1, 0);
+        Assert.That(port.LastMovementInput.Sequence, Is.EqualTo(13), "Start above the confirmed sequence.");
+        var replacement = new CrewInputSender(port);
+        replacement.Update(0, 0);
+        Assert.That(port.LastMovementInput.Sequence, Is.EqualTo(14), "Include locally issued inputs not yet in a snapshot.");
+        Assert.That(port.LastMovementInput.Direction.IsZero, Is.True, "A fresh binding can stop a held direction.");
+        replacement.Update(1, 0);
+        Assert.That(port.LastMovementInput.Sequence, Is.EqualTo(15));
+        Assert.That(replacement.Update(1, 0), Is.False, "Still no per-frame flooding.");
+    }
+
+    [Test] public void ReplacementSequenceSurvivesRestartAndResetsOnlyForNewIdentity()
+    {
+        var s = JoinAs(P1, P1);
+        var first = new CrewInputSender(port);
+        first.Update(1, 0);
+        first.Update(0, 1);
+        var next = OutpostFixtures.Next(s, newEpoch: 1, crew: OutpostFixtures.WithMember(s, P1, s.Crew[0].Pose, 2));
+        port.Publish(next);
+        var replacement = new CrewInputSender(port);
+        replacement.Update(0, 1);
+        Assert.That(port.LastMovementInput.Sequence, Is.EqualTo(3));
+        Assert.That(port.LastMovementInput.Epoch, Is.EqualTo(1));
+        port.Disconnect(OutpostReasons.ConnectionLost);
+        replacement.Update(0, 1);
+        port.Publish(OutpostFixtures.Next(next, crew: new[] { new CrewMemberState(P2, 0, s.Crew[0].Pose, 0) }));
+        port.Join(P2);
+        replacement.Update(0, 1);
+        Assert.That(port.LastMovementInput.Sequence, Is.EqualTo(1));
+        var otherPort = new FakeOutpostSessionPort();
+        otherPort.Publish(OutpostFixtures.Initial(scenario, 0, P1)); otherPort.Join(P1);
+        new CrewInputSender(otherPort).Update(1, 0);
+        Assert.That(otherPort.LastMovementInput.Sequence, Is.EqualTo(1), "IDs in another session do not share sequence history.");
+    }
+
     [Test] public void InterpolationUsesAFixedDelayAndNeverExtrapolates()
     {
         var smooth = new CrewInterpolator(0.1, 1.5);

@@ -18,9 +18,14 @@ namespace Trainer.Unity.Networking.Outpost
     /// </summary>
     public sealed class OutpostNetworkSessionAdapter : IOutpostSessionPort
     {
+        private sealed class Submission
+        {
+            public readonly OutpostCommand Command;
+            public Submission(OutpostCommand command) => Command = command;
+        }
         private readonly ISessionClientTransport transport;
-        private readonly Dictionary<(Guid, long), List<OutpostCommand>> pending =
-            new Dictionary<(Guid, long), List<OutpostCommand>>();
+        private readonly Dictionary<(Guid, long), List<Submission>> pending =
+            new Dictionary<(Guid, long), List<Submission>>();
         private OutpostWireProtocol.Assembler assembler = new OutpostWireProtocol.Assembler();
         private OutpostSessionSnapshot snapshot;
         private PlayerId awaitingSnapshotFor = PlayerId.None;
@@ -65,12 +70,13 @@ namespace Trainer.Unity.Networking.Outpost
             }
             byte[] payload = OutpostWireProtocol.EncodeSubmit(command);
             var key = (command.Id, command.Epoch);
-            if (!pending.TryGetValue(key, out List<OutpostCommand> queue))
+            if (!pending.TryGetValue(key, out List<Submission> queue))
             {
-                queue = new List<OutpostCommand>(1);
+                queue = new List<Submission>(1);
                 pending.Add(key, queue);
             }
-            queue.Add(command); // Registered before sending: the result may come back immediately.
+            var submission = new Submission(command);
+            queue.Add(submission); // Registered before sending: the result may come back immediately.
             pendingCount++;
             try
             {
@@ -78,9 +84,17 @@ namespace Trainer.Unity.Networking.Outpost
             }
             catch
             {
-                queue.Remove(command);
-                pendingCount--;
-                if (queue.Count == 0) pending.Remove(key);
+                // A synchronous result or link close may already have removed this exact submission.
+                // Never decrement twice or remove a new link's request with the same id/epoch.
+                if (pending.TryGetValue(key, out List<Submission> current) && ReferenceEquals(current, queue)
+                    && queue.Remove(submission))
+                {
+                    pendingCount--;
+                    if (queue.Count == 0) pending.Remove(key);
+                    // Sending can fail after delivery. This is unknown, not a server rejection; a later
+                    // snapshot remains authoritative and an unsolicited late result is discarded.
+                    CommandAbandoned?.Invoke(command, OutpostReasons.ConnectionLost);
+                }
                 throw;
             }
         }
@@ -123,7 +137,8 @@ namespace Trainer.Unity.Networking.Outpost
                 membershipChanged = true;
             }
             var abandoned = new List<OutpostCommand>(pendingCount);
-            foreach (List<OutpostCommand> queue in pending.Values) abandoned.AddRange(queue);
+            foreach (List<Submission> queue in pending.Values)
+                foreach (Submission submission in queue) abandoned.Add(submission.Command);
             pending.Clear();
             pendingCount = 0;
             return abandoned;
@@ -205,7 +220,7 @@ namespace Trainer.Unity.Networking.Outpost
         private void ApplyResult(CommandResult result)
         {
             var key = (result.CommandId, result.Epoch);
-            if (!pending.TryGetValue(key, out List<OutpostCommand> queue))
+            if (!pending.TryGetValue(key, out List<Submission> queue))
             {
                 DiscardedResultCount++;
                 return;

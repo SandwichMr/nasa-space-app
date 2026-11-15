@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Trainer.Application;
 using Trainer.Application.Outpost;
+using Trainer.Unity.Networking.Outpost;
 using static Trainer.Tooling.Validation.Phase02.Phase02Checks;
 
 namespace Trainer.Tooling.Validation.Phase02
@@ -43,6 +44,40 @@ namespace Trainer.Tooling.Validation.Phase02
         private const string Kind = Phase02CheckKinds.TwoPortSession;
         private const double Tick = 0.05;
 
+        /// <summary>Real D1+D2+D3 over D3's Editor in-memory transport helper. No socket/render/process
+        /// evidence. Uses ONLY the D5 fixture and its explicit rules, not the shipped scene's mission.</summary>
+        public static List<Phase02Check> RunIntegrated(Phase02ImplementationDiscovery discovery)
+        {
+            if (discovery == null) throw new ArgumentNullException(nameof(discovery));
+            if (discovery.Authority.Create == null || discovery.Authority.Advance == null || discovery.Simulation == null)
+                return new List<Phase02Check> { new Phase02Check("integrated two ports", Kind, Phase02CheckStatus.Pending,
+                    "Real authority/model/tick unavailable; see discovery diagnostics.") };
+            var scenario = Phase02Fixtures.Scenario();
+            IOutpostAuthority authority = discovery.Authority.Create(scenario, discovery.Simulation());
+            var network = new InMemoryOutpostNetwork();
+            using (var bridge = new OutpostCommandBridge(authority, network.HostTransport))
+            using (var host = new LocalOutpostSessionPort(authority))
+            using (var client = new OutpostConnectionController(network.CreateClient()))
+            {
+                host.Join();
+                client.Connect();
+                return Run(new TwoPortPlan {
+                    Label = "D1+D2+D3, in-memory transport (one process)", Scenario = scenario,
+                    Host = host, Client = client.Session,
+                    Pump = dt => {
+                        network.Pump();
+                        discovery.Authority.Advance(authority, dt);
+                        bridge.FlushSnapshots();
+                        network.Pump();
+                    },
+                    DisconnectClient = client.Disconnect,
+                    HostStation = Phase02Fixtures.DockA, HostTask = Phase02Fixtures.FixA,
+                    ClientStation = Phase02Fixtures.DockB, ClientTask = Phase02Fixtures.FixB,
+                    ClientRoute = new[] { new BasePosition(4, 2.9) }, MaxPumpSeconds = 30
+                });
+            }
+        }
+
         public static List<Phase02Check> Run(TwoPortPlan plan)
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
@@ -53,6 +88,10 @@ namespace Trainer.Tooling.Validation.Phase02
                     new Phase02Check(p + "two-participant session", Kind, Phase02CheckStatus.Pending,
                         "Real host/client ports and pump not provided (requires D2 + D3 integration).")
                 };
+            if (!Phase02ImplementationDiscovery.IsProductionCandidate(plan.Host.GetType())
+                || !Phase02ImplementationDiscovery.IsProductionCandidate(plan.Client.GetType()))
+                return new List<Phase02Check> { new Phase02Check(p + "production ports", Kind, Phase02CheckStatus.Failed,
+                    "Development/editor/fake ports cannot certify an integrated session.") };
 
             var results = new List<(string Who, CommandResult Result)>();
             var abandoned = new List<string>();
@@ -165,6 +204,8 @@ namespace Trainer.Tooling.Validation.Phase02
                 Require(a.Resources.LifeSupport.Water.PotableKilograms == b.Resources.LifeSupport.Water.PotableKilograms
                     && a.Resources.Power.EnergyJoules == b.Resources.Power.EnergyJoules, "Ports show different stocks.");
                 Require(a.Objectives.Select(o => o.Current).SequenceEqual(b.Objectives.Select(o => o.Current)), "Ports show different objectives.");
+                Require(a.State == SessionState.Completed && b.State == a.State && a.Outcome == OutpostOutcome.ObjectiveAchieved
+                    && b.Outcome == a.Outcome, "The configured two-task validation mission must actually complete on both ports.");
                 return "host end " + Last(a, plan.HostStation) + ", client end " + Last(a, plan.ClientStation) + ", outcome " + a.Outcome;
             }));
             checks.Add(Check(p + "restart from the client reaches both ports", Kind, () =>

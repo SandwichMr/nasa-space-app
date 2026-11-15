@@ -182,6 +182,24 @@ No lancé Unity, según la indicación de no hacer builds ni ejecuciones de Unit
 
 ## Dependencias y pendientes
 
+### Correcciones integradas de auditoría (2026-11-15)
+
+Working tree sobre `be207a3`, sin commit. Los bloqueos de ausencia de D1/D2 indicados en la entrega aislada
+son históricos: ya están integrados. Quedan por verificar de nuevo en Unity las correcciones siguientes:
+
+- El adaptador registra una entrada por Submit y solo retira esa entrada al fallar el envío. Si pudo
+  entregarse, emite abandono con resultado desconocido; no inventa un rechazo del servidor ni resta dos
+  veces el contador después de una respuesta síncrona. Un resultado tardío no revive la solicitud.
+- `StationInteractionClient` y los controles de sesión limpian su pendiente cuando un puerto lanza.
+  El emisor de movimiento conserva por puerto/identidad el máximo local emitido y confirmado, mediante
+  una tabla débil; rebind y Restart no reinician secuencia. Una identidad nueva sí empieza su secuencia.
+- El host libera solo el puente capturado y protege Attach/Detach/Stop frente a callbacks de una sesión
+  anterior. Se prepararon regresiones EditMode del cierre y Attach reentrante sin abrir sockets.
+
+Las regresiones managed cubren envío antes/después de entrega, respuesta síncrona, pérdida del enlace,
+resultado tardío, rebind, reinicio e identidad nueva. El informe y las salidas reales están en
+`Logs/phase02-fixes-og-20261115T060242Z/`. No se ejecutaron Unity ni sockets nativos durante la corrección.
+
 1. **D2**: falta la autoridad real (`IOutpostAuthority`) y el wiring de escena; sin ellos no hay partida jugable. Las pruebas usan dobles rotulados (`CrewTestAuthority`, `MovementOnlyAuthority`) que no son la autoridad de misión. La autoridad debe:
    - ser dueña de un único `CrewRoster`;
    - llamar a `Advance` solo en Running;

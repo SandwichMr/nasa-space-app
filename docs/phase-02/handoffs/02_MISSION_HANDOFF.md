@@ -12,6 +12,24 @@ existen en el repositorio (ver [Dependencias y bloqueos](#dependencias-y-bloqueo
 
 ## Registro de archivos exclusivos
 
+### Correcciones de auditoría en integración (2026-11-15)
+
+Working tree sobre `be207a3`, sin commit. Los resultados y bloqueos de la rama aislada documentados más
+abajo son históricos. El controlador ya importó/compiló `be207a3` con Unity 6000.3.28f1; aquella ejecución
+EditMode tuvo 281 Passed y 1 Inconclusive, y D5 falló. No acredita estas correcciones.
+
+- `OutpostAuthority.Tick` captura el snapshot actual de D1 después de completar/aplicar todas las tareas
+  del subpaso, sin otro Advance, Apply o revisión. Regresiones: agua como último objetivo, efectos
+  simultáneos, rechazo por stock/capacidad, snapshots anteriores inmutables y Join sin reparar cantidades.
+- Los controles de sesión liberan su pendiente ante excepción de Submit como resultado desconocido y
+  correlacionan también la época. La composición desconecta el host al Shutdown y filtra callbacks de
+  autoridades anteriores; el host protege un Attach nuevo frente a la limpieza reentrante del anterior.
+- Se añadieron regresiones EditMode del cierre/recomposición, de la geometría en escena temporal y de la partida
+  del asset real terminando con agua. Su ejecución nativa corregida queda para el controlador.
+
+Evidencia antes/después y límites: `Logs/phase02-fixes-og-20261115T060242Z/FIX_REPORT.md`. Las pruebas managed
+no sustituyen al Editor, sockets, render ni partida con dos procesos. La fase sigue sin aceptación jugable.
+
 Registrado antes de editar. Todas las rutas son de D2 según `docs/phase-02/OWNERSHIP.md`. Prefijo omitido:
 `Assets/_Project/`. Cada archivo nuevo lleva su `.meta`, igual que las carpetas nuevas.
 
@@ -227,7 +245,8 @@ comprobación de `05_VALIDATION_HANDOFF.md` con dos personas.
 Limitaciones conocidas:
 
 - El arte de estaciones se genera en `Configure` al componer; en la escena guardada solo está la vista previa de D4,
-  así que la auditoría «station drawn on plan» de D5 quedará Pending fuera de Play.
+  por lo que no debe compararse esa vista previa con el plano final. La corrección de D5 ejecuta ahora la proyección
+  en una escena temporal para comprobar posiciones y rectángulos; su ejecución nativa corregida sigue pendiente.
 - La cámara sigue al astronauta local (D3) con altura visible de 9,5 m (D4); el plano mide 18 × 10 m.
 - Los textos de tarea de `OutpostPanel` no traducen `analyze-sample` (muestra la clave); es de D4.
 

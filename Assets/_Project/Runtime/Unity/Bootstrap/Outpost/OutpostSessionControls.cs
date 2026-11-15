@@ -73,22 +73,27 @@ namespace Trainer.Unity.Bootstrap
             var command = new OutpostCommand(Guid.NewGuid(), snapshot.Epoch, action);
             pending = command;
             feedback = null;
-            port.Submit(command); // A local port may answer synchronously.
+            try { port.Submit(command); } // A local port may answer synchronously.
+            catch
+            {
+                if (ReferenceEquals(pending, command)) OnAbandoned(command, OutpostReasons.ConnectionLost);
+                throw;
+            }
             return true;
         }
 
         private void OnCompleted(CommandResult result)
         {
-            if (pending == null || result.CommandId != pending.Id) return;
+            if (pending == null || result.CommandId != pending.Id || result.Epoch != pending.Epoch) return;
             pending = null;
             feedback = result.Accepted ? null : OutpostPanel.DescribeReason(result.Reason);
         }
 
         private void OnAbandoned(OutpostCommand command, string reason)
         {
-            if (pending == null || command.Id != pending.Id) return;
+            if (pending == null || command.Id != pending.Id || command.Epoch != pending.Epoch) return;
             pending = null;
-            feedback = OutpostPanel.DescribeReason(reason);
+            feedback = "Resultado sin confirmar. " + OutpostPanel.DescribeReason(reason);
         }
 
         private void OnMembership(OutpostMembership membership)

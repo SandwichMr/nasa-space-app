@@ -36,6 +36,20 @@ namespace Trainer.Tooling.Validation.Phase02
         public const double FixADuration = 4;
         public const double FixAPower = 100;
 
+        /// <summary>Rules ONLY for this validation fixture: two support completions, 120 s. Production
+        /// assets keep their own rules. The conformance harness must not guess them from arbitrary data.</summary>
+        public static OutpostMissionRules MissionRules(OutpostScenario scenario)
+        {
+            if (scenario == null || scenario.Id != ScenarioId)
+                throw new ArgumentException("D5 mission rules require the D5 conformance scenario.", nameof(scenario));
+            var rules = new OutpostMissionRules(120, new[] {
+                new OutpostObjectiveRule("support", new[] { FixA, FixB }, 2, true)
+            });
+            string problem = rules.ProblemWith(scenario);
+            if (problem != null) throw new ArgumentException(problem, nameof(scenario));
+            return rules;
+        }
+
         public static readonly BaseRect Bounds = new BaseRect(0, 0, 12, 8);
         public static readonly BaseRect Wall = new BaseRect(5.9, 0, 6.1, 5);
 

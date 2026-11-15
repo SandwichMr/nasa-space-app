@@ -5,6 +5,7 @@ using NUnit.Framework;
 using Trainer.Application;
 using Trainer.Application.Development;
 using Trainer.Application.Outpost;
+using Trainer.Simulation.LifeSupport;
 
 namespace Trainer.Tests.Phase02
 {
@@ -280,6 +281,76 @@ namespace Trainer.Tests.Phase02
         }
 
         // ------------------------------------------------------------ progress, costs and ends
+
+        [Test]
+        public void FinalWaterEffectIsPublishedWithoutAnotherTickOrJoin()
+        {
+            PlayerId a = JoinAt(NearWater);
+            Resume(a);
+            Start(a, OutpostFixtures.WaterProcessor, OutpostFixtures.TreatWater);
+            authority.Tick(20);
+            Start(a, OutpostFixtures.WaterProcessor, OutpostFixtures.TreatWater);
+            OutpostSessionSnapshot before = State;
+            double oldPotable = before.Resources.LifeSupport.Water.PotableKilograms;
+            int published = snapshots.Count;
+            authority.Tick(20);
+
+            Assert.That(State.State, Is.EqualTo(SessionState.Completed));
+            Assert.That(State.Resources.LifeSupport.Water.PotableKilograms,
+                Is.EqualTo(simulation.Snapshot.LifeSupport.Water.PotableKilograms), "Must include the terminal Apply.");
+            Assert.That(State.Resources.LifeSupport.Water.UntreatedKilograms,
+                Is.EqualTo(simulation.Snapshot.LifeSupport.Water.UntreatedKilograms));
+            Assert.That(State.Revision, Is.EqualTo(before.Revision + 1));
+            Assert.That(snapshots.Count, Is.EqualTo(published + 1));
+            Assert.That(simulation.ApplyCalls.Count, Is.EqualTo(2));
+            Assert.That(before.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(oldPotable), "Old snapshots stay immutable.");
+            double final = State.Resources.LifeSupport.Water.PotableKilograms;
+            double time = State.SimulatedTimeSeconds;
+            authority.Join();
+            Assert.That(State.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(final));
+            Assert.That(State.SimulatedTimeSeconds, Is.EqualTo(time));
+        }
+
+        [TestCase(0)] // Both effects apply.
+        [TestCase(1)] // The first effect exhausts the stock needed by the second.
+        [TestCase(2)] // The first effect leaves too little capacity for the second.
+        public void SameSubstepPublishesAllAppliedEffectsAndNoRejectedEffect(int rejection)
+        {
+            bool rejectSecond = rejection != 0;
+            var source = OutpostFixtures.Scenario();
+            var taskA = new TaskTypeId("water-a");
+            var taskB = new TaskTypeId("water-b");
+            var effect = source.Tasks.Single(t => t.Id == OutpostFixtures.TreatWater).CompletionEffect;
+            var layout = new OutpostLayout(source.Layout.Bounds, source.Layout.Obstacles, new[] {
+                new StationPlacement(OutpostFixtures.WaterProcessor, source.Layout.SpawnPoints[0], 1.2),
+                new StationPlacement(OutpostFixtures.AirMonitor, source.Layout.SpawnPoints[1], 1.2)
+            }, source.Layout.SpawnPoints);
+            var config = new OutpostConfiguration(source.Simulation.Power, new LifeSupportConfiguration(
+                new WaterStock(20, rejection == 1 ? 2 : 6, rejection == 2 ? 22 : 40, 20), source.Simulation.LifeSupport.InitialFood,
+                source.Simulation.LifeSupport.Cabin));
+            var s = new OutpostScenario("simultaneous-effects", source.Provenance, layout, source.Movement,
+                new[] { new TaskDefinition(taskA, OutpostFixtures.WaterProcessor, TaskCategory.Support, .25, 0, effect),
+                    new TaskDefinition(taskB, OutpostFixtures.AirMonitor, TaskCategory.Support, .25, 0, effect) }, config);
+            var model = new ScriptedOutpostSimulation();
+            var crew = new ScriptedCrewRoster(s);
+            var session = new OutpostAuthority(s, new OutpostMissionRules(5, new[] {
+                new OutpostObjectiveRule("water", new[] { taskA, taskB }, 2, true) }), model, crew);
+            PlayerId a = session.Join().Player, b = session.Join().Player;
+            session.Submit(a, new OutpostCommand(Guid.NewGuid(), 0, OutpostAction.Resume));
+            session.Submit(a, OutpostCommand.StartTask(Guid.NewGuid(), 0, OutpostFixtures.WaterProcessor, taskA));
+            session.Submit(b, OutpostCommand.StartTask(Guid.NewGuid(), 0, OutpostFixtures.AirMonitor, taskB));
+            session.TryGetSnapshot(out var before);
+            session.Tick(.25);
+            session.TryGetSnapshot(out var after);
+            Assert.That(model.ApplyCalls.Count, Is.EqualTo(2));
+            Assert.That(after.Revision, Is.EqualTo(before.Revision + 1));
+            Assert.That(after.SimulatedTimeSeconds, Is.EqualTo(.25));
+            Assert.That(after.Resources.LifeSupport.Water.PotableKilograms,
+                Is.EqualTo(model.Snapshot.LifeSupport.Water.PotableKilograms));
+            Assert.That(after.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(20 + (rejectSecond ? 1.8 : 3.6)).Within(1e-10));
+            Assert.That(after.Stations[1].LastEnd.Reason, Is.EqualTo(rejectSecond ? TaskEndReason.InsufficientResources : TaskEndReason.Completed));
+            Assert.That(before.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(20));
+        }
 
         [Test]
         public void SupportTaskProgressesWithServedServiceAndAppliesItsEffectOnce()

@@ -10,6 +10,13 @@ using Trainer.Unity.Configuration;
 using Trainer.Unity.Networking;
 using Trainer.Unity.Networking.Outpost;
 using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Reflection;
+using Trainer.Tooling.Validation.Phase02;
+using Trainer.Unity.World.Outpost;
+using Trainer.Tooling.BuildChecks.Phase02;
 using SessionState = Trainer.Application.SessionState;
 
 /// <summary>
@@ -30,6 +37,212 @@ public sealed class Phase02InteriorMatchTests
         var definition = AssetDatabase.LoadAssetAtPath<OutpostScenarioDefinition>(AssetPath);
         Assert.That(definition, Is.Not.Null, AssetPath);
         Phase02InteriorMatch.Play(definition);
+    }
+
+    [Test]
+    public void WaterAsLastObjectivePublishesD1StocksOnBothPortsBeforeAnyFurtherTick()
+    {
+        var definition = AssetDatabase.LoadAssetAtPath<OutpostScenarioDefinition>(AssetPath);
+        Assert.That(definition, Is.Not.Null, AssetPath);
+        Phase02InteriorMatch.PlayWithWaterLast(definition);
+    }
+
+    private static void Set(object instance, string field, object value) => instance.GetType()
+        .GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(instance, value);
+
+    [Test]
+    public void ShutdownDetachesTheHostAndAnOldCallbackCannotCloseTheNewComposition()
+    {
+        var definition = AssetDatabase.LoadAssetAtPath<OutpostScenarioDefinition>(AssetPath);
+        var root = new GameObject("Phase02 shutdown regression");
+        try
+        {
+            var runner = root.AddComponent<OutpostRunner>();
+            var bootstrap = root.AddComponent<OutpostBootstrap>();
+            var host = root.AddComponent<OutpostNetworkHost>();
+            var composition = root.AddComponent<OutpostSceneComposition>();
+            Set(bootstrap, "scenario", definition); Set(bootstrap, "runner", runner);
+            Set(composition, "bootstrap", bootstrap); Set(composition, "networkHost", host);
+            Set(composition, "authorityPlays", false); // No socket or local UI required in EditMode.
+            composition.ApplyRole(MissionProcessRole.Authority); // Awake does not run in EditMode.
+            var old = composition.ComposeAuthority();
+            Assert.That(host.Authority, Is.SameAs(old));
+            bootstrap.Shutdown();
+            Assert.That(runner.IsBound, Is.False);
+            Assert.That(host.Authority, Is.Null, "The released authority must not keep serving clients.");
+            bootstrap.Shutdown();
+            var current = composition.ComposeAuthority();
+            Assert.That(current, Is.Not.SameAs(old));
+            var callback = typeof(OutpostSceneComposition).GetMethod("OnAuthorityShutDown", BindingFlags.NonPublic | BindingFlags.Instance);
+            callback.Invoke(composition, new object[] { old });
+            callback.Invoke(composition, new object[] { old });
+            Assert.That(host.Authority, Is.SameAs(current));
+            Assert.That(bootstrap.Authority, Is.SameAs(current));
+            Assert.That(runner.IsBound, Is.True);
+            var local = host.CreateLocalPort(); local.Join();
+            Set(composition, "localPort", local);
+            local.MembershipChanged += membership => { if (!membership.IsJoined) throw new InvalidOperationException("Teardown subscriber failure"); };
+            Assert.Throws<InvalidOperationException>(() => bootstrap.Shutdown());
+            Assert.That(host.Authority, Is.Null);
+            Assert.That(runner.IsBound, Is.False);
+            current.TryGetSnapshot(out var ended);
+            Assert.That(ended.Crew, Is.Empty, "Subscriber failure must not retain the local member or server binding.");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
+    }
+
+    [Test]
+    public void AReentrantHostAttachDuringOldLeaveKeepsTheNewestAuthority()
+    {
+        var definition = AssetDatabase.LoadAssetAtPath<OutpostScenarioDefinition>(AssetPath);
+        OutpostAuthority Create() => OutpostBootstrap.Create(definition, OutpostSceneComposition.CreateSimulation, OutpostSceneComposition.CreateRoster);
+        var first = Create(); var superseded = Create(); var newest = Create();
+        var root = new GameObject("Phase02 host reentrancy regression");
+        try
+        {
+            var host = root.AddComponent<OutpostNetworkHost>();
+            host.Attach(first);
+            var network = new InMemoryOutpostNetwork();
+            using (var bridge = new OutpostCommandBridge(first, network.HostTransport))
+            using (var client = new OutpostConnectionController(network.CreateClient()))
+            {
+                typeof(OutpostNetworkHost).GetProperty("Bridge").GetSetMethod(true).Invoke(host, new object[] { bridge });
+                client.Connect(); network.Pump();
+                Assert.That(bridge.JoinedClientCount, Is.EqualTo(1));
+                bool replace = true;
+                first.SnapshotChanged += s => {
+                    if (replace && s.Crew.Count == 0) { replace = false; host.Attach(newest); }
+                };
+                host.Attach(superseded); // Disposing the old bridge synchronously invokes Leave.
+                Assert.That(host.Authority, Is.SameAs(newest), "The outer Attach must not overwrite a newer callback's session.");
+                first.TryGetSnapshot(out var ended);
+                Assert.That(ended.Crew, Is.Empty);
+            }
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
+    }
+
+    [Test]
+    public void ConfiguredGeometryAuditInstantiatesTheActualPlanWithoutChangingThePrefab()
+    {
+        var definition = AssetDatabase.LoadAssetAtPath<OutpostScenarioDefinition>(AssetPath);
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/World/Phase02/BaseInterior.prefab");
+        WithUntitledScene(() =>
+        {
+            var check = AuditWithoutEditorChanges(prefab.GetComponent<BaseInteriorView>(), definition.ToScenario(), prefab);
+            Assert.That(check.Status, Is.EqualTo(Phase02CheckStatus.Passed), check.Detail);
+            Assert.That(check.Detail, Does.Contain("4 instantiated stations").And.Contain("8 obstacle"));
+        });
+    }
+
+    [Test]
+    public void ConfiguredGeometryAuditCleansPreviewAfterGeometryFailure()
+    {
+        var definition = AssetDatabase.LoadAssetAtPath<OutpostScenarioDefinition>(AssetPath);
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/World/Phase02/BaseInterior.prefab");
+        WithUntitledScene(() =>
+        {
+            int previews = EditorSceneManager.previewSceneCount;
+            var fixtureScene = EditorSceneManager.NewPreviewScene();
+            GameObject shifted = null, missing = null;
+            try
+            {
+                shifted = UnityEngine.Object.Instantiate(prefab);
+                SceneManager.MoveGameObjectToScene(shifted, fixtureScene);
+                shifted.transform.position = Vector3.right;
+                var invalid = AuditWithoutEditorChanges(shifted.GetComponent<BaseInteriorView>(), definition.ToScenario(), prefab);
+                Assert.That(invalid.Status, Is.EqualTo(Phase02CheckStatus.Failed));
+                Assert.That(invalid.Detail, Does.Contain("off the plan"), "The check must generate and inspect geometry before failing.");
+
+                missing = new GameObject("Missing projection assets");
+                SceneManager.MoveGameObjectToScene(missing, fixtureScene);
+                var incomplete = missing.AddComponent<BaseInteriorView>();
+                invalid = AuditWithoutEditorChanges(incomplete, definition.ToScenario(), prefab);
+                Assert.That(invalid.Status, Is.EqualTo(Phase02CheckStatus.Failed), "An empty/missing projection cannot get a false Passed.");
+            }
+            finally
+            {
+                // Close only the preview owned by this fixture, including any surviving objects.
+                Assert.That(EditorSceneManager.ClosePreviewScene(fixtureScene), Is.True);
+                Assert.That(EditorSceneManager.previewSceneCount, Is.EqualTo(previews));
+                Assert.That(shifted == null && missing == null, Is.True, "Fixture objects must also be destroyed with their preview.");
+            }
+        });
+    }
+
+    private static void WithUntitledScene(Action check)
+    {
+        Scene previous = SceneManager.GetActiveScene();
+        Scene untitled = Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt)
+            .FirstOrDefault(s => s.isLoaded && string.IsNullOrEmpty(s.path) && !EditorSceneManager.IsPreviewScene(s));
+        bool owned = !untitled.IsValid();
+        // Reuse batch's untitled scene without changing its contents or dirty flag. Only when
+        // none exists can an additive test scene be created without the unsaved-scene guard.
+        if (owned) untitled = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+        try
+        {
+            Assert.That(SceneManager.SetActiveScene(untitled), Is.True);
+            Assert.That(untitled.path, Is.Empty, "Reproduce the native untitled/unsaved context.");
+            if (owned) EditorSceneManager.MarkSceneDirty(untitled);
+            check();
+        }
+        finally
+        {
+            try
+            {
+                if (previous.IsValid() && previous.isLoaded && SceneManager.GetActiveScene() != previous)
+                    SceneManager.SetActiveScene(previous);
+            }
+            finally
+            {
+                if (owned) EditorSceneManager.CloseScene(untitled, true); // Never close a pre-existing/user scene.
+            }
+        }
+    }
+
+    private static Phase02Check AuditWithoutEditorChanges(BaseInteriorView source, OutpostScenario scenario, GameObject prefab)
+    {
+        Scene active = SceneManager.GetActiveScene();
+        Scene[] scenes = Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).ToArray();
+        bool[] loaded = scenes.Select(s => s.isLoaded).ToArray();
+        bool[] dirty = scenes.Select(s => s.isDirty).ToArray();
+        string[] paths = scenes.Select(s => s.path).ToArray();
+        int[][] roots = scenes.Select(s => s.isLoaded
+            ? s.GetRootGameObjects().Select(g => g.GetInstanceID()).ToArray() : Array.Empty<int>()).ToArray();
+        int previews = EditorSceneManager.previewSceneCount;
+        Func<int[]> objects = () => Resources.FindObjectsOfTypeAll<GameObject>().Where(g => !EditorUtility.IsPersistent(g) && g.scene.IsValid())
+            .Select(g => g.GetInstanceID()).OrderBy(id => id).ToArray();
+        int[] before = objects();
+        bool prefabDirty = EditorUtility.IsDirty(prefab);
+        string[] prefabState = prefab.GetComponentsInChildren<Component>(true).Select(c => EditorJsonUtility.ToJson(c)).ToArray();
+        byte[] prefabBytes = System.IO.File.ReadAllBytes(AssetDatabase.GetAssetPath(prefab));
+        try { return Phase02BuildChecks.AuditConfiguredInterior(source, scenario); }
+        finally
+        {
+            Assert.That(SceneManager.GetActiveScene(), Is.EqualTo(active));
+            Assert.That(Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt), Is.EqualTo(scenes));
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                Assert.That(scenes[i].path, Is.EqualTo(paths[i]));
+                Assert.That(scenes[i].isLoaded, Is.EqualTo(loaded[i]));
+                Assert.That(scenes[i].isDirty, Is.EqualTo(dirty[i]), "Validation must preserve the scene's dirty flag.");
+                if (loaded[i]) Assert.That(scenes[i].GetRootGameObjects().Select(g => g.GetInstanceID()), Is.EqualTo(roots[i]));
+            }
+            Assert.That(EditorSceneManager.previewSceneCount, Is.EqualTo(previews), "No validation preview may leak.");
+            Assert.That(objects(), Is.EqualTo(before), "No validation GameObject may survive or replace an existing object.");
+            Assert.That(EditorUtility.IsDirty(prefab), Is.EqualTo(prefabDirty));
+            Assert.That(prefab.GetComponentsInChildren<Component>(true).Select(c => EditorJsonUtility.ToJson(c)), Is.EqualTo(prefabState));
+            Assert.That(System.IO.File.ReadAllBytes(AssetDatabase.GetAssetPath(prefab)), Is.EqualTo(prefabBytes));
+        }
+    }
+
+    [Test]
+    public void FakeScannerAllowsEditorFixturesButRejectsTheSameCodeInPlayerSources()
+    {
+        const string connectedFake = "panel.Bind(new FakeOutpostSessionPort(), scenario);";
+        Assert.That(Phase02BuildChecks.UsesDevelopmentSessionInPlayerSource("Assets/_Project/Runtime/Unity/Editor/Fixture.cs", connectedFake), Is.False);
+        Assert.That(Phase02BuildChecks.UsesDevelopmentSessionInPlayerSource("Assets/_Project/Runtime/Unity/Bootstrap/Production.cs", connectedFake), Is.True);
+        Assert.That(Phase02BuildChecks.ScanProductionFakeUsage().Status, Is.EqualTo(Phase02CheckStatus.Passed));
     }
 }
 
@@ -90,11 +303,14 @@ public static class Phase02InteriorMatch
         public readonly OutpostCommandBridge Bridge;
         public readonly List<string> ProtocolErrors = new List<string>();
         public readonly double Speed;
+        public readonly Trainer.Simulation.LifeSupport.IOutpostSimulation Simulation;
 
         public Match(OutpostScenarioDefinition definition)
         {
-            Authority = OutpostBootstrap.Create(definition, OutpostSceneComposition.CreateSimulation,
+            Trainer.Simulation.LifeSupport.IOutpostSimulation model = null;
+            Authority = OutpostBootstrap.Create(definition, s => model = OutpostSceneComposition.CreateSimulation(s),
                 OutpostSceneComposition.CreateRoster);
+            Simulation = model;
             Bridge = new OutpostCommandBridge(Authority, Net.HostTransport);
             Bridge.ProtocolError += (id, code) => ProtocolErrors.Add(code);
             Speed = Authority.Scenario.Movement.MaxSpeedMetersPerSecond;
@@ -185,6 +401,45 @@ public static class Phase02InteriorMatch
         Assert.That(vb.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(va.Resources.LifeSupport.Water.PotableKilograms));
         Assert.That(vb.Resources.LifeSupport.Water.UntreatedKilograms, Is.EqualTo(va.Resources.LifeSupport.Water.UntreatedKilograms));
         Assert.That(vb.Resources.Power.EnergyJoules, Is.EqualTo(va.Resources.Power.EnergyJoules));
+    }
+
+    public static void PlayWithWaterLast(OutpostScenarioDefinition definition)
+    {
+        var match = new Match(definition);
+        using (var hostPort = new LocalOutpostSessionPort(match.Authority))
+        using (var controller = new OutpostConnectionController(match.Net.CreateClient()))
+        {
+            try
+            {
+                hostPort.Join();
+                var host = new Seat("host", hostPort);
+                var remote = new Seat("remote", controller.Session);
+                controller.Connect(); match.Pump();
+                AssertAccepted(match.Send(host, OutpostAction.Resume), "start");
+                match.Walk(host, (3, 5), (3, 7.8));
+                AssertAccepted(match.Send(host, OutpostAction.StartTask, Air, CheckAir), "air first");
+                match.Tick(10);
+                match.Walk(host, (3, 5), (9, 5), (9, 7.8));
+                for (int i = 0; i < 2; i++)
+                {
+                    AssertAccepted(match.Send(host, OutpostAction.StartTask, Water, TreatWater), "water last");
+                    match.Tick(20);
+                }
+                Assert.That(host.View.Outcome, Is.EqualTo(OutpostOutcome.ObjectiveAchieved));
+                AssertSameView(match, host, remote);
+                var water = match.Simulation.Snapshot.LifeSupport.Water;
+                Assert.That(host.View.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(water.PotableKilograms));
+                Assert.That(remote.View.Resources.LifeSupport.Water.UntreatedKilograms, Is.EqualTo(water.UntreatedKilograms));
+                double time = host.View.SimulatedTimeSeconds;
+                using (var late = new LocalOutpostSessionPort(match.Authority))
+                {
+                    late.Join(); match.Pump();
+                    Assert.That(host.View.Resources.LifeSupport.Water.PotableKilograms, Is.EqualTo(water.PotableKilograms));
+                    Assert.That(host.View.SimulatedTimeSeconds, Is.EqualTo(time), "Join must not repair stocks at the same time.");
+                }
+            }
+            finally { match.Bridge.Dispose(); }
+        }
     }
 
     public static void Play(OutpostScenarioDefinition definition)

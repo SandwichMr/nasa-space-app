@@ -4,6 +4,9 @@ using System.Linq;
 using NUnit.Framework;
 using Trainer.Tooling.Validation.Phase02;
 using Trainer.Tooling.Validation.Phase02.Doubles;
+using Trainer.Application.Crew;
+using Trainer.Application.Outpost;
+using Trainer.Simulation.LifeSupport;
 
 /// <summary>
 /// D5 phase 2: the conformance suites themselves. A contract-abiding test double must pass every check and
@@ -65,8 +68,47 @@ public sealed class Phase02ConformanceSelfTests
         });
         Assert.That(Phase02ImplementationDiscovery.IsProductionCandidate(typeof(ReferenceCrewRoster)), Is.False);
         Assert.That(Phase02ImplementationDiscovery.IsProductionCandidate(typeof(Trainer.Application.Development.FakeOutpostSessionPort)), Is.False);
-        Assert.That(d.Roster, Is.Null, "A double was taken for D3's roster.");
-        Assert.That(d.Simulation, Is.Null, "A double was taken for D1's simulation.");
+        Assert.That(d.RosterName, Is.EqualTo(typeof(CrewRoster).FullName), "Finding real code in the fake's assembly is correct.");
+        Assert.That(d.SimulationName, Is.EqualTo(typeof(OutpostBaseSimulation).FullName));
+        Assert.That(d.AuthorityName, Is.EqualTo(typeof(OutpostAuthority).FullName));
+        Assert.That(d.Authority.Create, Is.Not.Null, "The actual D2 constructor and validation rules must be wired.");
+    }
+
+    [Test] public void EditorDoublesAreNeverProductionCandidates()
+    {
+        Assert.That(Phase02ImplementationDiscovery.IsProductionCandidate(typeof(Trainer.Tests.Phase02.ScriptedCrewRoster)), Is.False);
+        Assert.That(Phase02ImplementationDiscovery.IsProductionCandidate(typeof(Trainer.Tests.Phase02.ScriptedOutpostSimulation)), Is.False);
+        Assert.That(Phase02ImplementationDiscovery.IsProductionCandidate(typeof(CrewTestAuthority)), Is.False);
+        Assert.That(Phase02ImplementationDiscovery.IsProductionCandidate(typeof(CrewRoster)), Is.True);
+        Assert.That(Phase02ImplementationDiscovery.IsProductionCandidate(typeof(OutpostBaseSimulation)), Is.True);
+    }
+
+    [Test] public void PlayerSourceFilterExcludesOnlyEditorDirectorySegments()
+    {
+        Assert.That(Phase02ImplementationDiscovery.IsPlayerSourcePath("Assets/_Project/Runtime/Unity/Presentation/Outpost/Editor/Phase02VisualChecks.cs"), Is.False);
+        Assert.That(Phase02ImplementationDiscovery.IsPlayerSourcePath(@"Assets\_Project\Runtime\Unity\Presentation\Outpost\Editor\Phase02VisualChecks.cs"), Is.False);
+        Assert.That(Phase02ImplementationDiscovery.IsPlayerSourcePath("Assets/_Project/Runtime/Unity/Bootstrap/Outpost/FakeConnection.cs"), Is.True,
+            "A fake in actual player sources must remain subject to the scanner.");
+        Assert.That(Phase02ImplementationDiscovery.IsPlayerSourcePath("Assets/_Project/Runtime/Unity/EditorControls.cs"), Is.True);
+    }
+
+    [Test] public void IntegratedTwoPortsUseTheRealAuthorityModelAndAdapters()
+    {
+        var discovery = Phase02ImplementationDiscovery.Discover();
+        var checks = TwoPortSessionScript.RunIntegrated(discovery);
+        Assert.That(discovery.AuthorityName, Is.EqualTo(typeof(OutpostAuthority).FullName));
+        AllPassed(checks);
+    }
+
+    [Test] public void TwoPortGateRejectsAConnectedDevelopmentFake()
+    {
+        var scenario = Trainer.Application.Development.OutpostFixtures.Scenario();
+        var fake = new Trainer.Application.Development.FakeOutpostSessionPort();
+        var player = new PlayerId(1);
+        fake.Publish(Trainer.Application.Development.OutpostFixtures.Initial(scenario, 0, player));
+        fake.Join(player);
+        var checks = TwoPortSessionScript.Run(new TwoPortPlan { Scenario = scenario, Host = fake, Client = fake, Pump = dt => { } });
+        Assert.That(checks.Single().Status, Is.EqualTo(Phase02CheckStatus.Failed), "A joined fake is still not production evidence.");
     }
 }
 

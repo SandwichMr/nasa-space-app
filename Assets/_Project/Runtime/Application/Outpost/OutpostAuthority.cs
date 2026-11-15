@@ -323,8 +323,11 @@ namespace Trainer.Application.Outpost
                     if (!(elapsed > 0)) break;
 
                     CreditWork(elapsed, after.Power.SimulatedTimeSeconds);
+                    // Completion may publish a new immutable model snapshot through Apply. Capture every
+                    // effect before committing this step, including the step that ends the mission.
+                    last = RequireResources();
                     remaining -= step;
-                    result = OutpostMissionEvaluator.Evaluate(Rules, after.Power, completed);
+                    result = OutpostMissionEvaluator.Evaluate(Rules, last.Power, completed);
                 }
             }
             catch

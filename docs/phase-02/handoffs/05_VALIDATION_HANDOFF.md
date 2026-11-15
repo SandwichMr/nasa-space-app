@@ -6,6 +6,29 @@ Fecha: 2026-11-14. Rama `feature/phase-02/d05-validacion`, creada desde la base 
 
 ## Criterio
 
+### Actualización de integración tras auditoría (2026-11-15)
+
+Working tree sobre `be207a3`, sin commit. Antes del arreglo, el controlador ejecutó Unity nativo:
+importación/compilación exit 0; EditMode 282 casos, 281 Passed/1 Inconclusive, exit 2; checks D5 exit 1.
+La inconclusa era `RealImplementationsConformToTheContracts`: dobles dentro de `Assembly-CSharp-Editor`
+se mezclaban con D1/D3 y el constructor real de D2 no tenía binding. Aquella suite no quedó aceptada.
+
+- Discovery ahora excluye el ensamblado Editor y dobles de pruebas; conserva los candidatos reales del
+  ensamblado runtime predefinido. D2 se construye explícitamente con sus tipos reales y reglas rotuladas
+  **solo para la fixture D5**, sin cambiar las reglas del asset de misión ni los contratos.
+- El fixture comprueba que se descubren las implementaciones reales; no supone que el ensamblado del
+  fake carece de producción. La aserción/inconclusa de la puerta no se desactivó.
+- `RunAll` conecta la suite de dos puertos a D1+D2+D3 reales mediante el transporte en memoria existente
+  de D3. La evidencia sigue siendo `session-two-ports`, en un proceso; rechaza puertos fake conectados.
+- El escáner excluye segmentos `Editor`, manteniendo el rechazo del mismo uso de fake en fuentes player.
+  La auditoría de estaciones ejecuta `BaseInteriorView.Configure` en un clon de una escena temporal usando
+  las referencias asignadas en la composición. Exige estaciones y rectángulos reales y no guarda escenas.
+  Esto verifica la proyección de geometría, no el arranque, render ni la experiencia jugable.
+
+Regresiones, resultados managed y checks de tipos contra DLL ya importadas:
+`Logs/phase02-fixes-og-20261115T060242Z/FIX_REPORT.md`. El controlador debe repetir importación, EditMode y
+D5 sobre el árbol corregido. PlayMode/build dependen de esas puertas; la partida con personas continúa pendiente.
+
 La fase se acepta solo con una experiencia de tipo Among Us: dos astronautas controlables dentro de la base, que se ven entre sí y hacen tareas al acercarse a las estaciones. Una UI conectada sin personajes ni navegación no cuenta, y tampoco basta con compilar ni con contar archivos.
 
 ## Archivos de D5 (exclusivos, según `OWNERSHIP.md`)
