@@ -14,6 +14,7 @@ namespace Trainer.Unity.World.Expedition
         [SerializeField] private BaseInteriorView baseView;
         private Transform generated;
         private readonly List<GameObject> replacedStations = new List<GameObject>();
+        private readonly Dictionary<OutpostStationView, (string text, float size)> captions = new Dictionary<OutpostStationView, (string, float)>();
         private SpriteRenderer inner, outer;
         private TextMesh airlockLabel, shelterLabel;
         private readonly Dictionary<StationId,TextMesh> endings = new Dictionary<StationId,TextMesh>();
@@ -26,8 +27,16 @@ namespace Trainer.Unity.World.Expedition
             var s = Context.Scenario;
             if (baseView != null)
                 foreach (var station in baseView.Stations)
+                {
                     if ((station.Placement.Id == s.Airlock.InnerPanel || station.Placement.Id == s.Airlock.OuterPanel || station.Placement.Id.Value == "regolith-site" || station.Placement.Id.Value == "crater-rim") && station.gameObject.activeSelf)
                     { replacedStations.Add(station.gameObject); station.gameObject.SetActive(false); }
+                    string caption = PreparationCaption(station.Placement.Id.Value);
+                    if (caption != null)
+                    {
+                        captions[station] = (station.DisplayName, station.CaptionSize);
+                        station.SetCaption(caption, .05f);
+                    }
+                }
             foreach (var z in s.Zones)
                 if (z.Zone == CrewZone.Exterior) Draw("Regolith", z.Area, regolith, -950, true);
             foreach (var r in s.Layout.Obstacles)
@@ -90,11 +99,26 @@ namespace Trainer.Unity.World.Expedition
             if (baseView != null) baseView.ClearReadings();
             foreach (var station in replacedStations) if (station != null) station.SetActive(true);
             replacedStations.Clear();
+            foreach (var entry in captions) if (entry.Key != null) entry.Key.SetCaption(entry.Value.text, entry.Value.size);
+            captions.Clear();
             stations.Clear(); endings.Clear();
             if (generated != null) { generated.gameObject.SetActive(false); if (UnityEngine.Application.isPlaying) Destroy(generated.gameObject); else DestroyImmediate(generated.gameObject); }
             generated = null;
         }
         private static Vector3 At(BasePosition p) => new Vector3((float)p.X,(float)p.Y,0);
+        private static string PreparationCaption(string id)
+        {
+            switch (id)
+            {
+                case "suit-rack-a": return "TRAJE A";
+                case "suit-rack-b": return "TRAJE B";
+                case "suit-charger": return "CARGA";
+                case "consumables-panel": return "O2 + AGUA";
+                case "suit-check": return "SELLOS";
+                case "shelter-panel": return "PREPARAR REFUGIO";
+                default: return null;
+            }
+        }
         private static Vector3 Center(BaseRect r) => new Vector3((float)((r.MinX+r.MaxX)/2),(float)((r.MinY+r.MaxY)/2),0);
         private SpriteRenderer Draw(string name,BaseRect r,Sprite sprite,int order,bool tiled=false)
         {

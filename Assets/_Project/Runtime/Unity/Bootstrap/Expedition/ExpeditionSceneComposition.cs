@@ -198,6 +198,16 @@ namespace Trainer.Unity.Bootstrap
             if (sessionControls != null) sessionControls.SetStatus(confirmed, detail);
         }
 
+        private void LateUpdate()
+        {
+            // Host.Start may open the socket after ComposeAuthority. Display the actual current listener state.
+            if (Role != MissionProcessRole.Authority || composedAuthority == null) return;
+            string listening = networkHost != null && networkHost.IsListening
+                ? " · escuchando en el puerto " + networkHost.Transport.Port : " · sin red";
+            SetStatus(localPort != null && localPort.Membership.IsJoined,
+                (localPort != null ? LocalPlayerDetail : DedicatedDetail) + listening);
+        }
+
         private void OnAuthorityShutDown(ExpeditionAuthority released)
         {
             if (!ReferenceEquals(composedAuthority, released)) return;

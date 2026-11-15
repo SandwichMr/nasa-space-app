@@ -15,6 +15,14 @@ namespace Trainer.Unity.World.Outpost
         public string DisplayName { get; private set; }
         public string StatusText { get; private set; } = "Sin datos vigentes";
         public double ConfirmedFraction { get; private set; }
+        public float CaptionSize => title != null ? title.characterSize : 0;
+
+        /// <summary>Optional presentation skin. Does not change placement, station identity or task state.</summary>
+        public void SetCaption(string label, float size)
+        {
+            DisplayName = label;
+            if (title != null) { title.text = label; title.characterSize = size; }
+        }
 
         public void Configure(StationPlacement placement, string label, Sprite sprite, Color color)
         {

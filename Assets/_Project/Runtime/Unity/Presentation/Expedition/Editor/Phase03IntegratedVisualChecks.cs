@@ -33,8 +33,10 @@ namespace Trainer.Unity.Presentation.Expedition.Editor
         private static ExpeditionInteractionClient supportIntents;
         private static ExpeditionAcceptanceScript explorerScript, supportScript;
         private static double started;
+        private static double nextDiagnostic;
         private static int frame, finishFrame = -1;
         private static bool ending;
+        private static bool knownIndexingError;
         private static string Evidence => Path.GetFullPath("docs/phase-03/integration-evidence");
 
         [MenuItem("Tools/Trainer/Phase 3/Run integrated production-scene visual checks")]
@@ -49,8 +51,9 @@ namespace Trainer.Unity.Presentation.Expedition.Editor
         {
             if (change != PlayModeStateChange.EnteredPlayMode || !UnityEditor.SessionState.GetBool(Key, false)) return;
             UnityEditor.SessionState.SetBool(Key, false);
-            captures.Clear(); ending = false; finishFrame = -1; explorerScript = supportScript = null;
+            captures.Clear(); ending = knownIndexingError = false; finishFrame = -1; explorerScript = supportScript = null;
             started = EditorApplication.timeSinceStartup;
+            nextDiagnostic = started + 10;
             frame = -1;
             Directory.CreateDirectory(Evidence);
             if (!UnityEngine.Application.isBatchMode)
@@ -66,11 +69,21 @@ namespace Trainer.Unity.Presentation.Expedition.Editor
         private static void OnLog(string message, string trace, LogType type)
         {
             if (ending || (type != LogType.Error && type != LogType.Exception && type != LogType.Assert)) return;
-            if (message.StartsWith("ArgumentOutOfRangeException:") && trace.Contains("UnityEditor.Search.SearchDatabase")) return;
+            if (message.StartsWith("ArgumentOutOfRangeException:") && trace.Contains("UnityEditor.Search.SearchDatabase"))
+            { knownIndexingError = true; return; }
             End(false, message + "\n" + trace);
         }
         private static void Tick()
         {
+            // Keep the isolated Editor's play loop advancing even if its Game view loses desktop focus.
+            EditorApplication.QueuePlayerLoopUpdate();
+            if (knownIndexingError && EditorApplication.isPaused)
+            {
+                // Console Error Pause may stop this test instance for the known Editor indexing defect only.
+                knownIndexingError = false;
+                EditorApplication.isPaused = false;
+            }
+            if (!ending && EditorApplication.timeSinceStartup - started > 300) { End(false, "Integrated visual check timeout"); return; }
             if (frame == Time.frameCount || ending) return;
             frame = Time.frameCount;
             try
@@ -105,6 +118,11 @@ namespace Trainer.Unity.Presentation.Expedition.Editor
                 }
                 var s = panel.Shown;
                 Require(s != null && s.Outpost.ScenarioId == composition.Scenario.Id, "same production scenario");
+                if (EditorApplication.timeSinceStartup >= nextDiagnostic)
+                {
+                    nextDiagnostic = EditorApplication.timeSinceStartup + 10;
+                    Debug.Log($"[IntegratedVisualChecks] t={s.SimulatedTimeSeconds:0.0} state={s.Outpost.State} step={explorerScript.CurrentStep} paused={EditorApplication.isPaused}");
+                }
                 s.TryGetCrew(composition.PresentedPort.Membership.Player, out var me);
                 if (s.Airlock.IsCycling) Capture("02-real-airlock.png");
                 if (me.Zone == CrewZone.Exterior) Capture("03-real-exterior.png");

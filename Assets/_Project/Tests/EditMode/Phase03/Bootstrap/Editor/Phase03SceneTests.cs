@@ -59,6 +59,7 @@ public sealed class Phase03SceneTests
                 Assert.That(world.GetComponentsInChildren<OutpostStationView>().Length, Is.EqualTo(2));
                 Assert.That(baseView.Stations.Count(s => !s.gameObject.activeSelf), Is.EqualTo(4),
                     "two science stations and two hatch panels are replaced, not duplicated");
+                Assert.That(baseView.Stations.Single(s => s.Placement.Id.Value == "suit-rack-a").DisplayName, Is.EqualTo("TRAJE A"));
 
                 typeof(ExpeditionPanel).GetMethod("ToggleDetails", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(panel, null);
                 Assert.That(keyboard.IsBlocked && input.IsBlocked, Is.True, "focused details own both inputs");
@@ -67,6 +68,8 @@ public sealed class Phase03SceneTests
                 Assert.That(panel.Shown, Is.Null);
                 Assert.That(keyboard.IsBlocked || input.IsBlocked, Is.False, "disconnect cannot retain a panel's input ownership");
                 Assert.That(baseView.Stations.All(s => s.gameObject.activeSelf), Is.True);
+                Assert.That(baseView.Stations.Single(s => s.Placement.Id.Value == "suit-rack-a").DisplayName, Is.EqualTo("suit-rack-a"),
+                    "phase3 captions are restored with the phase2 view on disconnect");
                 port.Join();
                 Assert.That(panel.Live && world.Live, Is.True);
                 Assert.That(world.transform.childCount, Is.EqualTo(1), "rejoin does not duplicate geometry");

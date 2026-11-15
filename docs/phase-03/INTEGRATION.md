@@ -15,6 +15,9 @@ Trabajo autorizado por el usuario: reunir las entregas, conectar D4 a la escena 
 - `Scenes/Phase03_EvaAndShelter.unity`: regeneración conservando su GUID y el escenario existente.
 - `Editor/Build/Phase03/Phase03BuildChecks.cs`: comprobar D4, ausencia de provisionales y procedencia de builds desde worktrees.
 - `Runtime/Unity/Presentation/Expedition/ExpeditionBoundView.cs`: liberar bloqueos al perder membresía.
+- `Runtime/Unity/Presentation/Expedition/ExpeditionPanel.cs`: bandas y modal opacos, scroll y espacio para los controles de sesión.
+- `Runtime/Unity/World/Expedition/ExpeditionWorldView.cs` y `World/Outpost/OutpostStationView.cs`: títulos de preparación breves, restaurables y sin cambiar el comportamiento por defecto de fase 2.
+- `Runtime/Unity/Bootstrap/Expedition/ExpeditionSceneComposition.cs`: indicar el estado real del listener después de Start.
 - `Tests/EditMode/Phase03/Bootstrap/Editor/Phase03SceneTests.cs`: regresión de montaje y ciclo de conexión con D4 real.
 - Tooling de validación de integración bajo `Runtime/Unity/Presentation/Expedition/Editor/` si las capturas reales lo requieren.
 - Este informe y `docs/phase-03/integration-evidence/`.
@@ -31,3 +34,23 @@ Contratos, datos/valores del escenario, renderer, paquetes y ProjectSettings se 
 - Contratos y configuración global sin cambios. Unity generó configuración temporal de Editor, descartada en este worktree.
 
 Build y recorridos de aceptación se registran después de ejecutarlos; estos resultados aún no sustituyen una partida con dos personas.
+
+## Ajustes descubiertos con la escena real
+
+La primera build (`b36e8ce`) pasó A y B con autoridad y dos clientes separados. La revisión gráfica de la escena real mostró acumulación de texto fuera del viewport de cámara y rótulos de preparación solapados. Se corrigen en D4 con bandas HUD opacas y títulos breves; los detalles pasan debajo de los controles de sesión y tienen scroll para conservar Reiniciar visible. `OutpostStationView.SetCaption/CaptionSize` es una extensión visual opcional, sin cambio de contratos ni del comportamiento por defecto de fase 2. D4 restaura los títulos al desconectar.
+
+La composición refresca la indicación de escucha del anfitrión, porque `Host.Start` puede abrir el socket después de su montaje. No se cambia el transporte ni la política de escucha. La validación gráfica usa argumentos de loopback.
+
+La primera captura automática se interrumpió para corregir estos defectos. El runner ahora solicita actualizaciones del player loop aunque el Editor pierda foco y despausa únicamente la incidencia conocida de indexación si Console Error Pause detiene la instancia de prueba. Cualquier otra excepción falla el runner. Sus capturas son del escenario/autoridad reales, con dos puertos locales en un proceso; la red entre procesos se comprueba por separado.
+
+## Contribuciones incluidas
+
+| Rol | Commits de fase 3 |
+| --- | --- |
+| D1 | `fb0cefa` |
+| D2 | `ad5135b`, `0a6f858` |
+| D3 | `9bda487`, `974d721`, `3748635` |
+| D4 | `83ca41b` |
+| D5 | `2166121`, `39c6495` |
+
+Los handoffs originales describen sus entregas antes del montaje. Su manifiesto D4 corresponde al commit `83ca41b`; los ajustes posteriores están en el historial y manifiesto de integración.

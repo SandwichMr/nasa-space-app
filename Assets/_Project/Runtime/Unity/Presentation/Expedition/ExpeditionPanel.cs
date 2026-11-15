@@ -11,12 +11,13 @@ namespace Trainer.Unity.Presentation.Expedition
     {
         [SerializeField] private Texture2D warning;
         private bool details;
+        private Vector2 detailsScroll;
         private string answer;
         private GUIStyle text, title, box, button;
         public string AdvisoryText { get; private set; } = "Sin información recibida";
         protected override void OnBound() { Context.Intents.Answered += Answered; }
         protected override void OnUnbinding() { Context.Intents.Answered -= Answered; }
-        protected override void OnRestart() { details=false; answer=null; }
+        protected override void OnRestart() { details=false; detailsScroll=Vector2.zero; answer=null; }
         private void Answered(string reason) { answer=reason; }
         protected override void Present(ExpeditionSessionSnapshot s)
         {
@@ -29,7 +30,7 @@ namespace Trainer.Unity.Presentation.Expedition
                 +$" · hasta {latest.Message.ValidUntilSeconds:0} s · "+Validity(latest.Validity)
                 +(latest.Validity==AdvisoryValidity.Expired && latest.Message.Kind!=AdvisoryKind.InstructionEnd ? "\nSin actualización: mantén la instrucción de refugio." : "");
         }
-        protected override void ClearView() { details=false; answer=null; AdvisoryText="Sin datos vigentes · desconectado"; }
+        protected override void ClearView() { details=false; detailsScroll=Vector2.zero; answer=null; AdvisoryText="Sin datos vigentes · desconectado"; }
         private void ToggleDetails()
         {
             details=!details;
@@ -42,6 +43,13 @@ namespace Trainer.Unity.Presentation.Expedition
             GUI.matrix=Matrix4x4.TRS(new Vector3((Screen.width-1280*scale)/2,(Screen.height-720*scale)/2,0),Quaternion.identity,Vector3.one*scale);
             try
             {
+                // The production camera reserves HUD bands in its viewport. Paint them opaquely every frame
+                // so old text cannot accumulate outside that camera's clear rectangle.
+                Color previousColor=GUI.color;
+                GUI.color=new Color(.03137255f,.05098039f,.09019608f,1);
+                GUI.DrawTexture(new Rect(0,0,1280,96),Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(0,620,1280,100),Texture2D.whiteTexture);
+                GUI.color=previousColor;
                 if (!Live) { GUI.Box(new Rect(12,12,1256,58),"SIN DATOS VIGENTES · conecta para recibir el estado de la misión",box);return; }
                 var s=Shown; s.TryGetCrew(Context.Port.Membership.Player,out var mine);
                 GUI.Box(new Rect(12,12,1256,68),"",box);
@@ -61,23 +69,31 @@ namespace Trainer.Unity.Presentation.Expedition
                 GUI.Label(new Rect(810,677,440,24),Context.Intents.HasPending?"Esperando confirmación…":answer==null?"Acciones en la estación cercana":"Respuesta: "+Reason(answer),text);
                 if (details || s.Phase==ExpeditionPhase.Closed)
                 {
-                    GUI.Box(new Rect(280,100,720,500),"",box);
-                    GUI.Label(new Rect(300,114,680,34),s.Phase==ExpeditionPhase.Closed?"RESULTADO · "+Outcome(s.Outcome):"MISIÓN / COMPAÑEROS",title);
-                    GUI.Label(new Rect(300,156,680,424),Details(s),text);
+                    // Keep D2's session strip (y=102..136), including Restart, visible and clickable.
+                    GUI.color=new Color(.03137255f,.05098039f,.09019608f,1);
+                    GUI.DrawTexture(new Rect(280,150,720,454),Texture2D.whiteTexture);
+                    GUI.color=previousColor;
+                    GUI.Box(new Rect(280,150,720,454),"",box);
+                    GUI.Label(new Rect(300,164,680,38),s.Phase==ExpeditionPhase.Closed?"RESULTADO · "+Outcome(s.Outcome):"MISIÓN / COMPAÑEROS",title);
+                    string content=Details(s);
+                    float height=Mathf.Max(370,text.CalcHeight(new GUIContent(content),650));
+                    detailsScroll=GUI.BeginScrollView(new Rect(300,210,680,380),detailsScroll,new Rect(0,0,650,height));
+                    GUI.Label(new Rect(0,0,650,height),content,text);
+                    GUI.EndScrollView();
                 }
             }
             finally { GUI.matrix=oldMatrix; GUI.enabled=oldEnabled; }
         }
         private string Details(ExpeditionSessionSnapshot s)
         {
-            var b=new StringBuilder("Escenario educativo sintético · sin dosimetría humana\n");
+            var b=new StringBuilder("Ejercicio educativo sintético\n");
             foreach(var o in s.Objectives) b.AppendLine((o.Met?"HECHO · ":"PENDIENTE · ")+Objective(o.Key)+(o.Role==ObjectiveRole.Optional?" (opcional)":""));
             b.AppendLine($"\nEsclusa: {s.Airlock.Occupants.Count}/{Context.Scenario.Airlock.Capacity} plazas · "+(s.Airlock.IsCycling?$"transición {s.Airlock.CycleFraction:P0}":"disponible")+(s.Airlock.Stalled?" · SIN SERVICIO":""));
             foreach(var c in s.Crew) b.AppendLine(c.Player+" · "+ExpeditionCrewBadge.Zone(c.Zone)+" · "+Margin(c.Margin,s.SimulatedTimeSeconds)+" · "+Protection(c.Protection));
             s.TryGetCrew(Context.Port.Membership.Player,out var mine);
             if(mine!=null && mine.SuitIndex>=0)
             {
-                var suit=s.Suits[mine.SuitIndex];b.AppendLine("\nTraje: "+suit.Status+" · checklist: "+suit.Completed);
+                var suit=s.Suits[mine.SuitIndex];b.AppendLine("\nTraje: "+(suit.Status==SuitStatus.Sealed?"sellado":"puesto")+" · revisión: "+Steps(suit.Completed));
                 foreach(var model in Context.Scenario.Eva.Model.Services) b.AppendLine(Service(model.Service)+$": {suit.Reading.Levels.Get(model.Service):0.###}/{model.Capacity:0.###} {model.Unit} · reserva {model.Reserve:0.###}");
             }
             b.AppendLine("\n"+AdvisoryText);
