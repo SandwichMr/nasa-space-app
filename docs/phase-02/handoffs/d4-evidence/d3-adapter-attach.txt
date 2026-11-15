@@ -1,0 +1,2 @@
+Extracto real de Unity. D3 se incluyó solo en la copia de verificación; puerto fake, sin red ni autoridad.
+D4_D3_ADAPTER_ATTACHED: astronaut prefab preserves its existing art and animation references.

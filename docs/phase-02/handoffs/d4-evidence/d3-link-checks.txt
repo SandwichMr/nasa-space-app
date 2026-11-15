@@ -1,0 +1,15 @@
+Extracto real de Unity. D3 se incluyó solo en la copia de verificación; puerto fake, sin red ni autoridad.
+D4_D3_CHECK 1: D3 alone spawns both D4 prefabs
+D4_D3_CHECK 2: Installed ICrewAvatarView adapter receives the local identity
+D4_D3_CHECK 3: Remote identity reaches D4 appearance
+D4_D3_CHECK 4: D3 positions the root from the confirmed pose
+D4_D3_CHECK 5: D3's real frame switches D4 animation
+D4_D3_CHECK 6: Only D3 follows the local astronaut
+D4_D3_CHECK 7: Opening D4 panel calls the real D3 Block
+D4_D3_CHECK 8: D4 task button uses the existing D3 Interaction pending guard
+D4_D3_CHECK 9: UI and D3 share one request in flight
+D4_D3_CHECK 10: D3 result releases pending and displays authority reason
+D4_D3_CHECK 11: Closing D4 panel calls the real D3 Unblock
+D4_D3_CHECK 12: D3 clears crew and D4 clears readings on the same lost membership
+D4_D3_CHECK 13: No ghost visual after D3 deferred destruction
+D4_D3_LINK_CHECKS_PASSED: 13 · real D3 components, fake port, no authority or network
