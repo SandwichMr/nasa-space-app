@@ -1,101 +1,101 @@
 # Space Station Breakdown
 
-**Mantén la base. Cuida las reservas. Haz ciencia. Regresa con tu equipo.**
+**Keep the base running. Protect your reserves. Do science. Bring your team home.**
 
-Prototipo educativo cooperativo de gestión de una **base lunar**, desarrollado en **Unity Universal 2D** para el reto *Build a Junior Astronaut Mission Trainer* de **NASA Space Apps Challenge 2026**.
+An educational cooperative **lunar-base management** prototype, built with **Unity Universal 2D** for the **NASA Space Apps Challenge 2026** challenge *Build a Junior Astronaut Mission Trainer*.
 
-La idea es sencilla: la base sigue funcionando mientras el equipo juega. Repartirse mantenimiento, cuidar suministros y decidir cuándo hacer ciencia o volver de una expedición importa más que completar una lista de tareas.
+The premise is simple: the base keeps operating while the team plays. Sharing maintenance duties, managing supplies, and deciding when to pursue science or return from an expedition matter more than completing a checklist.
 
-![Vista de desarrollo de la base lunar](docs/phase-04/art/large-base-overview.png)
+![Development view of the lunar base](docs/phase-04/art/large-base-overview.png)
 
-*Captura de desarrollo de la distribución lunar. El encuadre general es de evidencia y la paleta puede diferir de la escena actual; no representa toda la validación del juego.*
+*Development screenshot of the lunar-base layout. This overview uses an evidence-capture camera framing, and its palette may differ from the current scene. It does not establish full gameplay validation.*
 
-> **Estado:** prototipo en desarrollo, fase 4 en consolidación. Este repositorio incluye trabajo de simulación, presentación, red, integración y pruebas. No es una versión final ni un simulador certificado para operaciones espaciales reales.
+> **Status:** work-in-progress prototype; phase 4 is being consolidated. This repository includes simulation, presentation, networking, integration, and testing work. It is not a final release or a certified simulator for real space operations.
 
-## Qué propone el juego
+## The experience
 
-Los jugadores controlan astronautas en una base cenital 2D y comparten recursos, equipos y decisiones. Mientras una persona atiende el reciclador, otra puede revisar el aire o preparar una salida científica. Una reparación cuesta tiempo y recursos; terminarla no devuelve lo que ya se perdió.
+Players control astronauts in a top-down 2D base, sharing resources, equipment, and decisions. While one player services the water processor, another can check the air system or prepare a scientific expedition. Repairs take time and resources; completing one does not restore resources that have already been lost.
 
-El ciclo buscado es:
+The intended gameplay loop is:
 
-**Observar → priorizar → repartirse el trabajo → intervenir → recuperar margen → continuar.**
+**Observe → prioritize → share the work → intervene → restore operating margin → keep going.**
 
-Las tareas científicas y las expediciones son actividades dentro de la sesión. El modo continuo está diseñado para que completarlas no cierre ni reinicie toda la base. Los escenarios anteriores de entrenamiento conservan sus objetivos y resultados finitos.
+Scientific tasks and expeditions are activities within the session. Continuous mode is designed so that completing them does not end the session or reset the entire base. Earlier training scenarios retain their finite objectives and outcomes.
 
-## Sistemas incluidos en el prototipo
+## Systems included in the prototype
 
-- **Cooperación en red:** arquitectura host/cliente sobre Unity Transport y WebSocket, con una única autoridad de simulación.
-- **Astronautas y navegación:** movimiento 2D, presencia de compañeros, estaciones por proximidad, habitaciones, esclusa y exterior lunar.
-- **Recursos compartidos:** energía y batería, agua por calidad, comida y servicios de aire con O2 y CO2 diferenciados.
-- **Estaciones:** tratamiento de agua, decisiones de servicio de aire, ciencia y logística, con estados confirmados por la autoridad.
-- **Mantenimiento:** degradación sintética del reciclador, diagnóstico, aislamiento, intervención, prueba y restitución.
-- **Reposición:** pedidos, espera y descarga con las reglas y límites del escenario.
-- **EVA:** preparación del traje, recursos propios, margen de retorno, esclusa, ciencia exterior y regreso/refugio en los escenarios correspondientes.
-- **Interfaz:** barras, unidades, tendencias, ocupación, resultados de acciones y estados desconocidos o antiguos.
+- **Networked cooperation:** host/client architecture using Unity Transport and WebSocket, with a single simulation authority.
+- **Astronauts and navigation:** 2D movement, visible teammates, proximity-based stations, rooms, an airlock, and a lunar exterior.
+- **Shared resources:** power and battery reserves, water separated by quality, food, and distinct O2 and CO2 air-service readings.
+- **Stations:** water treatment, air-service decisions, science, and logistics, with authority-confirmed state.
+- **Maintenance:** synthetic water-processor degradation, diagnosis, isolation, intervention, testing, and restoration to service.
+- **Resupply:** ordering, waiting, and unloading under the scenario's rules and limits.
+- **EVA:** suit preparation, suit resources, return margin, airlock operations, outdoor science, and return/shelter behavior in the relevant scenarios.
+- **Interface:** resource bars, units, trends, occupancy, action results, and unavailable or stale readings.
 
-La implementación y sus límites están documentados en los [handoffs de fase 4](docs/phase-04/handoffs/) y en el [informe de integración](docs/phase-04/INTEGRATION.md). La presencia de un sistema no equivale a que todos sus recorridos y plataformas estén aceptados.
+Implementation details and limitations are documented in the [phase 4 handoffs](docs/phase-04/handoffs/) and the [integration report](docs/phase-04/INTEGRATION.md). A system being present does not mean that every workflow and platform has passed acceptance testing.
 
-## Abrir el proyecto
+## Open the project
 
-### Requisitos
+### Requirements
 
-- **Unity Hub** y **Unity Editor 6000.3.28f1**, versión declarada en [ProjectVersion.txt](ProjectSettings/ProjectVersion.txt).
+- **Unity Hub** and **Unity Editor 6000.3.28f1**, as specified in [ProjectVersion.txt](ProjectSettings/ProjectVersion.txt).
 - Git.
-- Módulo de build del target que se quiera generar. La evidencia de ejecución disponible se concentra en **Linux**; no se promete compatibilidad final con otros targets sin pruebas específicas.
+- The build-support module for your intended target. Available execution evidence focuses on **Linux**; other targets are not claimed as fully supported without platform-specific testing.
 
-### Pasos
+### Setup
 
 ```sh
 git clone https://github.com/SandwichMr/space-station-breakdown.git
 cd space-station-breakdown
 ```
 
-1. En Unity Hub, añade la carpeta clonada como proyecto existente.
-2. Ábrela con la versión indicada y deja que Unity resuelva los paquetes/importación.
-3. Abre `Assets/_Project/Scenes/Phase04_LivingBase.unity`.
-4. Entra en Play Mode. En la configuración de autoridad jugable, el anfitrión también controla un astronauta.
-5. Usa **Iniciar** en los controles de sesión para pasar de Ready a la simulación activa.
+1. In Unity Hub, add the cloned folder as an existing project.
+2. Open it with the specified Editor version and let Unity resolve packages and import assets.
+3. Open `Assets/_Project/Scenes/Phase04_LivingBase.unity`.
+4. Enter Play Mode. With the playable-authority configuration, the host also controls an astronaut.
+5. Click **Iniciar** (Start) in the session controls to move from Ready into active simulation.
 
-Las fases anteriores siguen disponibles en `Assets/_Project/Scenes/` como escenarios de desarrollo y regresión.
+Earlier phases remain available in `Assets/_Project/Scenes/` as development and regression scenarios.
 
-### Controles principales
+### Main controls
 
-- **WASD / flechas:** moverse.
-- **E:** interactuar con la estación o panel cercano; en las estaciones de fase 4 abre la interfaz correspondiente.
-- **R:** declarar el regreso en el flujo EVA cuando corresponda.
-- **Interfaz:** decisiones, detalles de recursos y controles de iniciar, pausa y reinicio.
-- **Escape / cerrar panel:** salir de la interfaz según su estado.
+- **WASD / arrow keys:** move.
+- **E:** interact with a nearby station or panel; at phase 4 stations, this opens the corresponding interface.
+- **R:** declare a return during the EVA workflow, when applicable.
+- **Interface:** make decisions, inspect resource details, and start, pause, or restart the session.
+- **Escape / close panel:** leave the interface as appropriate for its current state.
 
-Las acciones pueden rechazarse por distancia, ocupación, falta de recursos o requisitos del procedimiento. La interfaz debe mostrar el estado confirmado, no dar por terminada una solicitud solo por enviarla.
+Actions may be rejected because of distance, occupancy, insufficient resources, or procedure requirements. The interface should display confirmed state, not treat a request as completed merely because it was sent. In-game labels and many linked development notes are currently in Spanish.
 
-## Multiplayer local y desarrollo
+## Local multiplayer and development
 
-Para ejecutar varios procesos, genera primero una build del proyecto actual. No ejecutes Unity CLI sobre el mismo proyecto mientras esté abierto en otro Editor.
+Build the current project before running multiple processes. Do not launch Unity CLI against a project that is already open in another Editor instance.
 
-Ejemplo con la salida Linux del tooling de fase 4, desde la raíz del repositorio:
+Example using the phase 4 tooling's Linux output, from the repository root:
 
 ```sh
 P="Builds/Phase4LivingBase/StandaloneLinux64/Phase4LivingBase.x86_64"
 
-# Ventana del anfitrión: autoridad y jugador local.
+# Host window: authority and local player.
 "$P" -trainer-role authority -trainer-bind 127.0.0.1 -trainer-port 7777
 
-# En otra terminal: cliente de la misma build.
+# In another terminal: a client running the same build.
 "$P" -trainer-role client -trainer-server 127.0.0.1 -trainer-port 7777 -trainer-connect
 ```
 
-Para una autoridad dedicada se añaden `-batchmode -nographics` al proceso autoridad. En LAN privada, utiliza una dirección de escucha apropiada y la IP del host en los clientes, con acceso permitido por el firewall. **Dos procesos en localhost no prueban LAN, Internet, crossplay ni WebGL/WSS.**
+For a dedicated authority, add `-batchmode -nographics` to the authority process. On a private LAN, choose an appropriate listening address, configure clients with the host's IP address, and allow the connection through the firewall. **Two processes on localhost do not establish LAN, Internet, crossplay, or WebGL/WSS support.**
 
-Este README no configura hosting público ni un túnel. No añadas credenciales o direcciones privadas de servicios al repositorio.
+This README does not configure public hosting or a tunnel. Do not commit credentials or private service addresses.
 
-## Pruebas, builds y evidencia
+## Tests, builds, and evidence
 
-El proyecto contiene pruebas EditMode/PlayMode, validadores de escenario/composición, verificaciones visuales y herramientas para ejecutar autoridad y clientes. Cada tipo de evidencia tiene un alcance diferente.
+The project includes EditMode/PlayMode tests, scenario/composition validators, visual checks, and tools for running an authority and clients. Each type of evidence has a different scope.
 
-Ejemplo de Test Runner nativo en Linux, con el Editor del proyecto cerrado:
+Native Test Runner example on Linux, with the project's Editor closed:
 
 ```sh
-UNITY="/ruta/a/Unity/Hub/Editor/6000.3.28f1/Editor/Unity"
+UNITY="/path/to/Unity/Hub/Editor/6000.3.28f1/Editor/Unity"
 mkdir -p Logs/local-checks
 
 "$UNITY" -batchmode -nographics -projectPath "$PWD" \
@@ -109,9 +109,9 @@ mkdir -p Logs/local-checks
   -logFile "$PWD/Logs/local-checks/playmode.log"
 ```
 
-Una ejecución sin gráficos no valida legibilidad, teclado físico o experiencia de usuarios. Revisa los XML, el exit code y las pruebas omitidas/inconclusas, no solo si el proceso terminó.
+A headless run does not validate readability, physical keyboard input, or the user experience. Check the XML, exit code, and skipped/inconclusive tests rather than only whether the process finished.
 
-El tooling de fase 4 está en `Assets/_Project/Editor/Build/Phase04/Phase04BuildChecks.cs`. Para generar una build Linux con la escena productiva:
+Phase 4 tooling is located in `Assets/_Project/Editor/Build/Phase04/Phase04BuildChecks.cs`. To build the production scene for Linux:
 
 ```sh
 "$UNITY" -batchmode -nographics -projectPath "$PWD" -buildTarget Linux64 \
@@ -119,65 +119,65 @@ El tooling de fase 4 está en `Assets/_Project/Editor/Build/Phase04/Phase04Build
   -logFile "$PWD/Logs/local-checks/build.log"
 ```
 
-No uses una build forzada/diagnóstica como prueba de aceptación. Los logs y las builds se generan localmente y no se versionan.
+Do not use a forced/diagnostic build as acceptance evidence. Logs and builds are generated locally and are not versioned.
 
-### Estado de validación
+### Validation status
 
-Los XML locales de la revisión de base grande registran **551/551 EditMode** y **76/76 PlayMode**, sin fallos ni inconclusas. **Después hubo retoques de escena/configuración:** esas cifras no certifican por sí solas cada cambio posterior de este commit. Esta publicación no volvió a ejecutar Unity porque el proyecto estaba abierto en el Editor.
+The local XML results from the large-base revision record **551/551 EditMode** and **76/76 PlayMode** tests passing, with no failures or inconclusive cases. **Scene/configuration adjustments were made afterward:** those counts do not, by themselves, certify every subsequent change. Unity was not rerun for that publication because the project was open in the Editor.
 
-Existen pruebas automatizadas de continuidad y ejecuciones de builds anteriores; sus versiones, duración, límites e interrupciones están documentados. **No se atribuye la validación de una build anterior al rediseño visual posterior.** Sigue pendiente la aceptación prolongada con personas.
+Automated continuity checks and executions of earlier builds are documented, including their versions, duration, limitations, and interruptions. **Validation of an earlier build does not automatically apply to a later visual redesign.** Extended acceptance testing with human players remains pending.
 
-Referencias:
-- [Integración y correcciones](docs/phase-04/INTEGRATION.md).
-- [Resultados registrados de ejecución](docs/phase-04/integration-evidence/RUN_RESULTS_2026-11-15.md).
-- [Pruebas y límites pendientes](docs/phase-04/integration-evidence/PENDING_TESTS.md).
-- [Protocolo de sesión humana](docs/phase-04/integration-evidence/HUMAN_SESSION.md).
-- [Distribución de la base y validación del rediseño](docs/phase-04/art/LARGE_BASE.md).
+References:
+- [Integration and fixes](docs/phase-04/INTEGRATION.md).
+- [Recorded execution results](docs/phase-04/integration-evidence/RUN_RESULTS_2026-11-15.md).
+- [Pending tests and limitations](docs/phase-04/integration-evidence/PENDING_TESTS.md).
+- [Human play-session protocol](docs/phase-04/integration-evidence/HUMAN_SESSION.md).
+- [Base layout and redesign validation](docs/phase-04/art/LARGE_BASE.md).
 
-## Ciencia y datos NASA
+## Science and NASA data
 
-El proyecto busca enseñar relaciones entre sistemas: gastar energía en ciencia puede reducir margen para otro servicio; tratar agua tiene entradas, salidas y pérdidas; regresar a tiempo puede ser una decisión correcta.
+The project aims to teach relationships between systems: using energy for science can reduce the margin available to another service; water treatment has inputs, outputs, and losses; returning in time can be the right decision.
 
-Los escenarios actuales usan **parámetros sintéticos identificados** y modelos reducidos. No son predicciones, tasas universales, umbrales médicos ni una reconstrucción certificada de una base real.
+Current scenarios use **explicitly identified synthetic parameters** and reduced models. They are not predictions, universal rates, medical thresholds, or a certified reconstruction of a real base.
 
-La integración de registros de clima espacial de **NASA/CCMC DONKI** pertenece a la **fase 5**. No se presenta como una conexión productiva ya terminada. Se prevén episodios históricos contextualizados y fallback sintético rotulado, sin hacer depender la partida de un evento solar real.
+Integrating **NASA/CCMC DONKI** space-weather records belongs to **phase 5**. It is not presented as an already completed production connection. The plan includes contextualized historical episodes and a clearly labeled synthetic fallback, without requiring a real solar event to occur during a game session.
 
-- Una llamarada, una CME y un evento de partículas no son equivalentes.
-- Clase X, Kp o flujo de protones no se convierten directamente en dosis de un astronauta lunar.
-- La ausencia de datos no significa ausencia de peligro.
-- Esta versión no necesita configurar una API key NASA para abrir los escenarios sintéticos. Nunca incluyas claves en clientes, assets, Git o logs.
+- A solar flare, a CME, and an energetic-particle event are not equivalent.
+- Flare class, Kp, or proton flux cannot be converted directly into a lunar astronaut's dose.
+- Missing data does not mean that no hazard exists.
+- This version does not require a NASA API key to open the synthetic scenarios. Never include keys in clients, assets, Git, or logs.
 
-Más contexto: [reglas científicas](docs/SCIENTIFIC_RULES.md) y [DONKI oficial](https://ccmc.gsfc.nasa.gov/tools/DONKI/).
+Further context: [scientific rules](docs/SCIENTIFIC_RULES.md) and [official DONKI information](https://ccmc.gsfc.nasa.gov/tools/DONKI/).
 
 ## Roadmap
 
-- **Fases 1–3:** energía cooperativa, gestión interior y expediciones con regreso/refugio.
-- **Fase 4:** base viva, recursos, mantenimiento, reposición e integración; consolidación actual.
-- **Fase 5:** variedad de contratiempos, datos NASA contextualizados y actividades renovables.
-- **Fase 6:** balance, guardado/reanudación, accesibilidad y validación de entrega.
+- **Phases 1–3:** cooperative power management, interior-base management, and expeditions with return/shelter workflows.
+- **Phase 4:** a continuously operated base, resources, maintenance, resupply, and integration; currently being consolidated.
+- **Phase 5:** varied setbacks, contextualized NASA data, and renewable activities.
+- **Phase 6:** balancing, save/resume support, accessibility, and delivery validation.
 
-Los planes no son funciones ya disponibles. Marte es una posible ampliación posterior, no un escenario implementado en esta versión.
+Plans are not already available features. Mars is a possible later expansion, not an implemented scenario in this version.
 
-Consulta los documentos vigentes en [docs/roadmap](docs/roadmap/), especialmente la [fase 4](docs/roadmap/04_MISSION_OPERATIONS_PROTOTYPE.md), [fase 5](docs/roadmap/05_RELEASE_CANDIDATE.md) y [fase 6](docs/roadmap/06_RELEASE_CANDIDATE.md). El archivo de fase 5 conserva un nombre histórico; su contenido vigente es el de contratiempos y rejugabilidad.
+See the current documents in [docs/roadmap](docs/roadmap/), especially [phase 4](docs/roadmap/04_MISSION_OPERATIONS_PROTOTYPE.md), [phase 5](docs/roadmap/05_RELEASE_CANDIDATE.md), and [phase 6](docs/roadmap/06_RELEASE_CANDIDATE.md). The phase 5 filename is historical; its current content covers setbacks and replayability.
 
-## Arquitectura y colaboración
+## Architecture and collaboration
 
 ```text
-Unity / presentación / red
-            ↓
-       Application
-            ↓
-        Simulation
+Unity / presentation / networking
+               ↓
+          Application
+               ↓
+           Simulation
 ```
 
-La autoridad procesa intenciones y avanza la simulación; los clientes reciben snapshots. Las vistas no mantienen inventarios ni controladores de movimiento alternativos.
+The authority processes intentions and advances the simulation; clients receive snapshots. Views do not maintain separate inventories or alternative movement controllers.
 
-Código y assets del proyecto: `Assets/_Project/`. Reparto y contratos: [OWNERSHIP de fase 4](docs/phase-04/OWNERSHIP.md) y [contrato de sesión](docs/phase-04/SESSION_CONTRACT.md). Antes de contribuir, lee [AGENTS.md](AGENTS.md), conserva metadatos/GUIDs y no publiques caches ni cambios de settings generados accidentalmente.
+Project code and assets live in `Assets/_Project/`. Ownership and interfaces are documented in [phase 4 OWNERSHIP](docs/phase-04/OWNERSHIP.md) and the [session contract](docs/phase-04/SESSION_CONTRACT.md). Before contributing, read [AGENTS.md](AGENTS.md), preserve metadata/GUIDs, and do not publish caches or accidentally generated settings changes.
 
-## Créditos y licencia
+## Credits and licensing
 
-Desarrollo por el equipo del proyecto. [Contribuidores en GitHub](https://github.com/SandwichMr/space-station-breakdown/graphs/contributors).
+Developed by the project team. [Contributors on GitHub](https://github.com/SandwichMr/space-station-breakdown/graphs/contributors).
 
-La procedencia de los recursos visuales y sus prompts se documenta en [Art de fase 4](Assets/_Project/Art/Phase04/ART_PROVENANCE.md) y [arte lunar](docs/phase-04/art/LUNAR_BASE.md). Usar datos o referencias de NASA no implica aval o certificación de este prototipo por NASA.
+Visual-asset provenance and prompts are documented in [phase 4 art](Assets/_Project/Art/Phase04/ART_PROVENANCE.md) and [lunar art](docs/phase-04/art/LUNAR_BASE.md). Using NASA data or references does not imply NASA endorsement or certification of this prototype.
 
-El repositorio todavía no declara una licencia general mediante un archivo LICENSE. No asumas una licencia MIT u otra autorización que no esté publicada; consulta a los autores y la procedencia de cada recurso antes de redistribuirlo.
+The repository does not yet declare a general license through a LICENSE file. Do not assume an MIT license or any other unpublished permission; consult the authors and each asset's provenance before redistribution.
