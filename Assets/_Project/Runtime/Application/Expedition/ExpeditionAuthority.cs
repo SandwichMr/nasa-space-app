@@ -54,6 +54,8 @@ namespace Trainer.Application.Expedition
         }
 
         private readonly IOutpostSimulation baseModel;
+        /// <summary>Close policy and step hooks of the phase 4 continuous authority; null = the finite phase 3 rules (unchanged).</summary>
+        private readonly IExpeditionSessionPolicy policy;
         private readonly IEvaSimulation eva;
         private readonly IZonedCrewRoster roster;
         private readonly double maxStepSeconds;
@@ -95,7 +97,16 @@ namespace Trainer.Application.Expedition
         /// <param name="roster">D3's roster built for the scenario's layout and movement settings; must be empty.</param>
         public ExpeditionAuthority(ExpeditionScenario scenario, IOutpostSimulation baseModel, IEvaSimulation eva,
             IZonedCrewRoster roster, double maxStepSeconds = DefaultMaxStepSeconds)
+            : this(scenario, baseModel, eva, roster, maxStepSeconds, null)
         {
+        }
+
+        /// <summary>Phase 4: the same single authority with an injected close policy and step hooks (see
+        /// <see cref="IExpeditionSessionPolicy"/>). Only the phase 4 continuous authority uses it.</summary>
+        internal ExpeditionAuthority(ExpeditionScenario scenario, IOutpostSimulation baseModel, IEvaSimulation eva,
+            IZonedCrewRoster roster, double maxStepSeconds, IExpeditionSessionPolicy policy)
+        {
+            this.policy = policy;
             Scenario = scenario ?? throw new ArgumentNullException(nameof(scenario));
             this.baseModel = baseModel ?? throw new ArgumentNullException(nameof(baseModel));
             this.eva = eva ?? throw new ArgumentNullException(nameof(eva));
@@ -149,6 +160,7 @@ namespace Trainer.Application.Expedition
                 board.End(task.Station, TaskEndReason.PerformerLeft, now);
                 hadTask = true;
             }
+            if (policy != null && policy.PlayerLeft(player, now)) hadTask = true;
             if (members.TryGetValue(player, out Member member))
             {
                 if (member.Suit >= 0)
@@ -195,6 +207,11 @@ namespace Trainer.Application.Expedition
             {
                 bool same = stored.Sender == sender && stored.Command.HasSameContent(command);
                 CommandCompleted?.Invoke(sender, same ? stored.Result : Reject(command, OutpostReasons.CommandIdConflict));
+                return;
+            }
+            if (policy != null && policy.OwnsCommandId(command.Id))
+            {
+                CommandCompleted?.Invoke(sender, Reject(command, OutpostReasons.CommandIdConflict));
                 return;
             }
 
@@ -280,7 +297,7 @@ namespace Trainer.Application.Expedition
             if (!Scenario.Layout.TryGetStation(command.Station, out StationPlacement placement)) return OutpostReasons.UnknownStation;
             if (!Scenario.Outpost.TryGetTask(command.Task, out TaskDefinition definition)) return OutpostReasons.UnknownTaskType;
             if (definition.Station != command.Station) return OutpostReasons.TaskNotOfferedAtStation;
-            if (board.TryGetForPlayer(sender, out _)) return OutpostReasons.PlayerBusy;
+            if (board.TryGetForPlayer(sender, out _) || (policy != null && policy.IsPlayerBusy(sender))) return OutpostReasons.PlayerBusy;
             if (board.TryGetAtStation(command.Station, out _)) return OutpostReasons.StationOccupied;
             if (command.ZoneSequence != ExpeditionCommand.Unstated && command.ZoneSequence != member.ZoneSequence)
                 return ExpeditionReasons.StaleZone;
@@ -454,7 +471,11 @@ namespace Trainer.Application.Expedition
             SuitEquipment suit = suits[member.Suit];
             suit.Status = SuitStatus.Sealed;
             roster.SetSpeedFactor(player, Scenario.SuitedSpeedFactor);
-            if (phase == ExpeditionPhase.Preparing) phase = ExpeditionPhase.Underway;
+            if (phase == ExpeditionPhase.Preparing)
+            {
+                phase = ExpeditionPhase.Underway;
+                policy?.SortieStarted(player, Now);
+            }
         }
 
         private void Unseal(PlayerId player)
@@ -475,6 +496,7 @@ namespace Trainer.Application.Expedition
             long next = checked(epoch + 1);
             baseModel.Reset(Scenario.Outpost.Simulation); // may throw: nothing else has changed yet
             eva.Reset(Scenario.Eva);
+            policy?.Restarted();
             board.Clear();
             Array.Clear(objectiveCounts, 0, objectiveCounts.Length);
             roster.ResetForRestart();
@@ -554,7 +576,10 @@ namespace Trainer.Application.Expedition
                     DeriveActivities();
                     ventilationRunning = shelterPrepared && ShelterOccupants() > 0;
                     EvaDemand suitsDemand = SuitsDemand();
-                    baseModel.Advance(step, BaseDemand());
+                    policy?.ConfirmReach(now);
+                    OutpostDemand baseDemand = BaseDemand();
+                    policy?.BeforeBaseAdvance(step, baseDemand, now);
+                    baseModel.Advance(step, baseDemand);
                     double after = Now;
                     double elapsed = after - now;
                     if (!(elapsed > 0)) break; // a model whose clock does not move would loop forever
@@ -565,6 +590,7 @@ namespace Trainer.Application.Expedition
                     shelterServiceAvailable = ventilationRunning && service >= elapsed * (1d - ServiceTolerance);
                     CreditTasks(elapsed, service, science, after);
                     CreditCycle(elapsed, service);
+                    policy?.AfterStep(elapsed, service, after);
                     RefreshProtection(after);   // observed with the instruction known during the step
                     timeline.IssueDue(after);
                     DeliverAdvisories(after);
@@ -592,7 +618,13 @@ namespace Trainer.Application.Expedition
         {
             double step = Math.Min(remaining, maxStepSeconds);
             double timeLeft = Scenario.Rules.MissionDurationSeconds - now;
-            if (timeLeft > 0) step = Math.Min(step, timeLeft);
+            if (timeLeft > 0 && (policy == null || !policy.Continuous)) step = Math.Min(step, timeLeft);
+            if (policy != null)
+            {
+                double hook = policy.SecondsUntilEvent(BaseDemand(), now);
+                if (hook > AdvisoryTimeline.TimeToleranceSeconds && !double.IsInfinity(hook)) step = Math.Min(step, hook);
+                else if (hook > 0d && hook <= AdvisoryTimeline.TimeToleranceSeconds) step = Math.Min(step, MinimumWorkStepSeconds);
+            }
             foreach (OutpostTaskBoard.ActiveTask task in board.Active())
                 step = Math.Min(step, Math.Max(task.RemainingSeconds, MinimumWorkStepSeconds));
             if (IsCycling) step = Math.Min(step, Math.Max(cycleDuration - cycleWork, MinimumWorkStepSeconds));
@@ -650,6 +682,7 @@ namespace Trainer.Application.Expedition
             }
             if (IsCycling) serviceWatts += Scenario.Airlock.PumpPowerWatts;
             if (ventilationRunning) serviceWatts += Scenario.Shelter.VentilationWatts;
+            if (policy != null) serviceWatts += policy.ServiceWatts();
             return new OutpostDemand(aboard, science, serviceWatts);
         }
 
@@ -727,6 +760,7 @@ namespace Trainer.Application.Expedition
             if (!done) return;
             for (int i = 0; i < objectiveCounts.Length; i++)
                 if (Scenario.Rules.Objectives[i].Counts(definition.Id)) objectiveCounts[i]++;
+            policy?.TaskCompleted(definition.Id, task.Performer, now);
         }
 
         private bool ApplyBaseEffect(Guid id, ResourceEffect effect)
@@ -862,11 +896,26 @@ namespace Trainer.Application.Expedition
         /// expedition, mission time). Uses only issued information and confirmed state, never the hidden event.</summary>
         private ExpeditionOutcome Evaluate(double now)
         {
-            if (!OutpostMissionEvaluator.IsEssentialServed(RequireBase().Power)) return ExpeditionOutcome.EssentialServiceLost;
+            if (!OutpostMissionEvaluator.IsEssentialServed(RequireBase().Power) && (policy == null || policy.EssentialLossIsFinal))
+                return ExpeditionOutcome.EssentialServiceLost;
             EvaSnapshot readings = eva.Snapshot;
             for (int i = 0; i < suits.Length; i++)
                 if (suits[i].Status == SuitStatus.Sealed && readings.Suits[i].IsDepleted) return ExpeditionOutcome.SuitServiceDepleted;
             ShelterInstructionStatus instruction = timeline.Instruction(now);
+            if (policy != null && policy.Continuous)
+            {
+                // Continuous (phase 4): a finished sortie is an activity, not the end. When everybody who went out is
+                // back off suit supply, the sortie closes and the expedition phase returns to Preparing without a
+                // decision; objectives restart for the next sortie. Stocks, clock, crew and machines are kept.
+                if (!instruction.InForce && phase != ExpeditionPhase.Preparing && !AnySealed())
+                {
+                    policy.SortieFinished(PrimaryMet(), decision != null, now);
+                    phase = ExpeditionPhase.Preparing;
+                    decision = null;
+                    Array.Clear(objectiveCounts, 0, objectiveCounts.Length);
+                }
+                return ExpeditionOutcome.InProgress;
+            }
             if (instruction.State == InstructionState.Ended)
             {
                 assessments = AssessPresent(instruction);
@@ -904,6 +953,7 @@ namespace Trainer.Application.Expedition
                 || outcome == ExpeditionOutcome.SimulationFault ? SessionState.Interrupted : SessionState.Completed;
             board.EndAll(TaskEndReason.MissionEnded, Now);
             phase = ExpeditionPhase.Closed;
+            policy?.Closed(outcome, Now);
         }
 
         private void EnterFault()
@@ -912,6 +962,7 @@ namespace Trainer.Application.Expedition
             state = SessionState.Interrupted;
             board.EndAll(TaskEndReason.MissionEnded, Now);
             phase = ExpeditionPhase.Closed;
+            policy?.Closed(outcome, Now);
             Commit();
         }
 
@@ -952,11 +1003,52 @@ namespace Trainer.Application.Expedition
                 compatibility.Add(new ObjectiveProgress(rule.Key, current, rule.TargetCount, ProgressUnit.Count, rule.Role == ObjectiveRole.Safety));
             }
             var outpost = new OutpostSessionSnapshot(epoch, revision, state, ExpeditionOutcomes.ToOutpostOutcome(outcome), Scenario.Id,
-                roster.Members, board.BuildStates(), resources, compatibility);
+                roster.Members, StationStates(), resources, compatibility);
             EventDisclosure disclosure = Ended && Scenario.Episode != null ? EventDisclosure.Of(Scenario.Episode) : null;
             return new ExpeditionSessionSnapshot(outpost, crew, suitStates, airlock, shelter, readings.Supply, timeline.Issued(now),
                 timeline.Receptions, timeline.Instruction(now), phase, decision, outcome, objectives, assessments, incidents, disclosure);
         }
+
+        /// <summary>Phase 2 station states; a station held by a phase 4 operation is published Unavailable.</summary>
+        private List<StationState> StationStates()
+        {
+            List<StationState> states = board.BuildStates();
+            if (policy == null) return states;
+            for (int i = 0; i < states.Count; i++)
+                if (states[i].Availability == StationAvailability.Available && policy.IsStationUnavailable(states[i].Station))
+                    states[i] = new StationState(states[i].Station, StationAvailability.Unavailable, null, states[i].LastEnd);
+            return states;
+        }
+
+        // ---------------------------------------------------------------- phase 4 access (continuous authority only)
+
+        internal long CurrentEpoch => epoch;
+        internal SessionState CurrentState => state;
+        internal bool IsEnded => Ended;
+        internal double SimulatedNow => Now;
+        internal bool HasCommand(Guid id) => commands.ContainsKey(id);
+        internal bool HasTask(PlayerId player) => board.TryGetForPlayer(player, out _);
+        internal IReadOnlyList<CrewMemberState> CrewPoses => roster.Members;
+
+        /// <summary>Confirmed pose, zone sequence and sealed state of a present member.</summary>
+        internal bool TryGetMember(PlayerId player, out CrewMemberState pose, out long zoneSequence, out bool sealedNow)
+        {
+            pose = player.IsValid ? FindPose(player) : null;
+            zoneSequence = 0;
+            sealedNow = false;
+            if (pose == null || !members.TryGetValue(player, out Member member)) return false;
+            zoneSequence = member.ZoneSequence;
+            sealedNow = IsSealed(member);
+            return true;
+        }
+
+        /// <summary>Commits a change made by the phase 4 authority (new revision). The caller raises the event.</summary>
+        internal void CommitExternal() => Commit();
+
+        internal void RaiseSnapshotChanged() => SnapshotChanged?.Invoke(snapshot);
+
+        /// <summary>A phase 4 model call failed: SimulationFault, only Restart is accepted.</summary>
+        internal void FaultExternal() => EnterFault();
 
         /// <summary>Conservative return plan of a sealed member from confirmed state (see SESSION_CONTRACT.md).</summary>
         private ReturnMarginEstimate MarginOf(CrewMemberState pose, Member member, EvaSnapshot readings, double now)
@@ -1060,6 +1152,38 @@ namespace Trainer.Application.Expedition
 
         private OutpostSimulationSnapshot RequireBase() =>
             baseModel.Snapshot ?? throw new InvalidOperationException("IOutpostSimulation returned a null snapshot.");
+    }
+
+    /// <summary>
+    /// Close policy and step hooks injected by the phase 4 continuous authority (D2). Without it the phase 3 authority keeps
+    /// its finite rules exactly. With it: the base demand gains the phase 4 operation loads; the step is also cut at the
+    /// phase 4 events; the equipment advances right before the base with the same step and demand; operations, orders
+    /// and the irreversible rule are credited after the step; and, when <see cref="Continuous"/>, a finished sortie and
+    /// the mission duration never end the session (only the irreversible rule, suit depletion or a fault do).
+    /// Callbacks run inside the authority's own call; they must not call back into its public API.
+    /// </summary>
+    internal interface IExpeditionSessionPolicy
+    {
+        bool Continuous { get; }
+        /// <summary>False while the essential-power recovery window has not elapsed (always true for finite rules).</summary>
+        bool EssentialLossIsFinal { get; }
+        bool OwnsCommandId(Guid id);
+        bool IsPlayerBusy(PlayerId player);
+        bool IsStationUnavailable(StationId station);
+        double ServiceWatts();
+        double SecondsUntilEvent(OutpostDemand baseDemand, double now);
+        /// <summary>After the crew moved and zones were confirmed: phase 4 operations whose performer left reach end.</summary>
+        void ConfirmReach(double now);
+        void BeforeBaseAdvance(double step, OutpostDemand baseDemand, double now);
+        void AfterStep(double elapsed, double fullyServedServiceSeconds, double now);
+        void TaskCompleted(TaskTypeId task, PlayerId performer, double now);
+        void SortieStarted(PlayerId by, double now);
+        void SortieFinished(bool primaryMet, bool returnDeclared, double now);
+        /// <summary>Returns true if the player had a phase 4 operation (ended with PerformerLeft).</summary>
+        bool PlayerLeft(PlayerId player, double now);
+        /// <summary>Called inside Restart right after the base and EVA models were reset.</summary>
+        void Restarted();
+        void Closed(ExpeditionOutcome outcome, double now);
     }
 
     /// <summary>Deterministic ids for the second and later EVA transfers caused by ONE command (each id applies once).</summary>
