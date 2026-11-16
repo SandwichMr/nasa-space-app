@@ -62,10 +62,14 @@ namespace Trainer.Application.Incidents
         }
 
         /// <summary>Lowercase hex SHA-256 of UTF-8 text.</summary>
-        public static string Sha256Hex(string text)
+        public static string Sha256Hex(string text) => Sha256Hex(Encoding.UTF8.GetBytes(text ?? string.Empty));
+
+        /// <summary>Lowercase hex SHA-256 of bytes.</summary>
+        public static string Sha256Hex(byte[] bytes)
         {
+            if (bytes == null) throw new ArgumentNullException(nameof(bytes));
             byte[] hash;
-            using (SHA256 sha = SHA256.Create()) hash = sha.ComputeHash(Encoding.UTF8.GetBytes(text ?? string.Empty));
+            using (SHA256 sha = SHA256.Create()) hash = sha.ComputeHash(bytes);
             var sb = new StringBuilder(64);
             foreach (byte b in hash) sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
             return sb.ToString();

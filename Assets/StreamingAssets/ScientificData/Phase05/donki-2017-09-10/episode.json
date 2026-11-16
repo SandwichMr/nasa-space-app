@@ -1,0 +1,225 @@
+{
+ "dataset": {
+  "datasetId": "donki-2017-09-10-ar12673",
+  "license": "NASA GSFC CCMC/SWRC DONKI: 'Experimental Research Information', provided as is (SWRC disclaimer). NOAA SWPC is the official U.S. source of space weather forecasts. Cite CCMC/DONKI; no endorsement implied.",
+  "retrievedUtc": "2026-11-16T04:34:57Z",
+  "schemaVersion": 1
+ },
+ "didacticEndSeconds": 180.0,
+ "didacticOnsetSeconds": 18.0,
+ "key": "donki-2017-09-10",
+ "label": "HISTÓRICO · NASA CCMC DONKI · 10 sep 2017 (región activa 12673)",
+ "messages": [
+  {
+   "basis": "SourceNotification",
+   "id": "hist-watch",
+   "kind": "Watch",
+   "offsetSeconds": 0.0,
+   "shelterByOffsetSeconds": null,
+   "sourceIssuedUtc": "2017-09-10T16:07Z",
+   "sourceRecordIds": [
+    "20170910-AL-001"
+   ],
+   "supersedes": null,
+   "textKey": "sw-hist-watch-flare",
+   "validForSeconds": 60.0
+  },
+  {
+   "basis": "DidacticDecision",
+   "id": "hist-instruction",
+   "kind": "ShelterInstruction",
+   "offsetSeconds": 34.0,
+   "shelterByOffsetSeconds": 79.0,
+   "sourceIssuedUtc": "2017-09-10T16:41Z",
+   "sourceRecordIds": [
+    "20170910-AL-002",
+    "2017-09-10T16:25:00-SEP-001"
+   ],
+   "supersedes": null,
+   "textKey": "sw-hist-instruction",
+   "validForSeconds": 60.0
+  },
+  {
+   "basis": "DidacticDecision",
+   "id": "hist-update-10mev",
+   "kind": "InstructionUpdate",
+   "offsetSeconds": 51.0,
+   "shelterByOffsetSeconds": 79.0,
+   "sourceIssuedUtc": "2017-09-10T16:58Z",
+   "sourceRecordIds": [
+    "20170910-AL-004",
+    "2017-09-10T16:45:00-SEP-001"
+   ],
+   "supersedes": "hist-instruction",
+   "textKey": "sw-hist-update-10mev",
+   "validForSeconds": 60.0
+  },
+  {
+   "basis": "DidacticDecision",
+   "id": "hist-update-summary",
+   "kind": "InstructionUpdate",
+   "offsetSeconds": 61.0,
+   "shelterByOffsetSeconds": 79.0,
+   "sourceIssuedUtc": "2017-09-10T17:08Z",
+   "sourceRecordIds": [
+    "20170910-AL-005"
+   ],
+   "supersedes": "hist-update-10mev",
+   "textKey": "sw-hist-update-summary",
+   "validForSeconds": 60.0
+  },
+  {
+   "basis": "DidacticDecision",
+   "id": "hist-update-ongoing",
+   "kind": "InstructionUpdate",
+   "offsetSeconds": 120.0,
+   "shelterByOffsetSeconds": 120.0,
+   "sourceIssuedUtc": "2017-09-12T14:53Z",
+   "sourceRecordIds": [
+    "20170912-AL-001",
+    "2017-09-10T15:35:00-FLR-001"
+   ],
+   "supersedes": "hist-update-summary",
+   "textKey": "sw-hist-update-ongoing",
+   "validForSeconds": 61.0
+  },
+  {
+   "basis": "DidacticDecision",
+   "id": "hist-end",
+   "kind": "InstructionEnd",
+   "offsetSeconds": 180.0,
+   "shelterByOffsetSeconds": null,
+   "sourceIssuedUtc": null,
+   "sourceRecordIds": [],
+   "supersedes": "hist-update-ongoing",
+   "textKey": "sw-shelter-period-ended",
+   "validForSeconds": 60.0
+  }
+ ],
+ "mode": "Historical",
+ "provenance": "Registros reales de NASA GSFC CCMC/SWRC DONKI (FLR, SEP y notificaciones), descargados y congelados; cronología e instrucciones de refugio son decisiones didácticas del escenario.",
+ "records": [
+  {
+   "eventTimeUtc": null,
+   "issuedUtc": "2017-09-10T16:07Z",
+   "kind": "Notification",
+   "measurements": [],
+   "provider": "NASA GSFC CCMC/SWRC DONKI",
+   "retrievedUtc": "2026-11-16T04:34:57Z",
+   "sourceId": "20170910-AL-001",
+   "summary": "Significant flare detected by GOES. Flare intensity has crossed the threshold of M5.0.",
+   "uri": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/13099/1",
+   "version": null
+  },
+  {
+   "eventTimeUtc": null,
+   "issuedUtc": "2017-09-10T16:41Z",
+   "kind": "Notification",
+   "measurements": [],
+   "provider": "NASA GSFC CCMC/SWRC DONKI",
+   "retrievedUtc": "2026-11-16T04:34:57Z",
+   "sourceId": "20170910-AL-002",
+   "summary": "Solar energetic particle event detected by GOES. The flux of > 100 MeV protons exceeds 1 pfu starting at 2017-09-10T16:25Z.",
+   "uri": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/13102/1",
+   "version": null
+  },
+  {
+   "eventTimeUtc": null,
+   "issuedUtc": "2017-09-10T16:58Z",
+   "kind": "Notification",
+   "measurements": [],
+   "provider": "NASA GSFC CCMC/SWRC DONKI",
+   "retrievedUtc": "2026-11-16T04:34:57Z",
+   "sourceId": "20170910-AL-004",
+   "summary": "Solar energetic particle event detected by GOES. The flux of > 10 MeV protons exceeds 10 pfu starting at 2017-09-10T16:45Z.",
+   "uri": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/13105/1",
+   "version": null
+  },
+  {
+   "eventTimeUtc": null,
+   "issuedUtc": "2017-09-10T17:08Z",
+   "kind": "Notification",
+   "measurements": [],
+   "provider": "NASA GSFC CCMC/SWRC DONKI",
+   "retrievedUtc": "2026-11-16T04:34:57Z",
+   "sourceId": "20170910-AL-005",
+   "summary": "Solar energetic particle event detected by GOES. The flux of > 100 MeV protons exceeds 1 pfu starting at 2017-09-10T16:25Z. The flux of > 10 MeV protons exceeds 10 pfu starting at 2017-09-10T16:45Z.",
+   "uri": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/13106/1",
+   "version": null
+  },
+  {
+   "eventTimeUtc": null,
+   "issuedUtc": "2017-09-12T14:53Z",
+   "kind": "Notification",
+   "measurements": [],
+   "provider": "NASA GSFC CCMC/SWRC DONKI",
+   "retrievedUtc": "2026-11-16T04:34:57Z",
+   "sourceId": "20170912-AL-001",
+   "summary": "Ongoing solar energetic particle event detected by GOES. The flux of > 100 MeV protons exceeded 1 pfu starting at 2017-09-10T16:25Z and is currently around 2 pfu. The flux of > 10 MeV protons exceeded 10 pfu starting at 2017-09-10T16:45Z and is currently around 200 pfu.",
+   "uri": "https://ccmc.gsfc.nasa.gov/DONKI/view/Alert/13127/1",
+   "version": null
+  },
+  {
+   "eventTimeUtc": "2017-09-10T16:25Z",
+   "issuedUtc": "2017-09-10T16:41Z",
+   "kind": "SolarEnergeticParticles",
+   "measurements": [
+    {
+     "classification": "Observation",
+     "location": "GEO, Earth orbit (GOES-13)",
+     "quantity": "proton flux >100 MeV (threshold crossed)",
+     "unit": "pfu",
+     "value": 1
+    }
+   ],
+   "provider": "NASA GSFC CCMC/SWRC DONKI",
+   "retrievedUtc": "2026-11-16T04:34:57Z",
+   "sourceId": "2017-09-10T16:25:00-SEP-001",
+   "summary": "SEP onset 2017-09-10T16:25Z measured by GOES13: SEM/EPS >100 MeV",
+   "uri": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13101/-1",
+   "version": 1
+  },
+  {
+   "eventTimeUtc": "2017-09-10T16:45Z",
+   "issuedUtc": "2017-09-10T16:58Z",
+   "kind": "SolarEnergeticParticles",
+   "measurements": [
+    {
+     "classification": "Observation",
+     "location": "GEO, Earth orbit (GOES-13)",
+     "quantity": "proton flux >10 MeV (threshold crossed)",
+     "unit": "pfu",
+     "value": 10
+    }
+   ],
+   "provider": "NASA GSFC CCMC/SWRC DONKI",
+   "retrievedUtc": "2026-11-16T04:34:57Z",
+   "sourceId": "2017-09-10T16:45:00-SEP-001",
+   "summary": "SEP onset 2017-09-10T16:45Z measured by GOES13: SEM/EPS >10 MeV",
+   "uri": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/13104/-1",
+   "version": 1
+  },
+  {
+   "eventTimeUtc": "2017-09-10T16:06Z",
+   "issuedUtc": "2017-09-10T23:46Z",
+   "kind": "Flare",
+   "measurements": [
+    {
+     "classification": "Calculation",
+     "location": "GEO, Earth orbit (GOES-15)",
+     "quantity": "GOES XRS 1-8 A peak class X8.2 as flux",
+     "unit": "W/m2",
+     "value": 0.00082
+    }
+   ],
+   "provider": "NASA GSFC CCMC/SWRC DONKI",
+   "retrievedUtc": "2026-11-16T04:34:57Z",
+   "sourceId": "2017-09-10T15:35:00-FLR-001",
+   "summary": "Flare class X8.2, peak 2017-09-10T16:06Z, location S08W88, active region 12673, GOES15: SEM/XRS 1.0-8.0",
+   "uri": "https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/13098/-1",
+   "version": 4
+  }
+ ],
+ "schemaVersion": 1,
+ "timelineNote": "Cronología comprimida: de 16:07Z a 17:08Z, 1 minuto real ≈ 1 s de juego; la actualización del 12 sep (46 h después) se coloca a 120 s; el fin del refugio a 180 s es una decisión didáctica."
+}
