@@ -169,10 +169,28 @@ namespace Trainer.Editor.MainMenu
             d.itemText=Text(item,"Item label","Resolution",18,0,w-30,42,20,White);d.itemText.alignment=TextAnchor.MiddleLeft;
             scroll.viewport=viewport;scroll.content=content;d.template=template;template.gameObject.SetActive(false);return d;
         }
+        public static void PrepareIntegrated()
+        {
+            if(AssetDatabase.LoadAssetAtPath<SceneAsset>(Root+"Scenes/Phase05_LivingBase.unity")==null)
+                Trainer.Tooling.Composition.Phase05.Phase05SceneBuilder.Build(false);
+            EditorBuildSettings.scenes = new[] {new EditorBuildSettingsScene(Root+"Scenes/MainMenu.unity",true),new EditorBuildSettingsScene(Root+"Scenes/Phase05_LivingBase.unity",true)};
+        }
+        public static void BuildLinuxServer()
+        {
+            Directory.CreateDirectory("Builds/build_linux_Server");
+            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions {scenes=new[]{Root+"Scenes/Phase05_LivingBase.unity"},locationPathName="Builds/build_linux_Server/SpaceStationBreakdownServer.x86_64",target=BuildTarget.StandaloneLinux64,options=BuildOptions.Development});
+            if(report.summary.result!=BuildResult.Succeeded)throw new Exception("Server build failed.");
+        }
+        public static void BuildAll()
+        {
+            PrepareIntegrated();
+            BuildLinux();
+            BuildLinuxServer();
+        }
         public static void BuildLinux()
         {
             Directory.CreateDirectory("Builds/MainMenu");
-            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes=new[]{Root+"Scenes/MainMenu.unity"},locationPathName="Builds/MainMenu/SpaceStationBreakdown.x86_64",target=BuildTarget.StandaloneLinux64,options=BuildOptions.Development });
+            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes=new[]{Root+"Scenes/MainMenu.unity",Root+"Scenes/Phase05_LivingBase.unity"},locationPathName="Builds/MainMenu/SpaceStationBreakdown.x86_64",target=BuildTarget.StandaloneLinux64,options=BuildOptions.Development });
             if(report.summary.result!=BuildResult.Succeeded) throw new Exception("Menu build failed: "+report.summary.result);
         }
     }

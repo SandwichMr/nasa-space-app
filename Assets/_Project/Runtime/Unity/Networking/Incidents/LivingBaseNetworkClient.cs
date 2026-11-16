@@ -39,6 +39,14 @@ namespace Trainer.Unity.Networking.Incidents
             launchArgumentsRead = false;
         }
 
+        public void ConfigureFromMenu(WebSocketClientOptions value)
+        {
+            Configure(value);
+            readLaunchArguments = false;
+            connectOnStart = false;
+            launchConnect = false;
+        }
+
         public LivingBaseNetworkSessionAdapter Prepare()
         {
             EnsureComposed();

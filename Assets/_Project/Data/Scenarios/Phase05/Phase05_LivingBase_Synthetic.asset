@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88b2d5e6db954e6a8bfaafe31d139b37, type: 3}
+  m_Name: Phase05_LivingBase_Synthetic
+  m_EditorClassIdentifier: Assembly-CSharp::Trainer.Unity.Configuration.LivingBaseScenarioDefinition
+  displayName: "Fase 5 \xB7 Base viva con contratiempos (escenario sint\xE9tico)"
+  provenance: "ESCENARIO SINT\xC9TICO de fase 5 (base viva con contratiempos): plano
+    lunar de fase 4 + panel el\xE9ctrico; director sembrado con presupuesto, enfriamientos,
+    anti-repetici\xF3n y descansos. Tiempos, pesos y factores son par\xE1metros de
+    juego ilustrativos: no son probabilidades, MTBF, valores de hardware de la NASA,
+    dosis ni umbrales cl\xEDnicos."
+  baseOperations: {fileID: 11400000, guid: 211ef56f239948e4ae53d87b1abb9008, type: 2}
+  powerStation: panel-energia
+  powerX: 27
+  powerY: 12
+  powerRadius: 1.4
+  powerRelaySpare: power-relay
+  powerRelayCount: 1
+  powerRelayCapacity: 2
+  catalog:
+  - key: processor-filter-clog
+    kind: 0
+    weight: 3
+    cooldownSeconds: 300
+    warningSeconds: 20
+    hasProcessorFailAfter: 1
+    processorFailAfterSeconds: 360
+    powerFactor: 1
+    isolatedFactor: 1
+    spareKey:
+  - key: array-converter-trip
+    kind: 1
+    weight: 2
+    cooldownSeconds: 300
+    warningSeconds: 10
+    hasProcessorFailAfter: 0
+    processorFailAfterSeconds: 300
+    powerFactor: 0.5
+    isolatedFactor: 1
+    spareKey:
+  - key: discharge-controller-fault
+    kind: 2
+    weight: 1
+    cooldownSeconds: 420
+    warningSeconds: 10
+    hasProcessorFailAfter: 0
+    processorFailAfterSeconds: 300
+    powerFactor: 0.4
+    isolatedFactor: 0
+    spareKey: power-relay
+  - key: space-weather
+    kind: 3
+    weight: 2
+    cooldownSeconds: 600
+    warningSeconds: 10
+    hasProcessorFailAfter: 0
+    processorFailAfterSeconds: 300
+    powerFactor: 1
+    isolatedFactor: 1
+    spareKey:
+  evaluationIntervalSeconds: 30
+  initialGraceSeconds: 150
+  restAfterResolutionSeconds: 120
+  maxSimultaneous: 2
+  pressurePerEvaluation: 0.35
+  minBatteryFractionForPowerIncident: 0.3
+  recoveryObservationSeconds: 10
+  inspectSeconds: 4
+  resetSeconds: 6
+  replaceSeconds: 15
+  powerObservationValiditySeconds: 60
+  templates:
+  - key: regolith-survey
+    activityKey: regolith-sample
+    exterior: 1
+    rewardCredits: 2
+    deadlineSeconds: 600
+    renewCooldownSeconds: 300
+  - key: crater-core-drill
+    activityKey: crater-core
+    exterior: 1
+    rewardCredits: 3
+    deadlineSeconds: 900
+    renewCooldownSeconds: 420
+  offerSlots: 2
+  offerLifetimeSeconds: 300
+  postponeSeconds: 120
+  maxAccepted: 1
+  upgradeKey: high-recovery-regulator
+  upgradeStation: water-recycler
+  upgradeCreditCost: 3
+  upgradeSpareKey: processor-filter
+  upgradeInstallSeconds: 20
+  upgradeRecoveryFraction: 0.95
+  upgradeAddedEssentialWatts: 15
+  minWatchLeadSeconds: 40
+  maxWatchLeadSeconds: 80
+  shelterWithinSeconds: 60
+  minShelterPeriodSeconds: 90
+  maxShelterPeriodSeconds: 150
+  messageValiditySeconds: 60
+  defaultMode: 0
+  defaultSeed: 20170910
+  historicalDatasetFolder: ScientificData/Phase05/donki-2017-09-10

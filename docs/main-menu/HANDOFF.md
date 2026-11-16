@@ -1,25 +1,29 @@
-# Entrega del menú principal
+# Entrega integrada
 
-Rama `feature/main-menu`; base `4903c587da1590d35d7a937cdc4f596d3dfe0512`. El SHA final se obtiene con `git rev-parse feature/main-menu` (evita una referencia circular dentro del propio commit).
+`main` de fase 5 (`509174a`) se fusionó con el menú (`3f050ef`) mediante merge, preservando ambos historiales. El commit final de integración se identifica con `git rev-parse main` tras publicar.
 
-Abrir `Assets/_Project/Scenes/MainMenu.unity` y Play. Presentación uGUI real, prefab y configuración pública enlazados; ayuda, créditos, volumen/silencio, ajustes locales, confirmación/reversión de pantalla, menú multiplayer y conexión real al endpoint público autorizado. Menú español con recursos originales reutilizados; ver `ART_PROVENANCE.md`.
+Abrir `Assets/_Project/Scenes/MainMenu.unity` y Play. «Jugar online» → «Conectarse» carga `Phase05_LivingBase` en modo cliente, usa su único transporte fase 5 y muestra gameplay solo después de admisión + snapshot. El control «Volver al menú» abandona solo ese cliente; permite volver a conectar con identidad nueva. Mapa y arte de fase 4 conservados por el constructor de fase 5. Ver `INTEGRATION.md`.
 
-Archivos propios: escena MainMenu, Runtime/Unity/MainMenu, Editor/MainMenu, Art/MainMenu, Prefabs/UI/MainMenu, Data/MainMenu, Tests/EditMode/MainMenu y docs/main-menu, con .meta generados por Unity. Sin modificaciones permanentes a paquetes, escenas de gameplay, build settings, transporte, modelos o configuración compartida.
+Endpoint público autorizado: `ws://molecule-unlined.tun.ply.gg:43796/` (TCP hacia 7777 local). El usuario informa que el túnel todavía no funciona; la validación usa servidor local real mediante argumentos explícitos. No se afirma disponibilidad pública ni TLS.
+
+## Builds
+
+Cliente jugable: `Builds/MainMenu/SpaceStationBreakdown.x86_64`.
+Servidor real: `Builds/build_linux_Server/SpaceStationBreakdownServer.x86_64`.
+Recompilar servidor: `tools/build_linux_Server.sh` (Editor cerrado).
+Ejecutar dedicado en puerto 7777: `tools/run_linux_Server.sh`; puerto alternativo: `tools/run_linux_Server.sh 17777`.
+Ambas builds usan Linux; el servidor emplea el modo dedicado existente (`-batchmode -nographics -trainer-role authority`), sin instalar paquetes ni módulo Dedicated Server.
+
+`MainMenuBuilder.BuildAll` prepara las dos escenas y compila ambos players. Conserva escenario/escena fase 5 existentes; no regenera sus GUID en cada build. EditorBuildSettings registra MainMenu primero y Phase05 después. No se modifican paquetes, renderer ni assets artísticos globales. Se revierten los cambios automáticos de serialización de Unity en la configuración compartida ajena a las escenas de entrada.
 
 ## Validación
 
-Unity nativo 6000.3.28f1. Constructor de escena ejecutado correctamente. 15 pruebas EditMode pasadas, 0 fallos: `Logs/main-menu/editmode.xml` y `tests.log`. Cubren doble clic, sincronización sin falsa confirmación, cancelación y callbacks síncronos/tardíos, timeout, reintento, liberación/dispose, salida voluntaria, pérdida de conexión tras admisión, endpoint ausente/privado, integrador ausente, persistencia/corrupción/audio y referencias serializadas/EventSystem único.
+19 pruebas EditMode pasadas (15 del menú + 4 de red fase 5), cero fallos: `Logs/main-menu/integrated-editmode.xml`, `focused-tests.log`. Comando: Unity `-batchmode -nographics -job-worker-count 4 -projectPath <proyecto> -runTests -testPlatform EditMode -testFilter 'Trainer.Tests.MainMenu;Trainer.Tests.Phase05.Networking' -testResults Logs/main-menu/integrated-editmode.xml -logFile Logs/main-menu/focused-tests.log`.
 
-Comando reproducible de tests: Unity `-batchmode -nographics -job-worker-count 4 -projectPath <proyecto> -runTests -testPlatform EditMode -testFilter Trainer.Tests.MainMenu -testResults Logs/main-menu/editmode.xml -logFile Logs/main-menu/tests.log`. Dos procesos batch propios se detuvieron al recrear escena; se terminaron únicamente esos procesos. Se reintentó con cuatro workers y render OpenGL; no se modificó la versión del Editor. No se cerró ningún Editor del usuario.
+Se inició también la suite completa; se interrumpió durante las pruebas extensas de variedad del director para priorizar la entrega. No se declara pasada. Se detuvo únicamente el proceso batch propio; no había otro Editor abierto. Logs parciales: `full-editmode-interrupted.log` e `integrated-tests.log`.
 
-Build Linux independiente compilada correctamente: `Builds/MainMenu/SpaceStationBreakdown.x86_64`. Capturas y resultado del recorrido nativo en `Logs/main-menu/native-smoke.log`. La evidencia permanece local en Logs/main-menu y la build en Builds/MainMenu, ambos ignorados por Git.
+Las builds Linux se compilaron realmente. La primera comprobación admitió dos clientes distintos contra el servidor local. La prueba posterior inicia la misión mediante el mismo comando Resume de la UI antes de comprobar movimiento/reloj. El recorrido optativo `-main-menu-play-smoke` valida snapshot confirmado, rol Client sin autoridad local, movimiento por teclado confirmado, salida/reentrada y nueva identidad; `-main-menu-observer` mantiene otro cliente para verificar continuidad del reloj al salir el primero. No usa fakes ni acceso directo al estado del servidor. Resultados en `local-player.log`, `local-observer.log` y `local-server.log`; captura `10-integrated-gameplay.png`.
 
-El ejecutable admite `-main-menu-smoke`: recorrido optativo de pantallas y capturas reales sin transporte falso. Sin el argumento no se ejecuta el recorrido. Se prueban ajustes de audio, navegación de botones, ayuda, créditos, error/reintento/volver y capturas en 16:9, 16:10 y 4:3. Incluye eventos de teclado Tab/Enter/Escape inyectados en el Input System real; no equivale a prueba manual ni integración de gameplay.
+La comprobación anterior del menú independiente verificó teclado Tab/Enter/Escape, audio, ayuda, créditos, fallo/reintento y escalas 16:9, 16:10 y 4:3. Confirmación/reversión de pantalla no se ha certificado por interacción manual. No se certifican Windows/WebGL ni funcionamiento del endpoint público.
 
-## Pendientes precisos
-
-Endpoint autorizado: `ws://molecule-unlined.tun.ply.gg:43796/` (TCP hacia 7777 local). `MainMenuNetworkAdapter` usa el transporte y controlador existentes de fase 4. El usuario se encarga de disponibilizar el servidor. El montaje de gameplay de fase 5 sigue pendiente. El intento real al endpoint terminó con `ProtocolError`, informado por el transporte; no hubo admisión/snapshot confirmados. Se muestra error y se permite reintentar. No se afirma conexión online exitosa, gameplay, retorno entre escenas o convivencia con otro cliente. No se verificó todavía la confirmación/reversión de pantalla mediante interacción manual. Tampoco se certifica Windows/WebGL. Pantalla conectando enlazada al transporte real; sin fake productivo.
-
-No hay escena de fase 5 en este checkout. `INTEGRATION.md` describe la frontera propuesta y la receta para montar un solo cliente, conservar rol dedicado y acordar el cambio de escenas. No se contactó a un integrador externo; el acuerdo y montaje final siguen pendientes.
-
-Antes de distribución pública, el equipo debe verificar los derechos de sus referencias de base/terreno aportadas originalmente; no se inventaron licencias ni autores.
+Resultado final nativo local: PASS. `local-player.log` confirma movimiento con `crew=2`, regreso y REJOIN PASS; `local-observer.log` confirma que el reloj continuó hasta 25.97 s con `crew=1` tras la salida del otro cliente. Ambos recorridos terminaron con código 0. Captura real: `Logs/main-menu/10-integrated-gameplay.png`. El servidor temporal de prueba se detuvo después; el script de arranque queda listo para puerto 7777.

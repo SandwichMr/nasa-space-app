@@ -100,8 +100,18 @@ namespace Trainer.Unity.Bootstrap.Incidents
         /// <summary>Raised whenever a port is presented (or null when it is withdrawn).</summary>
         public event Action<ILivingBaseSessionPort> Presented;
 
+        public static event Action<LivingBaseSceneComposition> Preparing;
+        public void ConfigureMenuClient(WebSocketClientOptions options)
+        {
+            if (roleApplied) throw new InvalidOperationException("Configure the menu client before Awake resolves its role.");
+            role = MissionProcessRole.Client;
+            readCommandLine = false;
+            networkClient.ConfigureFromMenu(options);
+        }
+
         private void Awake()
         {
+            Preparing?.Invoke(this);
             bool webGl = false;
 #if UNITY_WEBGL && !UNITY_EDITOR
             webGl = true;

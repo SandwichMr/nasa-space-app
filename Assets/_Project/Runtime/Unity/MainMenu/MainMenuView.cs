@@ -37,6 +37,7 @@ namespace Trainer.Unity.MainMenu
             if (!UnityEngine.Application.isEditor && UnityEngine.Application.platform != RuntimePlatform.WebGLPlayer) MenuPreferences.LoadDisplay();
             flow = new MenuLaunchFlow(launchAdapter as IMainMenuLaunchPort, configuration);
             flow.Updated += UpdateConnection;
+            if(GetComponent<CanvasGroup>()==null) gameObject.AddComponent<CanvasGroup>();
             play.onClick.AddListener(() => Show(multiplayer));
             joinOnline.onClick.AddListener(Connect); retry.onClick.AddListener(Connect);
             multiplayerBack.onClick.AddListener(() => Show(home));
@@ -62,6 +63,12 @@ namespace Trainer.Unity.MainMenu
         }
         private void UpdateConnection()
         {
+            bool inGame = flow.State == MenuLaunchState.Joined;
+            GetComponent<Canvas>().enabled = !inGame;
+            GetComponent<CanvasGroup>().alpha = inGame ? 0 : 1;
+            GetComponent<CanvasGroup>().interactable = !inGame;
+            GetComponent<CanvasGroup>().blocksRaycasts = !inGame;
+            if(inGame) EventSystem.current?.SetSelectedGameObject(null);
             connectionDetail.text = flow.Detail;
             retry.gameObject.SetActive(flow.State == MenuLaunchState.Failed);
             back.interactable = true;
@@ -76,6 +83,7 @@ namespace Trainer.Unity.MainMenu
                 confirmLabel.text = "¿Conservar pantalla? " + Mathf.Max(0, (int)Math.Ceiling(confirmDeadline - Time.realtimeSinceStartupAsDouble)) + " s";
                 if (Time.realtimeSinceStartupAsDouble >= confirmDeadline) RevertDisplay();
             }
+            if(flow != null && flow.State == MenuLaunchState.Joined) return;
             if (Keyboard.current != null && Keyboard.current.tabKey.wasPressedThisFrame)
             {
                 var choices = page.GetComponentsInChildren<Selectable>().Where(s => s.IsActive() && s.IsInteractable()).ToArray();
@@ -89,6 +97,11 @@ namespace Trainer.Unity.MainMenu
                 else if (page == connection) { flow.Leave(); Show(multiplayer); }
                 else Show(home);
             }
+        }
+        public void ReturnFromGameplay()
+        {
+            flow.Leave();
+            Show(multiplayer);
         }
         private void Show(GameObject target)
         {
