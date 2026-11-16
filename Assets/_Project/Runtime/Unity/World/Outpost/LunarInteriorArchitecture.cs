@@ -11,9 +11,10 @@ namespace Trainer.Unity.World.Outpost
         private Texture2D gridTexture;
         private Sprite grid, white;
         private Material surfaceMaterial;
-        public void Configure(OutpostScenario scenario,Material material)
+        public void Configure(OutpostScenario scenario,Material material,LunarInteriorSkin skin=null)
         {
             surfaceMaterial=material;
+            skin=skin??new LunarInteriorSkin();
             gridTexture=new Texture2D(128,128,TextureFormat.RGBA32,false) {name="Grey metal grid",filterMode=FilterMode.Point,wrapMode=TextureWrapMode.Repeat};
             var pixels=new Color32[128*128];
             for(int y=0;y<128;y++)for(int x=0;x<128;x++)
@@ -24,16 +25,33 @@ namespace Trainer.Unity.World.Outpost
             gridTexture.SetPixels32(pixels);gridTexture.Apply(false,true);
             grid=Sprite.Create(gridTexture,new Rect(0,0,128,128),new Vector2(.5f,.5f),64,0,SpriteMeshType.FullRect);
             white=Sprite.Create(Texture2D.whiteTexture,new Rect(0,0,1,1),new Vector2(.5f,.5f),1,0,SpriteMeshType.FullRect);
-            TileFloor("Habitat grey grid",LunarBasePlan.Habitat);
-            TileFloor("Airlock grey grid",LunarBasePlan.Chamber);
+            // Floors: corridor/hub everywhere, then one themed floor per room so each area reads at a glance.
+            TileFloor("Habitat floor",LunarBasePlan.Habitat,Pick(skin.corridorFloor,grid),-1000);
+            TileFloor("Airlock floor",LunarBasePlan.Chamber,Pick(skin.airlockFloor,grid),-1000);
+            foreach(var room in LunarBasePlan.Rooms)
+            {
+                var floor=skin.FloorForRoom(room.Name);
+                if(floor!=null) TileFloor("Room floor "+room.Name,room.Area,floor,-999);
+                if(skin.edgeShadow!=null) Sliced("Room edge shadow",room.Area,skin.edgeShadow,-990,new Color(1,1,1,.8f));
+            }
+            if(skin.edgeShadow!=null) Sliced("Airlock edge shadow",LunarBasePlan.Chamber,skin.edgeShadow,-990,new Color(1,1,1,.8f));
             foreach(var r in scenario.Layout.Obstacles)
             {
                 if(r.MinX>=LunarBasePlan.OuterHatch.MaxX)continue;
                 if(LunarBasePlan.Furniture.Any(f=>f.Equals(r)))
                 {
-                    Solid("Bench or storage footprint",r,new Color(.10f,.14f,.18f),-800);
-                    Solid("Work surface",new BaseRect(r.MinX+.12,r.MinY+.12,r.MaxX-.12,r.MaxY-.12),new Color(.27f,.33f,.38f),-799);
+                    if(skin.furniture!=null)
+                    {
+                        DropShadow("Bench shadow",r,.16);
+                        Sliced("Bench or storage top",r,skin.furniture,-799,Color.white);
+                    }
+                    else
+                    {
+                        Solid("Bench or storage footprint",r,new Color(.10f,.14f,.18f),-800);
+                        Solid("Work surface",new BaseRect(r.MinX+.12,r.MinY+.12,r.MaxX-.12,r.MaxY-.12),new Color(.27f,.33f,.38f),-799);
+                    }
                 }
+                else if(skin.wall!=null) SkinnedWall(r,skin.wall);
                 else Wall(r);
             }
             foreach(var room in LunarBasePlan.Rooms)
@@ -48,6 +66,14 @@ namespace Trainer.Unity.World.Outpost
                 if(station.Position.X>=LunarBasePlan.InnerHatch.MinX)continue;
                 double x=station.Position.X,y=station.Position.Y;
                 double width=station.Id.Value.StartsWith("suit-")||station.Id.Value=="consumables-panel"?1:1.4;
+                if(skin.StationArtwork(station.Id.Value)!=null)
+                {
+                    // Skinned stations stand directly on the floor; only small translucent plates keep the white captions legible.
+                    var plate=new Color(.06f,.08f,.12f,.6f);
+                    Solid("Caption plate",new BaseRect(x-width*.8,y+.86,x+width*.8,y+1.18),plate,-738);
+                    Solid("Reading plate",new BaseRect(x-width*.9,y-1.36,x+width*.9,y-.86),plate,-738);
+                    continue;
+                }
                 // Flush equipment bays and dark caption plates; all remain purely visual.
                 Solid("Equipment bay",new BaseRect(x-width,y-.9,x+width,y+1.2),new Color(.11f,.14f,.17f),-740);
                 Solid("Bay top trim",new BaseRect(x-width,y+1.15,x+width,y+1.2),new Color(.61f,.77f,.79f),-739);
@@ -65,9 +91,32 @@ namespace Trainer.Unity.World.Outpost
             text.text=caption;text.color=new Color(.7f,.81f,.86f);
             var mesh=go.GetComponent<MeshRenderer>();mesh.sharedMaterial=text.font.material;mesh.sortingOrder=2500;
         }
-        private void TileFloor(string name,BaseRect area)
+        private static Sprite Pick(Sprite preferred,Sprite fallback)=>preferred!=null?preferred:fallback;
+        private void TileFloor(string name,BaseRect area,Sprite sprite,int order)
         {
-            var r=Renderer(name,area,grid,-1000,Color.white);r.drawMode=SpriteDrawMode.Tiled;r.size=new Vector2((float)area.Width,(float)area.Height);
+            var r=Renderer(name,area,sprite,order,Color.white);r.drawMode=SpriteDrawMode.Tiled;r.size=new Vector2((float)area.Width,(float)area.Height);
+        }
+        private void Sliced(string name,BaseRect area,Sprite sprite,int order,Color color)
+        {
+            var r=Renderer(name,area,sprite,order,color);r.drawMode=SpriteDrawMode.Sliced;r.size=new Vector2((float)area.Width,(float)area.Height);
+        }
+        private void DropShadow(string name,BaseRect r,double offset)
+        {
+            Solid(name,new BaseRect(r.MinX+offset*.6,r.MinY-offset,r.MaxX+offset*.6,r.MaxY-offset),new Color(0,0,0,.28f),-801);
+        }
+        private void SkinnedWall(BaseRect r,Sprite sprite)
+        {
+            DropShadow("Wall shadow",r,.14);
+            Sliced("Wall panel",r,sprite,-799,Color.white);
+            // Teal accent strip along the wall's long axis (base palette); decorative only.
+            double strip=System.Math.Min(.09,System.Math.Min(r.Width,r.Height)/5);
+            double cx=(r.MinX+r.MaxX)/2,cy=(r.MinY+r.MaxY)/2;
+            bool horizontal=r.Width>=r.Height;
+            if((horizontal?r.Width:r.Height)<=.36)return;
+            var accent=horizontal
+                ? new BaseRect(r.MinX+.12,cy-strip/2,r.MaxX-.12,cy+strip/2)
+                : new BaseRect(cx-strip/2,r.MinY+.12,cx+strip/2,r.MaxY-.12);
+            Solid("Wall accent strip",accent,new Color(.31f,.68f,.78f),-798);
         }
         private void Wall(BaseRect r)
         {

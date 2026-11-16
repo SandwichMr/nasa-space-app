@@ -14,18 +14,35 @@ namespace Trainer.Unity.Presentation.BaseOperations
     /// <summary>Compact HUD and proximity-only station panels. The injected ports own all pending requests and state.</summary>
     public sealed class BaseOperationsPanel : BaseOperationsBoundView
     {
-        /// <summary>Row of the 1440×900 canvas left free for the scene's session strip (start, pause, restart, connect).</summary>
-        public const float SessionStripY = 42f;
+        /// <summary>Row of the 1440×900 canvas left free for the scene's session status line.</summary>
+        public const float SessionStripY = 64f;
+        /// <summary>Header row where the session buttons (start, pause, restart, connect) are drawn, right-aligned.</summary>
+        public const float HeaderButtonY = 14f;
         public const int HudDepth = -10, SessionControlsDepth = HudDepth - 1;
-        private const float GaugeTop = 80f, GaugeHeight = 93f;
+        /// <summary>Bottom of the expanded / collapsed top dashboard block and top of the footer: the world viewport lives between them.</summary>
+        public const float TopBlockBottom = 264f, CollapsedTopBlockBottom = 100f, FooterTop = 804f;
+        private const float GaugeTop = 98f, GaugeHeight = 158f, SideBottom = 798f;
+        private bool dataHidden;
+        /// <summary>True while the live resource cards are folded away (local view preference, not session state).</summary>
+        public bool DataHidden => dataHidden;
+        /// <summary>Current bottom of the top block in canvas units; the camera framing follows it.</summary>
+        public float TopInset => dataHidden ? CollapsedTopBlockBottom : TopBlockBottom;
+        private float SideTop => TopInset + 8;
+        public void ToggleData() => dataHidden = !dataHidden;
+        /// <summary>Header area reserved for the session controls (start/pause, restart, connect), right-aligned.</summary>
+        public static readonly Rect SessionDock = new Rect(1418 - 432, 8, 432, 48);
+        private Action<Rect, Rect> sessionDock;
+        /// <summary>Scene wiring: draws the session status line and buttons inside this dashboard's frame (dock, status line).</summary>
+        public void ConfigureSessionDock(Action<Rect, Rect> draw) => sessionDock = draw;
         [SerializeField] private Texture2D battery, water, food, oxygen, carbonDioxide;
+        [SerializeField, Tooltip("Pixel-art dashboard skin. Visual only; empty fields fall back to flat colours.")]
+        private HudSkin skin = new HudSkin();
+        public HudSkin Skin => skin;
         private static readonly GaugeKind[] Essential = { GaugeKind.BatteryEnergy, GaugeKind.PotableWater, GaugeKind.StoredFood, GaugeKind.CabinOxygen, GaugeKind.CabinCarbonDioxide };
         private static readonly Color Background = new Color(.035f, .065f, .10f, 1);
-        private static readonly Color Card = new Color(.07f, .12f, .17f, 1);
         private static readonly Color Cyan = new Color(.40f, .86f, .94f, 1);
         private static readonly Color Amber = new Color(1, .76f, .35f, 1);
-        private static readonly Color Muted = new Color(.66f, .77f, .82f, 1);
-        private GUIStyle text, small, heading, value, button;
+        private GUIStyle text, small, heading, value, button, title, label, unit;
         private Vector2 scroll;
         private float stationContentHeight = 1500;
         private float detailsContentHeight = 1050;
@@ -119,65 +136,157 @@ namespace Trainer.Unity.Presentation.BaseOperations
             {
                 if ((opened.IsValid || details) && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
                 { ClosePanel(); Event.current.Use(); }
-                // Session controls are a separate IMGUI component. Leave their row transparent even if Unity sorts
-                // this HUD in front of them; a free layout row alone is not enough when its background is opaque.
-                Paint(new Rect(0, 0, 1440, SessionStripY), Background);
-                Paint(new Rect(0, SessionStripY + 34, 1440, 193 - SessionStripY - 34), Background);
-                Paint(new Rect(0, 800, 1440, 100), Background);
-                Label(new Rect(22, 12, 900, 24), "BASE VIVA  /  " + (Live ? State(Shown.Outpost.State) + "  ·  " + BaseOperationsText.Number(Shown.SimulatedTimeSeconds) + " s" : "SIN CONEXIÓN"), heading);
-                GUI.enabled = Live;
-                if (GUI.Button(new Rect(1236, 10, 182, 32), details ? "Cerrar detalles" : "Recursos y actividad", button)) ToggleDetails();
-                GUI.enabled = previousEnabled;
-                for (int i = 0; i < Essential.Length; i++) Gauge(new Rect(22 + i * 282, GaugeTop, 268, GaugeHeight), Essential[i], Icon(i));
+                // Session controls are a separate IMGUI component drawn at a lower depth (in front): their status line and
+                // header buttons sit on top of this dashboard frame.
+                skin.Panel(new Rect(8, 6, 1424, TopInset - 6));
+                Header();
+                if (dataHidden) CompactStatus();
+                else for (int i = 0; i < Essential.Length; i++) Gauge(new Rect(22 + i * 282, GaugeTop, 268, GaugeHeight), Essential[i], Icon(i));
+                skin.Panel(new Rect(8, FooterTop, 1424, 900 - FooterTop - 6));
                 if (!Live)
                 {
-                    Label(new Rect(24, 175, 1390, 18), "? SIN DATOS VIGENTES · Conecta para recibir el estado. No se muestran reservas ni acciones confirmadas.", small);
-                    Label(new Rect(24, 818, 1390, 50), "Sin conexión. El último estado no confirma el resultado de solicitudes pendientes.", text);
+                    Label(new Rect(28, FooterTop + 12, 1100, 18), "? SIN DATOS VIGENTES · Conecta para recibir el estado. No se muestran reservas ni acciones confirmadas.", small, HudSkin.Amber);
+                    Label(new Rect(28, FooterTop + 36, 1100, 44), "Sin conexión. El último estado no confirma el resultado de solicitudes pendientes.", text);
                     return;
                 }
-                var p = Shown.Outpost.Resources.Power;
-                Label(new Rect(24, 175, 1390, 18), $"ENERGÍA  ·  Generación {p.GenerationWatts:0.##} W   /   Demanda {p.EssentialRequestedWatts + p.ScienceRequestedWatts + Shown.Outpost.Resources.ServiceLoadRequestedWatts:0.##} W   ·   Balance {BaseOperationsText.Reading(Shown.GaugeOf(GaugeKind.PowerBalance).Reading)}   ·   " + BaseOperationsText.Band(Shown.GaugeOf(GaugeKind.PowerBalance)), small);
                 Footer();
-                if (opened.IsValid || details) Paint(new Rect(944, 193, 496, 607), Background);
+                if (opened.IsValid || details) skin.Panel(new Rect(944, SideTop, 488, SideBottom - SideTop));
                 if (opened.IsValid) StationPanel();
                 else if (details) DetailsPanel();
                 if (Shown.Session.EssentialUnservedSeconds > 0)
                 {
-                    Paint(new Rect(22, 199, 910, 30), new Color(.29f, .16f, .08f));
-                    Label(new Rect(32, 202, 890, 25), $"! Carga esencial sin servicio · ventana del escenario: {Shown.Session.SecondsBeforeIrreversible:0.#} s · reduce cargas", small);
+                    Paint(new Rect(22, SideTop, 910, 32), new Color(.29f, .12f, .06f, .95f));
+                    HudSkin.Icon(new Rect(30, SideTop + 4, 24, 24), skin.statusCritical);
+                    Label(new Rect(62, SideTop + 7, 860, 22), $"Carga esencial sin servicio · ventana del escenario: {Shown.Session.SecondsBeforeIrreversible:0.#} s · reduce cargas", text, HudSkin.Red);
                 }
             }
             finally { GUI.matrix = previousMatrix; GUI.enabled = previousEnabled; GUI.color = previousColor; GUI.depth = previousDepth; }
         }
 
-        private Texture2D Icon(int index) => index == 0 ? battery : index == 1 ? water : index == 2 ? food : index == 3 ? oxygen : carbonDioxide;
+        private Texture2D Icon(int index)
+        {
+            Texture2D skinned = index == 0 ? skin.iconBattery : index == 1 ? skin.iconWater : index == 2 ? skin.iconFood : index == 3 ? skin.iconOxygen : skin.iconCarbonDioxide;
+            if (skinned != null) return skinned;
+            return index == 0 ? battery : index == 1 ? water : index == 2 ? food : index == 3 ? oxygen : carbonDioxide;
+        }
+
+        private void Header()
+        {
+            HudSkin.Icon(new Rect(22, 10, 44, 44), skin.badge);
+            float x = skin.badge != null ? 80 : 22;
+            string state = Live ? State(Shown.Outpost.State) : "SIN CONEXIÓN";
+            string caption = "BASE VIVA  /  " + state;
+            float w = title.CalcSize(new GUIContent(caption)).x;
+            Label(new Rect(x, 14, w + 4, 34), caption, title);
+            if (Live)
+            {
+                HudSkin.Paint(new Rect(x + w + 14, 30, 6, 6), HudSkin.Cyan);
+                Label(new Rect(x + w + 28, 22, 200, 24), BaseOperationsText.Number(Shown.SimulatedTimeSeconds) + " s", unit, HudSkin.Title);
+            }
+            if (GUI.Button(new Rect(SessionDock.x - 8 - 210 - 8 - 170, HeaderButtonY, 170, 34), dataHidden ? "▼  Mostrar datos" : "▲  Ocultar datos", button)) ToggleData();
+            float left = SessionDock.x - 8 - 210;
+            GUI.enabled = Live;
+            if (GUI.Button(new Rect(left, HeaderButtonY, 210, 34), details ? "Cerrar detalles" : "Recursos y actividad", button)) ToggleDetails();
+            GUI.enabled = true;
+            // Session controls get their own framed dock in this header, drawn in this pass so they belong to the panel.
+            if (sessionDock != null)
+            {
+                skin.Card(SessionDock);
+                sessionDock(SessionDock, new Rect(24, SessionStripY + 2, dataHidden ? 1040 : 1396, 22));
+                GUI.enabled = true;
+            }
+            HudSkin.Paint(new Rect(22, SessionStripY - 6, 1396, 1), new Color(HudSkin.Line.r, HudSkin.Line.g, HudSkin.Line.b, .45f));
+        }
+
+        /// <summary>Collapsed view: one icon and status symbol per essential reserve, so a warning is never hidden.</summary>
+        private void CompactStatus()
+        {
+            float x = 1418;
+            for (int i = Essential.Length - 1; i >= 0; i--)
+            {
+                ResourceGauge gauge = Live ? Shown.GaugeOf(Essential[i]) : null;
+                x -= 64;
+                var cell = new Rect(x, SessionStripY - 1, 58, 30);
+                HudSkin.Icon(new Rect(cell.x + 4, cell.y + 3, 24, 24), Icon(i));
+                Texture2D symbol = StatusIcon(StatusOf(gauge));
+                if (symbol != null) HudSkin.Icon(new Rect(cell.x + 30, cell.y + 6, 20, 20), symbol);
+                else Paint(new Rect(cell.x + 34, cell.y + 10, 10, 10), StatusColor(StatusOf(gauge)));
+                GUI.Label(cell, new GUIContent("", BaseOperationsText.Name(Essential[i]) + " · " + BaseOperationsText.Value(gauge) + " · " + BaseOperationsText.Band(gauge)), GUIStyle.none);
+            }
+        }
+
+        private enum Status { Normal, Warning, Critical, NoData }
+        private static Status StatusOf(ResourceGauge gauge)
+        {
+            if (gauge == null || gauge.Reading.Status != ReadingStatus.Valid || gauge.Band == GaugeBand.Unknown) return Status.NoData;
+            if (gauge.Band == GaugeBand.Nominal) return Status.Normal;
+            return gauge.Band == GaugeBand.Exhausted ? Status.Critical : Status.Warning;
+        }
+        private Texture2D StatusIcon(Status status) => status == Status.Normal ? skin.statusOk : status == Status.Warning ? skin.statusWarn
+            : status == Status.Critical ? skin.statusCritical : skin.statusNone;
+        private static Color StatusColor(Status status) => status == Status.Normal ? HudSkin.Green : status == Status.Warning ? HudSkin.Amber
+            : status == Status.Critical ? HudSkin.Red : HudSkin.Dim;
+
         private void Gauge(Rect rect, GaugeKind kind, Texture2D icon)
         {
-            Paint(rect, Card);
+            skin.Card(rect);
             ResourceGauge gauge = Live ? Shown.GaugeOf(kind) : null;
-            Color accent = Accent(gauge);
-            Paint(new Rect(rect.x, rect.y, 3, rect.height), accent);
-            if (icon != null) GUI.DrawTexture(new Rect(rect.x + 12, rect.y + 6, 22, 22), icon, ScaleMode.ScaleToFit);
-            Label(new Rect(rect.x + 42, rect.y + 7, 216, 18), BaseOperationsText.Name(kind), small);
-            Label(new Rect(rect.x + 13, rect.y + 26, 250, 27), BaseOperationsText.Value(gauge), value);
-            bool valid = gauge != null && gauge.Reading.Status == ReadingStatus.Valid;
-            // ONLY a declared capacity can be the denominator. Cabin partial pressures are never percentages.
-            if (valid && gauge.Capacity.HasValue && gauge.Capacity.Value > 0)
+            Status status = StatusOf(gauge);
+            Color accent = StatusColor(status);
+            if (skin.cardFrame == null) Paint(new Rect(rect.x, rect.y, 3, rect.height), accent);
+            float x = rect.x + 16, w = rect.width - 32;
+            HudSkin.Icon(new Rect(x, rect.y + 14, 24, 24), icon);
+            Label(new Rect(x + 32, rect.y + 17, w - 64, 20), BaseOperationsText.Name(kind), label);
+            HudSkin.Icon(new Rect(rect.xMax - 42, rect.y + 13, 26, 26), StatusIcon(status));
+            bool valid = gauge != null && gauge.Reading.Status != ReadingStatus.Unavailable;
+            if (valid)
             {
-                Paint(new Rect(rect.x + 14, rect.y + 55, 240, 5), Background);
-                Paint(new Rect(rect.x + 14, rect.y + 55, 240 * Mathf.Clamp01((float)(gauge.Reading.Value.Value / gauge.Capacity.Value)), 5), accent);
+                string number = BaseOperationsText.Number(gauge.Reading.Value.Value);
+                float nw = value.CalcSize(new GUIContent(number)).x;
+                Label(new Rect(x, rect.y + 42, nw + 4, 32), number, value);
+                string rest = (gauge.Capacity.HasValue ? "/ " + BaseOperationsText.Number(gauge.Capacity.Value) + " " : "") + BaseOperationsText.Unit(gauge.Reading.Unit);
+                Label(new Rect(x + nw + 8, rect.y + 52, w - nw - 8, 20), rest, unit, HudSkin.Cyan);
             }
+            else Label(new Rect(x, rect.y + 46, w, 26), "SIN LECTURA", value, HudSkin.Dim);
+            // ONLY a declared capacity can be the denominator. Cabin partial pressures are never percentages.
+            if (gauge != null && gauge.Reading.Status == ReadingStatus.Valid && gauge.Capacity.HasValue && gauge.Capacity.Value > 0)
+                skin.Bar(new Rect(x, rect.y + 80, w, 12), (float)(gauge.Reading.Value.Value / gauge.Capacity.Value), BarFill(kind, status), accent);
             else
             {
                 string line = gauge == null ? "Capacidad / rango sin confirmar"
                     : gauge.LimitAt.HasValue ? "Línea del escenario ≤ " + BaseOperationsText.Number(gauge.LimitAt.Value) + " " + BaseOperationsText.Unit(gauge.Reading.Unit)
                     : gauge.ReserveAt.HasValue ? "Reserva del escenario: " + BaseOperationsText.Number(gauge.ReserveAt.Value) + " " + BaseOperationsText.Unit(gauge.Reading.Unit)
                     : "Sin escala declarada";
-                Label(new Rect(rect.x + 13, rect.y + 50, 250, 16), line, small);
+                Label(new Rect(x, rect.y + 78, w, 16), line, small, HudSkin.Title);
             }
-            Label(new Rect(rect.x + 13, rect.y + 61, 250, 16), BaseOperationsText.Band(gauge), small, accent);
-            Label(new Rect(rect.x + 13, rect.y + 76, 250, 16), BaseOperationsText.Trend(gauge), small);
+            Label(new Rect(x, rect.y + 98, w, 16), BaseOperationsText.Band(gauge), small, accent);
+            string trend = BaseOperationsText.Trend(gauge);
+            Texture2D arrow = gauge == null || !gauge.TrendPerSecond.HasValue || gauge.Reading.Status != ReadingStatus.Valid ? null
+                : gauge.TrendPerSecond.Value > 0 ? skin.trendUp : gauge.TrendPerSecond.Value < 0 ? skin.trendDown : skin.trendFlat;
+            HudSkin.Icon(new Rect(x, rect.y + 116, 14, 12), arrow);
+            Label(new Rect(arrow != null ? x + 20 : x, rect.y + 114, w - 20, 16), trend, small,
+                arrow == skin.trendUp && arrow != null ? HudSkin.Green : arrow == skin.trendDown && arrow != null ? HudSkin.Amber : HudSkin.Dim);
+            HudSkin.Paint(new Rect(x, rect.y + 133, w, 1), new Color(HudSkin.Line.r, HudSkin.Line.g, HudSkin.Line.b, .35f));
+            Label(new Rect(x, rect.y + 137, w, 16), CardFooter(kind), small, HudSkin.Dim);
             GUI.Label(rect, new GUIContent("", BaseOperationsText.Action(kind)), GUIStyle.none);
+        }
+
+        private Texture2D BarFill(GaugeKind kind, Status status)
+        {
+            if (status == Status.Critical) return skin.barRed;
+            if (status == Status.Warning) return skin.barAmber;
+            return kind == GaugeKind.BatteryEnergy ? skin.barBlue : kind == GaugeKind.PotableWater ? skin.barCyan : skin.barGreen;
+        }
+
+        /// <summary>Bottom line of each card: the power balance on the battery card (the old full-width energy line), otherwise
+        /// the action that changes this reserve.</summary>
+        private string CardFooter(GaugeKind kind)
+        {
+            if (!Live) return BaseOperationsText.Action(kind);
+            if (kind != GaugeKind.BatteryEnergy) return BaseOperationsText.Action(kind);
+            var p = Shown.Outpost.Resources.Power;
+            double demand = p.EssentialRequestedWatts + p.ScienceRequestedWatts + Shown.Outpost.Resources.ServiceLoadRequestedWatts;
+            return $"Gen {p.GenerationWatts:0.##} W · Dem {demand:0.##} W · Balance " + BaseOperationsText.Reading(Shown.GaugeOf(GaugeKind.PowerBalance).Reading);
         }
 
         private void Footer()
@@ -185,22 +294,42 @@ namespace Trainer.Unity.Presentation.BaseOperations
             Shown.Expedition.TryGetCrew(Context.Port.Membership.Player, out var crew);
             string info = crew != null && crew.OnSuitSupply
                 ? "TRAJE · " + ExpeditionPanel.Margin(crew.Margin, Shown.SimulatedTimeSeconds) + " · " + ExpeditionPanel.Protection(crew.Protection)
-                : "WASD / flechas · camina y repartid el trabajo. E: estación cercana / esclusa / tarea · R: regreso";
-            Label(new Rect(24, 807, 1130, 23), info, small);
+                : "WASD / flechas · camina y repartid el trabajo.   E · estación cercana / esclusa / tarea   ·   R · regreso";
+            Label(new Rect(28, FooterTop + 10, 1120, 20), info, small, HudSkin.Label);
             string notice = Feedback;
             if (string.IsNullOrEmpty(notice) && !string.IsNullOrEmpty(GUI.tooltip)) notice = GUI.tooltip;
             // A received shelter advisory keeps its own line: an answer or a tooltip never hides it.
             if (TryAdvisory(crew, out string advisory))
             {
-                Label(new Rect(24, 830, 1130, 30), advisory, text, Amber);
-                Label(new Rect(24, 861, 1130, 30), notice, small);
+                HudSkin.Icon(new Rect(28, FooterTop + 33, 22, 22), skin.statusWarn);
+                Label(new Rect(skin.statusWarn != null ? 58 : 28, FooterTop + 32, 1090, 28), advisory, text, HudSkin.Amber);
+                Label(new Rect(28, FooterTop + 62, 1120, 24), notice, small);
             }
-            else Label(new Rect(24, 833, 1130, 56), string.IsNullOrEmpty(notice) ? NoAdvisory : notice, text);
+            else
+            {
+                Label(new Rect(28, FooterTop + 32, 1120, 32), string.IsNullOrEmpty(notice) ? NoAdvisory : notice, text);
+                Legend(new Rect(28, FooterTop + 66, 700, 18));
+            }
             StationId nearby = NearbyStation();
             GUI.enabled = Live && nearby.IsValid;
-            if (GUI.Button(new Rect(1176, 814, 242, 42), opened.IsValid ? "Cerrar estación" : "Abrir estación cercana", button))
+            if (GUI.Button(new Rect(1172, FooterTop + 20, 246, 46), opened.IsValid ? "Cerrar estación" : "Abrir estación cercana", button))
             { if (opened.IsValid) ClosePanel(); else OpenNearbyStation(); }
             GUI.enabled = true;
+        }
+
+        /// <summary>Key of the status symbols used on the resource cards.</summary>
+        private void Legend(Rect row)
+        {
+            if (skin.statusOk == null) return;
+            float x = row.x;
+            Label(new Rect(x, row.y + 1, 80, 16), "ESTADO:", label); x += 70;
+            foreach (var (icon, caption, color) in new[] { (skin.statusOk, "EN RANGO", HudSkin.Green), (skin.statusWarn, "AVISO", HudSkin.Amber),
+                (skin.statusCritical, "AGOTADO", HudSkin.Red), (skin.statusNone, "SIN DATOS", HudSkin.Dim) })
+            {
+                HudSkin.Icon(new Rect(x, row.y, 18, 18), icon);
+                Label(new Rect(x + 22, row.y + 1, 100, 16), caption, small, color);
+                x += 30 + small.CalcSize(new GUIContent(caption)).x + 18;
+            }
         }
         public const string NoAdvisory = "Sin aviso recibido · no significa seguro. Mantén las reservas y comprueba los equipos.";
 
@@ -226,13 +355,13 @@ namespace Trainer.Unity.Presentation.BaseOperations
         private void StationPanel()
         {
             const float x = 954, width = 464;
-            Paint(new Rect(x, 204, width, 583), Background);
-            Paint(new Rect(x, 204, 3, 583), Cyan);
+            if (skin.panelFrame == null) { Paint(new Rect(x, SideTop + 10, width, SideBottom - SideTop - 20), Background); Paint(new Rect(x, SideTop + 10, 3, SideBottom - SideTop - 20), Cyan); }
             string title = opened == Context.Scenario.WaterStation ? "RECICLADOR DE AGUA"
                 : opened == Context.Scenario.AirStation ? "UNIDAD DE AIRE" : "SUMINISTROS DEL EQUIPO";
-            Label(new Rect(x + 18, 218, 376, 26), title, heading);
-            if (GUI.Button(new Rect(x + width - 48, 214, 32, 30), "×", button)) { ClosePanel(); return; }
-            scroll = GUI.BeginScrollView(new Rect(x + 14, 252, width - 25, 523), scroll, new Rect(0, 0, width - 48, stationContentHeight));
+            Label(new Rect(x + 18, SideTop + 20, 376, 26), title, heading, HudSkin.Title);
+            if (GUI.Button(new Rect(x + width - 50, SideTop + 16, 34, 30), "×", button)) { ClosePanel(); return; }
+            HudSkin.Paint(new Rect(x + 14, SideTop + 52, width - 28, 1), new Color(HudSkin.Line.r, HudSkin.Line.g, HudSkin.Line.b, .45f));
+            scroll = GUI.BeginScrollView(new Rect(x + 14, SideTop + 60, width - 25, SideBottom - SideTop - 74), scroll, new Rect(0, 0, width - 48, stationContentHeight));
             try
             {
                 float y = 2;
@@ -241,7 +370,7 @@ namespace Trainer.Unity.Presentation.BaseOperations
                     Label(new Rect(4, y, 406, 54), Performer(operation.Performer) + " · " + BaseOperationsText.Operation(operation.Action, operation.Choice)
                         + $"\n{operation.WorkSeconds:0.#} / {operation.DurationSeconds:0.#} s" + (operation.Stalled ? " · ESPERA: SIN POTENCIA" : " · CONFIRMADO"), text);
                     y += 60;
-                    Paint(new Rect(4, y, 396, 7), Card); Paint(new Rect(4, y, 396 * (float)operation.Fraction, 7), operation.Stalled ? Amber : Cyan); y += 22;
+                    skin.Bar(new Rect(4, y, 396, 12), (float)operation.Fraction, operation.Stalled ? skin.barAmber : skin.barCyan, operation.Stalled ? Amber : Cyan); y += 24;
                     if (operation.Performer == Context.Port.Membership.Player)
                     {
                         bool old = GUI.enabled; GUI.enabled = !Pending;
@@ -371,9 +500,10 @@ namespace Trainer.Unity.Presentation.BaseOperations
         }
         private void DetailsPanel()
         {
-            Paint(new Rect(954, 204, 464, 583), Background);
-            Label(new Rect(974, 219, 410, 29), "RESERVAS, EQUIPO Y ACTIVIDAD", heading);
-            scroll = GUI.BeginScrollView(new Rect(972, 260, 432, 512), scroll, new Rect(0, 0, 409, detailsContentHeight));
+            if (skin.panelFrame == null) Paint(new Rect(954, SideTop + 10, 464, SideBottom - SideTop - 20), Background);
+            Label(new Rect(974, SideTop + 20, 410, 29), "RESERVAS, EQUIPO Y ACTIVIDAD", heading, HudSkin.Title);
+            HudSkin.Paint(new Rect(968, SideTop + 52, 436, 1), new Color(HudSkin.Line.r, HudSkin.Line.g, HudSkin.Line.b, .45f));
+            scroll = GUI.BeginScrollView(new Rect(972, SideTop + 60, 432, SideBottom - SideTop - 74), scroll, new Rect(0, 0, 409, detailsContentHeight));
             try
             {
                 float y = 0;
@@ -395,7 +525,7 @@ namespace Trainer.Unity.Presentation.BaseOperations
                 string eva = ExpeditionDetails();
                 float evaHeight = text.CalcHeight(new GUIContent(eva), 402);
                 Label(new Rect(2, y, 402, evaHeight), eva, text); y += evaHeight + 8;
-                detailsContentHeight = Mathf.Max(512, y);
+                detailsContentHeight = Mathf.Max(SideBottom - SideTop - 74, y);
             }
             finally { GUI.EndScrollView(); }
         }
@@ -441,7 +571,6 @@ namespace Trainer.Unity.Presentation.BaseOperations
         }
         private static string RepairProgress(RepairSteps steps) => "inspección ✓ → aislamiento ✓ → filtro " + ((steps & RepairSteps.Intervene) != 0 ? "✓" : "pendiente") + " → prueba " + ((steps & RepairSteps.Test) != 0 ? "✓" : "pendiente");
         private static string State(SessionState state) => state == SessionState.Running ? "EN MARCHA" : state == SessionState.Paused ? "EN PAUSA" : state == SessionState.Ready ? "LISTA" : "DETENIDA";
-        private static Color Accent(ResourceGauge gauge) => gauge == null || gauge.Reading.Status != ReadingStatus.Valid ? Muted : gauge.Band == GaugeBand.Nominal ? Cyan : Amber;
         private static void Paint(Rect rect, Color color) { Color old = GUI.color; GUI.color = color; GUI.DrawTexture(rect, Texture2D.whiteTexture); GUI.color = old; }
         private static void Label(Rect rect, string content, GUIStyle style, Color? color = null)
         { Color old = GUI.color; if (color.HasValue) GUI.color = color.Value; GUI.Label(rect, content, style); GUI.color = old; }
@@ -452,8 +581,13 @@ namespace Trainer.Unity.Presentation.BaseOperations
             text.normal.textColor = new Color(.89f, .95f, .96f);
             small = new GUIStyle(text) { fontSize = 12 };
             heading = new GUIStyle(text) { fontSize = 17, fontStyle = FontStyle.Bold };
-            value = new GUIStyle(text) { fontSize = 22, fontStyle = FontStyle.Bold };
-            button = new GUIStyle(GUI.skin.button) { fontSize = 14, wordWrap = true };
+            value = new GUIStyle(text) { fontSize = 26, fontStyle = FontStyle.Bold, wordWrap = false };
+            title = new GUIStyle(text) { fontSize = 26, fontStyle = FontStyle.Bold, wordWrap = false };
+            title.normal.textColor = HudSkin.Title;
+            label = new GUIStyle(text) { fontSize = 13, fontStyle = FontStyle.Bold, wordWrap = false };
+            label.normal.textColor = HudSkin.Label;
+            unit = new GUIStyle(text) { fontSize = 15, fontStyle = FontStyle.Bold, wordWrap = false };
+            button = skin.Button(new GUIStyle(GUI.skin.button) { fontSize = 14, wordWrap = true });
         }
     }
 }

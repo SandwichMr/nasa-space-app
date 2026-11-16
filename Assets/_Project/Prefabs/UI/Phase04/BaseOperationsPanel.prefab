@@ -49,3 +49,30 @@ MonoBehaviour:
   food: {fileID: 2800000, guid: a15e3b75d78c8e2ceb56cbc6558f475a, type: 3}
   oxygen: {fileID: 2800000, guid: 2cce0c33b3f664c95b2496c6b2141093, type: 3}
   carbonDioxide: {fileID: 2800000, guid: 11738088879258cb197c0c8ad69face9, type: 3}
+  skin:
+    cardFrame: {fileID: 2800000, guid: c361773e9959433ebd0de44a54b3aeb2, type: 3}
+    panelFrame: {fileID: 2800000, guid: 1dd0eca793864e5ea419b309bae7c177, type: 3}
+    button: {fileID: 2800000, guid: 0458c64c70694877a2fd3566a628899e, type: 3}
+    buttonHover: {fileID: 2800000, guid: 6da0c4461e4e4431bb31f7e16328ef66, type: 3}
+    buttonActive: {fileID: 2800000, guid: d9aedcc7025945f0889be46ec544a13d, type: 3}
+    buttonPrimary: {fileID: 2800000, guid: 4b5cab5321724862a7526f52b713f0c5, type: 3}
+    buttonPrimaryHover: {fileID: 2800000, guid: a6d272edf5dd4d09bae78dc8a2acf712, type: 3}
+    barTrack: {fileID: 2800000, guid: 053f2c9469a04f7da2db5ee61e3cc5bd, type: 3}
+    barBlue: {fileID: 2800000, guid: 17d3cca01837403aa2b998b53155693b, type: 3}
+    barCyan: {fileID: 2800000, guid: 330f1df3492d4f478d8bdffe7f3c95ee, type: 3}
+    barGreen: {fileID: 2800000, guid: c8ae25732e5f4ebca42666d0ddfe9862, type: 3}
+    barAmber: {fileID: 2800000, guid: 3b0ecd69a2a94cd5aa87c42beb4b03de, type: 3}
+    barRed: {fileID: 2800000, guid: 46c98f6243da4a02a3be03b38ebc3524, type: 3}
+    statusOk: {fileID: 2800000, guid: a5ccbae096a74f88b852657b3a629669, type: 3}
+    statusWarn: {fileID: 2800000, guid: 66c644e5945f4a949fcb4c36e61f4475, type: 3}
+    statusCritical: {fileID: 2800000, guid: d1882d26e4d24eecb04a76678baeaa14, type: 3}
+    statusNone: {fileID: 2800000, guid: 39a49b127ff44c8987dc23babcf9306f, type: 3}
+    iconBattery: {fileID: 2800000, guid: ca37530bc7e14b128d23bcb991e26a6d, type: 3}
+    iconWater: {fileID: 2800000, guid: 198918d3a6ce44868e303e2891e9c4a8, type: 3}
+    iconFood: {fileID: 2800000, guid: 97770ccf140649f788fc5dfcb5a411f2, type: 3}
+    iconOxygen: {fileID: 2800000, guid: b4edad0cd04a4fa69afcb48f3ac1e64e, type: 3}
+    iconCarbonDioxide: {fileID: 2800000, guid: 451473e2d91c45a1b597c573d2b4366b, type: 3}
+    trendUp: {fileID: 2800000, guid: 18c1963b13394b4a9bde839917802ffb, type: 3}
+    trendDown: {fileID: 2800000, guid: cd4d340ec1b9491b8ec0b3f2ab95d6b0, type: 3}
+    trendFlat: {fileID: 2800000, guid: 92dcfe692364415aa1236e18de189a44, type: 3}
+    badge: {fileID: 2800000, guid: 9a7b21360f154dd08b0d306f537b7d7d, type: 3}

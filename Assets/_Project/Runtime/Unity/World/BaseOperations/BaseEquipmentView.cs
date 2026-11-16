@@ -23,6 +23,14 @@ namespace Trainer.Unity.World.BaseOperations
             title.text = caption;
             Clear();
         }
+        /// <summary>Optional presentation skin; placement, identity and state are untouched.</summary>
+        public void SetBodySprite(Sprite sprite)
+        {
+            if (body == null || sprite == null) return;
+            body.sprite = sprite;
+            // Large opaque lunar artwork: sort by its back edge so the operator in reach stays visible in front of it.
+            body.sortingOrder = 1000 - Mathf.RoundToInt((transform.localPosition.y + .5f) * 20);
+        }
         public void Present(BaseOperationsSnapshot snapshot, EquipmentKind? kind, PlayerId local, bool nearby)
         {
             snapshot.TryGetOperationAt(Station, out var operation);

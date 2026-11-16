@@ -39,8 +39,15 @@ namespace Trainer.Unity.World.Outpost
             Clear();
         }
 
+        /// <summary>Back edge of the lunar station artwork above its centre (metres). Visual only.</summary>
+        public const float LunarArtworkBackEdge = .45f;
+
         public void ApplyLunarLabelStyle()
         {
+            // The lunar artwork is a large opaque 3/4 machine the crew stands on while working. Sort it by its back edge so an
+            // operator anywhere in reach stays in front of it, and keep the proximity brackets above the artwork.
+            if(body!=null) body.sortingOrder=1000-Mathf.RoundToInt(((float)Placement.Position.Y+LunarArtworkBackEdge)*20);
+            if(selection!=null&&body!=null) selection.sortingOrder=body.sortingOrder+1;
             if(title!=null){title.characterSize=.055f;title.anchor=TextAnchor.MiddleCenter;title.transform.localPosition=new Vector3(0,1.02f,0);}
             if(status!=null){status.characterSize=.04f;status.anchor=TextAnchor.MiddleCenter;status.transform.localPosition=new Vector3(0,-1.03f,0);}
         }
