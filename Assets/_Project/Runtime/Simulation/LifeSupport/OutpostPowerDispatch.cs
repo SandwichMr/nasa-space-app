@@ -41,13 +41,21 @@ namespace Trainer.Simulation.LifeSupport
         public bool ScienceFullyServed => ScienceRequestedWatts > 0d && ScienceServedWatts >= ScienceRequestedWatts;
 
         public static OutpostPowerDispatch Evaluate(PowerConfiguration config, double energyJoules,
-            bool scienceRequested, double serviceLoadWatts)
+            bool scienceRequested, double serviceLoadWatts) =>
+            Evaluate(config, energyJoules, scienceRequested, serviceLoadWatts, null);
+
+        /// <summary>Phase 5 (D1): the same dispatch with the effective capacity of <paramref name="capacity"/> (generation
+        /// and discharge limit multiplied by their factors, added essential load). Null or nominal reproduces phase 4
+        /// exactly (multiplying by 1 and adding 0 are exact in IEEE 754).</summary>
+        public static OutpostPowerDispatch Evaluate(PowerConfiguration config, double energyJoules,
+            bool scienceRequested, double serviceLoadWatts, Trainer.Simulation.Incidents.PowerCapacityState capacity)
         {
-            double generation = config.GenerationWatts;
-            double essentialDemand = config.EssentialConsumptionWatts;
+            double generation = EffectiveGeneration(config, capacity);
+            double essentialDemand = config.EssentialConsumptionWatts + (capacity == null ? 0d : capacity.AddedEssentialWatts);
             double scienceDemand = scienceRequested ? config.ScienceConsumptionWatts : 0d;
 
-            double dischargeLimit = energyJoules > 0d ? config.MaxDischargeWatts : 0d;
+            double maxDischarge = config.MaxDischargeWatts * (capacity == null ? 1d : capacity.DischargeFactor);
+            double dischargeLimit = energyJoules > 0d ? maxDischarge : 0d;
             double chargeLimit = energyJoules < config.CapacityJoules ? config.MaxChargeWatts : 0d;
 
             double available = generation + dischargeLimit;
@@ -61,6 +69,10 @@ namespace Trainer.Simulation.LifeSupport
             return new OutpostPowerDispatch(essentialDemand, essentialServed, serviceLoadWatts, serviceServed,
                 scienceDemand, scienceServed, batteryWatts);
         }
+
+        /// <summary>Generation in force: configured generation × generation factor.</summary>
+        public static double EffectiveGeneration(PowerConfiguration config, Trainer.Simulation.Incidents.PowerCapacityState capacity) =>
+            config.GenerationWatts * (capacity == null ? 1d : capacity.GenerationFactor);
 
         /// <summary>Seconds until the battery reaches empty or full at this dispatch; infinity when steady.</summary>
         public double SecondsToBatteryBoundary(double energyJoules, double capacityJoules)

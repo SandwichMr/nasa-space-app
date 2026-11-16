@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Trainer.Simulation.Incidents;
 
 namespace Trainer.Simulation.BaseOperations
 {
@@ -30,13 +31,20 @@ namespace Trainer.Simulation.BaseOperations
     /// Every event is applied at its exact instant inside <see cref="Advance"/>; an event exactly at the end of the
     /// interval is applied in that Advance. Effects are all or nothing, once per id per Reset; a refused effect changes
     /// nothing and does not consume its id. Snapshots are immutable and replaced, never modified.
+    ///
+    /// Phase 5 (D1): also <see cref="IEquipmentIncidentTarget"/>, on this same object. A director degradation behaves like
+    /// the scripted fault but starts at the current instant with its own optional fail timer (null = never fails); the
+    /// phase 4 filter replacement clears it and cancels the timer. Spares can be consumed by phase 5 repairs. One bounded
+    /// upgrade raises the NOMINAL recovery only. Phase 5 ids share the id space of <see cref="Apply"/>. Without phase 5
+    /// calls the model is phase 4 unchanged.
     /// </summary>
-    public sealed class BaseEquipmentSimulation : IBaseEquipmentModel
+    public sealed class BaseEquipmentSimulation : IBaseEquipmentModel, IEquipmentIncidentTarget
     {
         private const int MaxSegmentsPerAdvance = 16;
 
         private readonly SimulationClock clock = new SimulationClock();
         private readonly Dictionary<Guid, EquipmentEffect> applied = new Dictionary<Guid, EquipmentEffect>();
+        private readonly Dictionary<Guid, IncidentRequest> appliedIncidents = new Dictionary<Guid, IncidentRequest>();
 
         private BaseEquipmentConfiguration configuration;
         private State state;
@@ -60,6 +68,7 @@ namespace Trainer.Simulation.BaseOperations
             this.configuration = configuration;
             clock.Reset();
             applied.Clear();
+            appliedIncidents.Clear();
             var spares = new Dictionary<string, int>(StringComparer.Ordinal);
             var capacities = new Dictionary<string, int>(StringComparer.Ordinal);
             var order = new List<string>();
@@ -129,6 +138,7 @@ namespace Trainer.Simulation.BaseOperations
             if (effect == null) throw new ArgumentNullException(nameof(effect));
             if (applied.TryGetValue(effect.Id, out EquipmentEffect previous))
                 return previous.HasSameContent(effect) ? EquipmentEffectStatus.AlreadyApplied : EquipmentEffectStatus.IdConflict;
+            if (appliedIncidents.ContainsKey(effect.Id)) return EquipmentEffectStatus.IdConflict;
 
             State work = state.Copy();
             EquipmentEffectStatus status = Evaluate(ref work, effect);
@@ -137,6 +147,107 @@ namespace Trainer.Simulation.BaseOperations
             applied.Add(effect.Id, effect);
             Publish();
             return EquipmentEffectStatus.Applied;
+        }
+
+        // ---------------------------------------------------------------- phase 5 incident target
+
+        public double ProcessorNominalRecovery
+        {
+            get
+            {
+                RequireReset();
+                return state.UpgradedRecovery ?? configuration.WaterProcessor.NominalRecoveryFraction;
+            }
+        }
+
+        public bool ProcessorUpgraded
+        {
+            get
+            {
+                RequireReset();
+                return state.UpgradedRecovery.HasValue;
+            }
+        }
+
+        public EquipmentEffectStatus DegradeProcessor(Guid id, double? failAfterSeconds)
+        {
+            RequireReset();
+            if (failAfterSeconds.HasValue && (!IncidentGuard.IsFinite(failAfterSeconds.Value) || failAfterSeconds.Value <= 0d))
+                throw new ArgumentOutOfRangeException(nameof(failAfterSeconds));
+            return ApplyIncident(new IncidentRequest(IncidentRequestKind.Degrade, failAfterSeconds, null), id, (ref State s) =>
+            {
+                if (s.Condition != EquipmentCondition.Nominal) return EquipmentEffectStatus.InvalidForState;
+                s.Condition = EquipmentCondition.Degraded;
+                s.DegradedAt = clock.ElapsedSeconds;
+                s.DirectorDegraded = true;
+                s.DirectorFailAfter = failAfterSeconds;
+                return EquipmentEffectStatus.Applied;
+            });
+        }
+
+        public EquipmentEffectStatus ConsumeSpare(Guid id, string spareKey)
+        {
+            RequireReset();
+            if (spareKey == null) throw new ArgumentNullException(nameof(spareKey));
+            return ApplyIncident(new IncidentRequest(IncidentRequestKind.ConsumeSpare, null, spareKey), id, (ref State s) =>
+            {
+                if (!s.Spares.ContainsKey(spareKey)) return EquipmentEffectStatus.InvalidForState;
+                return TakeSpare(ref s, spareKey) ? EquipmentEffectStatus.Applied : EquipmentEffectStatus.InsufficientSpares;
+            });
+        }
+
+        public EquipmentEffectStatus UpgradeProcessorRecovery(Guid id, double recoveryFraction)
+        {
+            RequireReset();
+            if (!IncidentGuard.IsFinite(recoveryFraction)) throw new ArgumentOutOfRangeException(nameof(recoveryFraction));
+            return ApplyIncident(new IncidentRequest(IncidentRequestKind.Upgrade, recoveryFraction, null), id, (ref State s) =>
+            {
+                if (s.UpgradedRecovery.HasValue
+                    || recoveryFraction <= configuration.WaterProcessor.NominalRecoveryFraction
+                    || recoveryFraction > IncidentEffectLimits.MaxUpgradedRecoveryFraction)
+                    return EquipmentEffectStatus.InvalidForState;
+                s.UpgradedRecovery = recoveryFraction;
+                return EquipmentEffectStatus.Applied;
+            });
+        }
+
+        private delegate EquipmentEffectStatus IncidentChange(ref State s);
+
+        private EquipmentEffectStatus ApplyIncident(IncidentRequest request, Guid id, IncidentChange change)
+        {
+            if (appliedIncidents.TryGetValue(id, out IncidentRequest previous))
+                return previous.Equals(request) ? EquipmentEffectStatus.AlreadyApplied : EquipmentEffectStatus.IdConflict;
+            if (applied.ContainsKey(id)) return EquipmentEffectStatus.IdConflict;
+            State work = state.Copy();
+            EquipmentEffectStatus status = change(ref work);
+            if (status != EquipmentEffectStatus.Applied) return status;
+            state = work;
+            appliedIncidents.Add(id, request);
+            Publish();
+            return EquipmentEffectStatus.Applied;
+        }
+
+        private enum IncidentRequestKind { Degrade, ConsumeSpare, Upgrade }
+
+        private readonly struct IncidentRequest : IEquatable<IncidentRequest>
+        {
+            private readonly IncidentRequestKind kind;
+            private readonly double? value;
+            private readonly string key;
+
+            public IncidentRequest(IncidentRequestKind kind, double? value, string key)
+            {
+                this.kind = kind;
+                this.value = value;
+                this.key = key;
+            }
+
+            public bool Equals(IncidentRequest other) =>
+                kind == other.kind && Nullable.Equals(value, other.value) && string.Equals(key, other.key, StringComparison.Ordinal);
+
+            public override bool Equals(object obj) => obj is IncidentRequest other && Equals(other);
+
+            public override int GetHashCode() => (int)kind;
         }
 
         // ---------------------------------------------------------------- effects
@@ -205,6 +316,8 @@ namespace Trainer.Simulation.BaseOperations
                     s.Condition = EquipmentCondition.Nominal;
                     s.DegradedAt = null;
                     s.DegradeScriptPending = false;
+                    s.DirectorDegraded = false;
+                    s.DirectorFailAfter = null;
                     return EquipmentEffectStatus.Applied;
                 }
                 case EquipmentEffectKind.SwitchBed:
@@ -250,8 +363,12 @@ namespace Trainer.Simulation.BaseOperations
 
         private double RecoveryOf(EquipmentCondition condition) =>
             condition == EquipmentCondition.Nominal
-                ? configuration.WaterProcessor.NominalRecoveryFraction
+                ? state.UpgradedRecovery ?? configuration.WaterProcessor.NominalRecoveryFraction
                 : configuration.WaterProcessor.DegradedRecoveryFraction;
+
+        /// <summary>Fail delay of the current degradation: the director's own timer, else the scripted one.</summary>
+        private double? FailAfter(in State s) =>
+            s.DirectorDegraded ? s.DirectorFailAfter : configuration.WaterProcessor.FailAfterDegradedSeconds;
 
         private double ConductivityOf(EquipmentCondition condition) =>
             condition == EquipmentCondition.Nominal
@@ -268,9 +385,10 @@ namespace Trainer.Simulation.BaseOperations
             WaterProcessorConfiguration water = configuration.WaterProcessor;
             if (s.DegradeScriptPending && water.DegradeAtSeconds.Value > now)
                 next = Math.Min(next, water.DegradeAtSeconds.Value - now);
-            if (s.Condition == EquipmentCondition.Degraded && water.FailAfterDegradedSeconds.HasValue)
+            double? failAfter = FailAfter(s);
+            if (s.Condition == EquipmentCondition.Degraded && failAfter.HasValue)
             {
-                double failAt = s.DegradedAt.Value + water.FailAfterDegradedSeconds.Value;
+                double failAt = s.DegradedAt.Value + failAfter.Value;
                 if (failAt > now) next = Math.Min(next, failAt - now);
             }
             AirRevitalizationConfiguration air = configuration.Air;
@@ -315,8 +433,9 @@ namespace Trainer.Simulation.BaseOperations
                     s.DegradedAt = water.DegradeAtSeconds.Value;
                 }
             }
-            if (s.Condition == EquipmentCondition.Degraded && water.FailAfterDegradedSeconds.HasValue
-                && s.DegradedAt.Value + water.FailAfterDegradedSeconds.Value <= now)
+            double? failAfter = FailAfter(s);
+            if (s.Condition == EquipmentCondition.Degraded && failAfter.HasValue
+                && s.DegradedAt.Value + failAfter.Value <= now)
                 s.Condition = EquipmentCondition.Failed;
             AirRevitalizationConfiguration air = configuration.Air;
             if (s.InletScriptPending && air.InletRestrictedAtSeconds.Value <= now)
@@ -358,6 +477,9 @@ namespace Trainer.Simulation.BaseOperations
             public EquipmentOperatingState WaterOperating;
             public double? DegradedAt;
             public bool DegradeScriptPending;
+            public bool DirectorDegraded;
+            public double? DirectorFailAfter;
+            public double? UpgradedRecovery;
             public double Hold;
             public double HoldConductivity;
             public InstrumentReading Conductivity;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Trainer.Simulation.BaseOperations;
 using Trainer.Simulation.Crew;
+using Trainer.Simulation.Incidents;
 
 namespace Trainer.Simulation.LifeSupport
 {
@@ -29,14 +30,22 @@ namespace Trainer.Simulation.LifeSupport
     ///
     /// Phase 4 (D1): also <see cref="IAirServiceCapacity"/>, on this same object (no second base model). The factor
     /// multiplies the declared maximum CO2 removal rate; Reset sets it to 1, which reproduces phase 2 exactly.
+    ///
+    /// Phase 5 (D1): also <see cref="IPowerCapacityModifiers"/>, on this same object. Reversible modifiers (generation
+    /// factor, discharge-limit factor, added essential load) are composed by <see cref="PowerCapacityState.Compose"/> and
+    /// used by every dispatch (Advance, event prediction, publication). Removal restores the rate, never the energy lost.
+    /// Every modifier id is accepted at most once per Reset; Reset clears them (phase 4 behaviour).
     /// </summary>
-    public sealed class OutpostBaseSimulation : IOutpostSimulation, IAirServiceCapacity
+    public sealed class OutpostBaseSimulation : IOutpostSimulation, IAirServiceCapacity, IPowerCapacityModifiers
     {
         private const int MaxSegmentsPerAdvance = 64;
 
         private readonly OutpostSimulationParameters parameters;
         private readonly SimulationClock clock = new SimulationClock();
         private readonly Dictionary<Guid, ResourceEffect> appliedTransfers = new Dictionary<Guid, ResourceEffect>();
+        private readonly Dictionary<Guid, PowerModifier> seenModifiers = new Dictionary<Guid, PowerModifier>();
+        private readonly List<PowerModifier> activeModifiers = new List<PowerModifier>();
+        private PowerCapacityState powerCapacity = PowerCapacityState.Nominal;
 
         private OutpostConfiguration configuration;
         private double oxygenTargetKilograms;
@@ -115,6 +124,43 @@ namespace Trainer.Simulation.LifeSupport
             carbonDioxideRemovalFactor = factor;
         }
 
+        /// <summary>Phase 5 composed electrical capacity in force (Nominal after Reset).</summary>
+        public PowerCapacityState PowerCapacity
+        {
+            get
+            {
+                RequireReset();
+                return powerCapacity;
+            }
+        }
+
+        /// <summary>Explicit implementation: an overload named Apply would make the phase 2 <c>Apply(null)</c> ambiguous.</summary>
+        PowerModifierStatus IPowerCapacityModifiers.Apply(PowerModifier modifier)
+        {
+            RequireReset();
+            if (modifier == null) throw new ArgumentNullException(nameof(modifier));
+            if (seenModifiers.TryGetValue(modifier.Id, out PowerModifier previous))
+                return previous.HasSameContent(modifier) ? PowerModifierStatus.AlreadyApplied : PowerModifierStatus.IdConflict;
+            if (activeModifiers.Count >= IncidentEffectLimits.MaxPowerModifiers)
+                return PowerModifierStatus.LimitReached;
+            seenModifiers.Add(modifier.Id, modifier);
+            activeModifiers.Add(modifier);
+            powerCapacity = PowerCapacityState.Compose(activeModifiers);
+            Publish();
+            return PowerModifierStatus.Applied;
+        }
+
+        public bool Remove(Guid modifierId)
+        {
+            RequireReset();
+            int index = activeModifiers.FindIndex(m => m.Id == modifierId);
+            if (index < 0) return false;
+            activeModifiers.RemoveAt(index);
+            powerCapacity = PowerCapacityState.Compose(activeModifiers);
+            Publish();
+            return true;
+        }
+
         public void Reset(OutpostConfiguration configuration)
         {
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
@@ -130,6 +176,9 @@ namespace Trainer.Simulation.LifeSupport
             serviceLoadWatts = 0d;
             crewAboard = 0;
             carbonDioxideRemovalFactor = 1d;
+            seenModifiers.Clear();
+            activeModifiers.Clear();
+            powerCapacity = PowerCapacityState.Nominal;
 
             oxygenTargetKilograms = CabinGas.MassKilograms(
                 cabin.InitialOxygenPartialPressureKilopascals, CabinGas.OxygenMolarMass, cabin);
@@ -167,7 +216,7 @@ namespace Trainer.Simulation.LifeSupport
                 if (++segments > MaxSegmentsPerAdvance)
                     throw new InvalidOperationException("Life support step did not converge; state left unchanged.");
                 OutpostPowerDispatch power = OutpostPowerDispatch.Evaluate(configuration.Power, work.Energy,
-                    demand.ScienceRequested, demand.ServiceLoadWatts);
+                    demand.ScienceRequested, demand.ServiceLoadWatts, powerCapacity);
                 Rates rates = ComputeRates(work, power, demand.CrewAboard);
                 double dt = Math.Min(remaining, NextEvent(work, power, rates));
                 if (power.ServiceFullyServed) fullService += dt;
@@ -191,7 +240,7 @@ namespace Trainer.Simulation.LifeSupport
             RequireReset();
             if (demand == null) throw new ArgumentNullException(nameof(demand));
             OutpostPowerDispatch power = OutpostPowerDispatch.Evaluate(configuration.Power, state.Energy,
-                demand.ScienceRequested, demand.ServiceLoadWatts);
+                demand.ScienceRequested, demand.ServiceLoadWatts, powerCapacity);
             if (!power.EssentialFullyServed) return 0d;
             return power.SecondsToBatteryBoundary(state.Energy, configuration.Power.CapacityJoules);
         }
@@ -339,9 +388,9 @@ namespace Trainer.Simulation.LifeSupport
         private void Publish()
         {
             PowerConfiguration p = configuration.Power;
-            OutpostPowerDispatch power = OutpostPowerDispatch.Evaluate(p, state.Energy, scienceRequested, serviceLoadWatts);
+            OutpostPowerDispatch power = OutpostPowerDispatch.Evaluate(p, state.Energy, scienceRequested, serviceLoadWatts, powerCapacity);
             var powerSnapshot = new PowerSnapshot(clock.ElapsedSeconds, state.Energy, p.CapacityJoules,
-                p.GenerationWatts, power.EssentialRequestedWatts, power.EssentialServedWatts,
+                OutpostPowerDispatch.EffectiveGeneration(p, powerCapacity), power.EssentialRequestedWatts, power.EssentialServedWatts,
                 power.ScienceRequestedWatts, power.ScienceServedWatts);
 
             WaterStock w = configuration.LifeSupport.InitialWater;
