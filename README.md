@@ -14,9 +14,11 @@ The premise is simple: the base keeps operating while the team plays. Sharing ma
 
 ## Demo
 
-[![Watch the gameplay demo](docs/demo/gameplay-demo-preview.jpg)](https://github.com/SandwichMr/space-station-breakdown/blob/main/docs/demo/gameplay-demo.mp4)
+![Animated gameplay demo](docs/demo/gameplay-demo.gif)
 
-**[Watch the gameplay demo](https://github.com/SandwichMr/space-station-breakdown/blob/main/docs/demo/gameplay-demo.mp4)** — recorded prototype footage. Click the preview to open the video.
+*Animated preview of the prototype; no audio.*
+
+[Download the original MP4 video with audio](https://github.com/SandwichMr/space-station-breakdown/raw/refs/heads/main/docs/demo/gameplay-demo.mp4)
 
 ## The experience
 
