@@ -12,6 +12,12 @@ The premise is simple: the base keeps operating while the team plays. Sharing ma
 
 > **Status:** work-in-progress prototype; phase 4 is being consolidated. This repository includes simulation, presentation, networking, integration, and testing work. It is not a final release or a certified simulator for real space operations.
 
+## Demo
+
+[![Watch the gameplay demo](docs/demo/gameplay-demo-preview.jpg)](https://github.com/SandwichMr/space-station-breakdown/blob/main/docs/demo/gameplay-demo.mp4)
+
+**[Watch the gameplay demo](https://github.com/SandwichMr/space-station-breakdown/blob/main/docs/demo/gameplay-demo.mp4)** — recorded prototype footage. Click the preview to open the video.
+
 ## The experience
 
 Players control astronauts in a top-down 2D base, sharing resources, equipment, and decisions. While one player services the water processor, another can check the air system or prepare a scientific expedition. Repairs take time and resources; completing one does not restore resources that have already been lost.
