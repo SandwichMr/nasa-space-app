@@ -8,7 +8,8 @@ Preparación D2-A con revisión científica D5, publicada en la rama `setup/phas
 | --- | --- |
 | Remoto | `https://github.com/SandwichMr/nasa-space-app.git` (el prompt cita `space-station-breakdown.git`; no se cambió el origin) |
 | `main` de partida | `4903c587da1590d35d7a937cdc4f596d3dfe0512` (fast-forward con `origin/main`, árbol limpio tras descartar, con autorización del usuario, 4 cambios locales: espacio en `MissionBootstrap.cs`, paquete `com.unity.recorder` y su lock, iconos VisionOS en `ProjectSettings.asset`) |
-| Commit de contratos | ver la nota del commit siguiente (un commit no puede contener su propio SHA) |
+| Commit de contratos | `f3f2e0ea9af94b708d27bf62592f0b8e163bb4da` (registrado en este commit de nota posterior; un commit no puede contener su propio SHA) |
+| SHA común para la rama de desarrollo | el de este commit de nota (contiene el de contratos; solo añade esta línea) |
 | Rama de desarrollo | `feature/phase-05/complete`, creada desde el SHA publicado de esta rama |
 
 ## Alcance entregado
