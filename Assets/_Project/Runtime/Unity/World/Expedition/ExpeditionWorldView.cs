@@ -70,7 +70,8 @@ namespace Trainer.Unity.World.Expedition
                 bool optional = p.Id.Value == "crater-rim";
                 var station = Instantiate(optional ? optionalPrefab : sciencePrefab,generated,false);
                 var body = station.GetComponentInChildren<SpriteRenderer>();
-                station.Configure(p,optional ? "NÚCLEO · OPCIONAL" : "MUESTRA DE REGOLITO",body.sprite,optional ? new Color(1,.78f,.5f) : new Color(.8f,.7f,1));
+                Sprite artwork = baseView != null ? baseView.LunarSkin?.StationArtwork(p.Id.Value) : null;
+                station.Configure(p,optional ? "NÚCLEO · OPCIONAL" : "MUESTRA DE REGOLITO",artwork != null ? artwork : body.sprite,optional ? new Color(1,.78f,.5f) : new Color(.8f,.7f,1));
                 stations.Add(station);
                 endings[p.Id] = Text("",At(p.Position)+Vector3.down*.85f,.12f);
             }

@@ -2,6 +2,7 @@ using System;
 using Trainer.Application;
 using Trainer.Application.Outpost;
 using Trainer.Unity.Networking;
+using Trainer.Unity.Presentation;
 using Trainer.Unity.Presentation.Outpost;
 using UnityEngine;
 
@@ -32,6 +33,9 @@ namespace Trainer.Unity.Bootstrap
         private GUIStyle label, button;
         private float canvasWidth = DefaultCanvasWidth, canvasHeight = DefaultCanvasHeight, stripY = DefaultStripY;
         private int drawDepth;
+        private HudSkin skin;
+        private bool embedded;
+        private GUIStyle skinnedLabel, skinnedButton;
 
         /// <summary>Phase 2/3 layout: 1280×720 virtual canvas, strip at y 102.</summary>
         public const float DefaultCanvasWidth = 1280f, DefaultCanvasHeight = 720f, DefaultStripY = 102f;
@@ -40,6 +44,8 @@ namespace Trainer.Unity.Bootstrap
         public string Feedback => feedback;
         public string Status => status;
         public int DrawDepth => drawDepth;
+        /// <summary>True when a dashboard draws these controls inside its own frame (see <see cref="EmbedIn"/>).</summary>
+        public bool Embedded => embedded;
 
         /// <summary>Optional overlay depth for a scene whose HUD paints a background behind this strip.</summary>
         public void ConfigureDrawDepth(int value) => drawDepth = value;
@@ -76,6 +82,37 @@ namespace Trainer.Unity.Bootstrap
             canvasHeight = height;
             stripY = stripTop;
         }
+
+        /// <summary>Phase 4: the dashboard draws these controls in its own pass through <see cref="DrawDock"/> (status line plus a
+        /// framed button dock), so they are part of its frame instead of a separate overlay. Phase 2/3 never call this.</summary>
+        public void EmbedIn(HudSkin value)
+        {
+            skin = value != null && value.HasFrames ? value : null;
+            embedded = true;
+            skinnedLabel = skinnedButton = null;
+        }
+
+        /// <summary>Draws the session status in <paramref name="statusLine"/> and the session buttons right-aligned inside
+        /// <paramref name="dock"/>. Call from the host dashboard's OnGUI, in its virtual canvas.</summary>
+        public void DrawDock(Rect dock, Rect statusLine)
+        {
+            EnsureStyles();
+            if (skinnedLabel == null)
+            {
+                skinnedLabel = new GUIStyle(label) { fontSize = 13 };
+                skinnedLabel.normal.textColor = HudSkin.Label;
+                skinnedButton = skin != null ? skin.Button(new GUIStyle(button) { fontSize = 14 }) : button;
+            }
+            string text = string.IsNullOrEmpty(feedback) ? status : feedback;
+            HudSkin.Paint(new Rect(statusLine.x, statusLine.y + 3, 8, 14), confirmed ? HudSkin.Green : HudSkin.Amber);
+            GUI.Label(new Rect(statusLine.x + 18, statusLine.y, statusLine.width - 18, statusLine.height), text, skinnedLabel);
+            Color previousColor = GUI.color;
+            try { Buttons(dock.xMax - 8, dock.y + (dock.height - 34) / 2, 34, DockStep, DockPrimaryStep, skinnedButton); }
+            finally { GUI.enabled = true; GUI.color = previousColor; }
+        }
+
+        /// <summary>Horizontal space each dock button takes (button plus gap); the widest dock is connect + restart + primary.</summary>
+        public const float DockStep = 132f, DockPrimaryStep = 152f, DockWidth = 2 * DockStep + DockPrimaryStep + 16f;
 
         public void SetStatus(bool isConfirmed, string detail)
         {
@@ -135,14 +172,18 @@ namespace Trainer.Unity.Bootstrap
             port = null;
         }
 
+        private void EnsureStyles()
+        {
+            if (label != null) return;
+            label = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = false, clipping = TextClipping.Clip,
+                normal = { textColor = new Color(.75f, .83f, .9f) } };
+            button = new GUIStyle(GUI.skin.button) { fontSize = 15 };
+        }
+
         private void OnGUI()
         {
-            if (label == null)
-            {
-                label = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = false, clipping = TextClipping.Clip,
-                    normal = { textColor = new Color(.75f, .83f, .9f) } };
-                button = new GUIStyle(GUI.skin.button) { fontSize = 15 };
-            }
+            if (embedded) return; // The host dashboard draws us inside its own frame.
+            EnsureStyles();
             Matrix4x4 previous = GUI.matrix;
             int previousDepth = GUI.depth;
             GUI.depth = drawDepth;
@@ -156,17 +197,19 @@ namespace Trainer.Unity.Bootstrap
         private void Draw()
         {
             var strip = new Rect(16, stripY, canvasWidth - 32, 34);
-            float buttonY = stripY + 3;
             GUI.color = new Color(.055f, .09f, .15f, .92f);
             GUI.DrawTexture(strip, Texture2D.whiteTexture);
             GUI.color = confirmed ? new Color(.45f, .9f, .6f) : new Color(.95f, .7f, .35f);
             GUI.DrawTexture(new Rect(strip.x, strip.y, 6, strip.height), Texture2D.whiteTexture);
             GUI.color = Color.white;
+            GUI.Label(new Rect(30, stripY + 5, 760, 24), string.IsNullOrEmpty(feedback) ? status : feedback, label);
+            Buttons(strip.xMax - 8, stripY + 3, 28, 130, 150, button);
+        }
 
-            string text = string.IsNullOrEmpty(feedback) ? status : feedback;
-            GUI.Label(new Rect(30, stripY + 5, 760, 24), text, label);
-
-            float x = strip.xMax - 8;
+        /// <summary>Session buttons laid out right to left from <paramref name="right"/>: connect (clients), restart, primary.</summary>
+        private void Buttons(float right, float buttonY, float buttonHeight, float step, float primaryStep, GUIStyle buttonStyle)
+        {
+            float x = right;
             bool joined = port != null && port.Membership.IsJoined;
             OutpostSessionSnapshot snapshot = null;
             bool hasState = joined && port.TryGetSnapshot(out snapshot) && snapshot != null;
@@ -176,24 +219,24 @@ namespace Trainer.Unity.Bootstrap
             {
                 SessionConnectionState state = connectionState();
                 bool offline = state == SessionConnectionState.Disconnected || state == SessionConnectionState.ConnectionLost;
-                x -= 130;
+                x -= step;
                 if (offline)
                 {
                     GUI.enabled = connect != null;
-                    if (GUI.Button(new Rect(x, buttonY, 126, 28), "Conectar", button)) connect?.Invoke();
+                    if (GUI.Button(new Rect(x, buttonY, step - 4, buttonHeight), "Conectar", buttonStyle)) connect?.Invoke();
                 }
                 else
                 {
                     GUI.enabled = disconnect != null;
-                    if (GUI.Button(new Rect(x, buttonY, 126, 28), "Desconectar", button)) disconnect?.Invoke();
+                    if (GUI.Button(new Rect(x, buttonY, step - 4, buttonHeight), "Desconectar", buttonStyle)) disconnect?.Invoke();
                 }
                 GUI.enabled = true;
             }
             if (!hasState) return;
 
-            x -= 130;
+            x -= step;
             GUI.enabled = idle;
-            if (GUI.Button(new Rect(x, buttonY, 126, 28), "Reiniciar", button)) Request(OutpostAction.Restart);
+            if (GUI.Button(new Rect(x, buttonY, step - 4, buttonHeight), "Reiniciar", buttonStyle)) Request(OutpostAction.Restart);
 
             string primary = null;
             OutpostAction action = OutpostAction.Resume;
@@ -205,8 +248,14 @@ namespace Trainer.Unity.Bootstrap
             }
             if (primary != null)
             {
-                x -= 150;
-                if (GUI.Button(new Rect(x, buttonY, 146, 28), idle ? primary : "Esperando…", button)) Request(action);
+                x -= primaryStep;
+                var primaryRect = new Rect(x, buttonY, primaryStep - 4, buttonHeight);
+                string caption = idle ? primary : "Esperando…";
+                // Starting the mission is the first thing a new crew must do: make it stand out in the dashboard skin.
+                bool pressed = skin != null && snapshot.State == SessionState.Ready
+                    ? skin.PrimaryButton(primaryRect, caption, buttonStyle)
+                    : GUI.Button(primaryRect, caption, buttonStyle);
+                if (pressed) Request(action);
             }
             GUI.enabled = true;
         }

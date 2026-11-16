@@ -25,8 +25,11 @@ namespace Trainer.Unity.World.Outpost
         public IReadOnlyList<SpriteRenderer> Blockers => blockers;
         public OutpostScenario Scenario { get; private set; }
         private Sprite lunarArtwork;
+        private LunarInteriorSkin lunarSkin;
         public bool HasLunarStyle => lunarArtwork != null;
-        public void SetLunarArtwork(Sprite sprite) => lunarArtwork = sprite;
+        /// <summary>Active lunar skin, or null when the lunar style is off. Visual only.</summary>
+        public LunarInteriorSkin LunarSkin => HasLunarStyle ? lunarSkin : null;
+        public void SetLunarArtwork(Sprite sprite, LunarInteriorSkin skin = null) { lunarArtwork = sprite; lunarSkin = skin; }
 
         public void Configure(OutpostScenario scenario)
         {
@@ -36,7 +39,7 @@ namespace Trainer.Unity.World.Outpost
             generated.SetParent(transform, false);
             if (HasLunarStyle)
             {
-                generated.gameObject.AddComponent<LunarInteriorArchitecture>().Configure(scenario,material);
+                generated.gameObject.AddComponent<LunarInteriorArchitecture>().Configure(scenario,material,lunarSkin);
             }
             else
             {
@@ -68,6 +71,8 @@ namespace Trainer.Unity.World.Outpost
                         if (task.Station == p.Id && task.Category == TaskCategory.Science)
                         { label = "CIENCIA"; sprite = scienceStation; color = new Color(.81f,.67f,1); break; }
                 }
+                Sprite artwork = LunarSkin?.StationArtwork(key);
+                if (artwork != null) sprite = artwork;
                 var station = Instantiate(stationPrefab, generated, false);
                 station.name = "Station " + key;
                 station.Configure(p, label, sprite, color);

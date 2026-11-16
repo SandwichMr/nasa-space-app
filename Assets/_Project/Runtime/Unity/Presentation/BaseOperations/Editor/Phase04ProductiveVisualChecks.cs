@@ -121,7 +121,7 @@ namespace Trainer.Unity.Presentation.BaseOperations.Editor
                     case 21:
                         Capture("10-water-room-scale.png");break;
                     case 22:
-                        End(true,"Large habitat rendered at gameplay scale and full-plan evidence scale; room layout, grey grid, EVA connection and productive controls captured. Only the evidence camera was repositioned.");break;
+                        End(true,"Large habitat rendered at gameplay scale and full-plan evidence scale; room layout, themed floors, EVA connection and productive controls captured. Only the evidence camera was repositioned.");break;
                 }
             }
             catch (Exception e) { End(false, e.ToString()); }

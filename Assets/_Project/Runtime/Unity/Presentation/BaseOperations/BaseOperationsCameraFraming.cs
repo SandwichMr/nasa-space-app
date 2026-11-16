@@ -22,7 +22,10 @@ namespace Trainer.Unity.Presentation.BaseOperations
             float scale = Mathf.Min(Screen.width / 1440f, Screen.height / 900f);
             float insetX = (Screen.width - 1440 * scale) / 2, insetY = (Screen.height - 900 * scale) / 2;
             bool focused = panel != null && panel.Live && (panel.OpenStation.IsValid || panel.DetailsOpen);
-            target.pixelRect = new Rect(insetX, insetY + 100 * scale, (focused ? 944 : 1440) * scale, 607 * scale);
+            // The world shows between the dashboard's top block and its footer (canvas y grows down, pixels grow up).
+            float top = panel != null ? panel.TopInset : BaseOperationsPanel.TopBlockBottom;
+            float bottom = 900 - BaseOperationsPanel.FooterTop, height = BaseOperationsPanel.FooterTop - top;
+            target.pixelRect = new Rect(insetX, insetY + bottom * scale, (focused ? 944 : 1440) * scale, height * scale);
             target.orthographicSize = visibleHeightMeters / 2;
         }
         private void OnDisable()

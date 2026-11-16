@@ -279,6 +279,40 @@ MonoBehaviour:
   crewPresenter: {fileID: 1624164575}
   baseView: {fileID: 924289264}
   lunarInteriorArtwork: {fileID: 21300000, guid: 52a0fd801f816852491624fb0353cae6, type: 3}
+  lunarInteriorSkin:
+    corridorFloor: {fileID: 21300000, guid: eaf35ea4fc0647a3a5c7372e192f4241, type: 3}
+    evaFloor: {fileID: 21300000, guid: 76b5c4def5c947bc8a58618c1509a942, type: 3}
+    airlockFloor: {fileID: 21300000, guid: cd699f872b0b4b028de09e0c75ee5439, type: 3}
+    wall: {fileID: 21300000, guid: b6d33093867d44c88b07ef77b75caa24, type: 3}
+    furniture: {fileID: 21300000, guid: 37cd7a8e49084571898b46396d0ccf6b, type: 3}
+    edgeShadow: {fileID: 21300000, guid: 42e3d8e4b8014246bef3d5192edc5aca, type: 3}
+    stations:
+    - stationId: suit-rack-a
+      sprite: {fileID: 21300000, guid: 776f8c5cf84b4a849fa27ff280eb2200, type: 3}
+    - stationId: suit-rack-b
+      sprite: {fileID: 21300000, guid: 3072cedb0c084f1ca3e8226165d72048, type: 3}
+    - stationId: suit-charger
+      sprite: {fileID: 21300000, guid: 8a64d0b74ded45ce9a24d55732c1cdf7, type: 3}
+    - stationId: consumables-panel
+      sprite: {fileID: 21300000, guid: 31ebe469da7b4c25a3ea8dec70cdaec1, type: 3}
+    - stationId: suit-check
+      sprite: {fileID: 21300000, guid: c3f2f75a33914b82b242bb0851c3dfc2, type: 3}
+    - stationId: shelter-panel
+      sprite: {fileID: 21300000, guid: 44d89fd898654c27a63533d5b7e1a750, type: 3}
+    - stationId: science-lab
+      sprite: {fileID: 21300000, guid: 559e55239de14f98bdb4a71d3b6e9c4a, type: 3}
+    - stationId: sample-analyzer
+      sprite: {fileID: 21300000, guid: c54256c5e211423cade81d49e199b14e, type: 3}
+    - stationId: water-recycler
+      sprite: {fileID: 21300000, guid: 3d590013b30c4138b2e7661d5a198233, type: 3}
+    - stationId: air-scrubber
+      sprite: {fileID: 21300000, guid: 44a38baa838d4dc3819789ff87b6113a, type: 3}
+    - stationId: logistics-console
+      sprite: {fileID: 21300000, guid: c1322fc3b5cf48cf91061198e6ab1fd7, type: 3}
+    - stationId: regolith-site
+      sprite: {fileID: 21300000, guid: a3effac9ce384c25b86135ca0fec3c94, type: 3}
+    - stationId: crater-rim
+      sprite: {fileID: 21300000, guid: 8cdac5ab55d448b4a8d197efb2f0a64b, type: 3}
   sessionControls: {fileID: 918466744}
   phase3Mount: {fileID: 496560928}
   phase4Mount: {fileID: 1992628014}

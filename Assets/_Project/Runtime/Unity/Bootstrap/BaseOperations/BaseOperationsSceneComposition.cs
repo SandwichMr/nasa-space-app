@@ -57,6 +57,7 @@ namespace Trainer.Unity.Bootstrap.BaseOperations
         [SerializeField] private ExpeditionCrewPresenter crewPresenter;
         [SerializeField] private BaseInteriorView baseView;
         [SerializeField] private Sprite lunarInteriorArtwork;
+        [SerializeField, Tooltip("Themed floors, walls and furniture for the lunar interior. Visual only.")] private LunarInteriorSkin lunarInteriorSkin = new LunarInteriorSkin();
         [SerializeField] private OutpostSessionControls sessionControls;
         [SerializeField, Tooltip("Parent of every IExpeditionView bound on the same port.")] private Transform phase3Mount;
         [SerializeField, Tooltip("Parent of every IBaseOperationsView (D4 views).")] private Transform phase4Mount;
@@ -100,6 +101,12 @@ namespace Trainer.Unity.Bootstrap.BaseOperations
             {
                 sessionControls.ConfigureCanvas(CanvasWidth, CanvasHeight, SessionStripY);
                 sessionControls.ConfigureDrawDepth(BaseOperationsPanel.SessionControlsDepth);
+                var dashboard = phase4Mount != null ? phase4Mount.GetComponentInChildren<BaseOperationsPanel>(true) : null;
+                if (dashboard != null)
+                {
+                    sessionControls.EmbedIn(dashboard.Skin);
+                    dashboard.ConfigureSessionDock(sessionControls.DrawDock);
+                }
             }
         }
 
@@ -189,7 +196,7 @@ namespace Trainer.Unity.Bootstrap.BaseOperations
             if (crewPresenter != null) crewPresenter.Bind(port, avatarSync);
             if (baseView != null && port != null && expedition != null)
             {
-                baseView.SetLunarArtwork(lunarInteriorArtwork);
+                baseView.SetLunarArtwork(lunarInteriorArtwork, lunarInteriorSkin);
                 baseView.Configure(expedition.Outpost);
             }
             if (sessionControls != null) sessionControls.Bind(port);

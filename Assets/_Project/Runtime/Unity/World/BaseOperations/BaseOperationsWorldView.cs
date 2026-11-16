@@ -55,6 +55,7 @@ namespace Trainer.Unity.World.BaseOperations
             var view = Instantiate(prefab, generated, false);
             view.name = "Station " + station.Value;
             view.Configure(placement, caption);
+            view.SetBodySprite(baseInterior != null ? baseInterior.LunarSkin?.StationArtwork(station.Value) : null);
             stations.Add(view);
         }
         protected override void ClearView()
