@@ -1,0 +1,40 @@
+{
+  "comment": "Didactic decisions of the phase 5 historical episode (scenario choices, NOT data). Offsets are session seconds from the episode start. Real times are compressed for play (see timelineNote). Instructions and the end of the shelter period are training decisions; NASA/SWRC issued notifications, never shelter orders or all-clears.",
+  "key": "donki-2017-09-10",
+  "datasetId": "donki-2017-09-10-ar12673",
+  "label": "HISTÓRICO · NASA CCMC DONKI · 10 sep 2017 (región activa 12673)",
+  "provenance": "Registros reales de NASA GSFC CCMC/SWRC DONKI (FLR, SEP y notificaciones), descargados y congelados; cronología e instrucciones de refugio son decisiones didácticas del escenario.",
+  "timelineNote": "Cronología comprimida: de 16:07Z a 17:08Z, 1 minuto real ≈ 1 s de juego; la actualización del 12 sep (46 h después) se coloca a 120 s; el fin del refugio a 180 s es una decisión didáctica.",
+  "license": "NASA GSFC CCMC/SWRC DONKI: 'Experimental Research Information', provided as is (SWRC disclaimer). NOAA SWPC is the official U.S. source of space weather forecasts. Cite CCMC/DONKI; no endorsement implied.",
+  "records": [
+    {"file": "notif_flr.json", "type": "notification", "id": "20170910-AL-001"},
+    {"file": "notif_sep.json", "type": "notification", "id": "20170910-AL-002"},
+    {"file": "notif_sep.json", "type": "notification", "id": "20170910-AL-004"},
+    {"file": "notif_sep.json", "type": "notification", "id": "20170910-AL-005"},
+    {"file": "notif_sep_0912.json", "type": "notification", "id": "20170912-AL-001"},
+    {"file": "sep.json", "type": "sep", "id": "2017-09-10T16:25:00-SEP-001",
+     "measurements": [{"quantity": "proton flux >100 MeV (threshold crossed)", "value": 1, "unit": "pfu", "location": "GEO, Earth orbit (GOES-13)", "classification": "Observation"}]},
+    {"file": "sep.json", "type": "sep", "id": "2017-09-10T16:45:00-SEP-001",
+     "measurements": [{"quantity": "proton flux >10 MeV (threshold crossed)", "value": 10, "unit": "pfu", "location": "GEO, Earth orbit (GOES-13)", "classification": "Observation"}]},
+    {"file": "flr.json", "type": "flr", "id": "2017-09-10T15:35:00-FLR-001",
+     "measurements": [{"quantity": "GOES XRS 1-8 A peak class X8.2 as flux", "value": 0.00082, "unit": "W/m2", "location": "GEO, Earth orbit (GOES-15)", "classification": "Calculation"}]}
+  ],
+  "messages": [
+    {"id": "hist-watch", "kind": "Watch", "basis": "SourceNotification", "offset": 0, "validFor": 60, "textKey": "sw-hist-watch-flare",
+     "sources": ["20170910-AL-001"], "sourceIssued": "20170910-AL-001"},
+    {"id": "hist-instruction", "kind": "ShelterInstruction", "basis": "DidacticDecision", "offset": 34, "validFor": 60, "shelterBy": 79,
+     "textKey": "sw-hist-instruction", "sources": ["20170910-AL-002", "2017-09-10T16:25:00-SEP-001"], "sourceIssued": "20170910-AL-002"},
+    {"id": "hist-update-10mev", "kind": "InstructionUpdate", "basis": "DidacticDecision", "offset": 51, "validFor": 60, "shelterBy": 79,
+     "supersedes": "hist-instruction", "textKey": "sw-hist-update-10mev", "sources": ["20170910-AL-004", "2017-09-10T16:45:00-SEP-001"],
+     "sourceIssued": "20170910-AL-004"},
+    {"id": "hist-update-summary", "kind": "InstructionUpdate", "basis": "DidacticDecision", "offset": 61, "validFor": 60, "shelterBy": 79,
+     "supersedes": "hist-update-10mev", "textKey": "sw-hist-update-summary", "sources": ["20170910-AL-005"], "sourceIssued": "20170910-AL-005"},
+    {"id": "hist-update-ongoing", "kind": "InstructionUpdate", "basis": "DidacticDecision", "offset": 120, "validFor": 61, "shelterBy": 120,
+     "supersedes": "hist-update-summary", "textKey": "sw-hist-update-ongoing", "sources": ["20170912-AL-001", "2017-09-10T15:35:00-FLR-001"],
+     "sourceIssued": "20170912-AL-001"},
+    {"id": "hist-end", "kind": "InstructionEnd", "basis": "DidacticDecision", "offset": 180, "validFor": 60,
+     "supersedes": "hist-update-ongoing", "textKey": "sw-shelter-period-ended", "sources": []}
+  ],
+  "didacticOnsetSeconds": 18,
+  "didacticEndSeconds": 180
+}

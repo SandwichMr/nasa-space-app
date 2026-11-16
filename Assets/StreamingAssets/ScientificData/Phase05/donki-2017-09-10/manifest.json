@@ -1,0 +1,47 @@
+{
+ "datasetId": "donki-2017-09-10-ar12673",
+ "episodeFile": "episode.json",
+ "generator": "tools/data-pipeline/phase05/normalize_episode.py",
+ "license": "NASA GSFC CCMC/SWRC DONKI: 'Experimental Research Information', provided as is (SWRC disclaimer). NOAA SWPC is the official U.S. source of space weather forecasts. Cite CCMC/DONKI; no endorsement implied.",
+ "requests": [
+  {
+   "bytes": 1468,
+   "requestedUtc": "2026-11-16T04:34:33.283085+00:00",
+   "sha256": "fb20b2d23bc702c98eda830dc6d6f9e5b1cd320a0f220aacab29d0ffcc67b770",
+   "status": 200,
+   "url": "https://ccmc.gsfc.nasa.gov/DONKI-API/get/FLR?startDate=2017-09-10&endDate=2017-09-10"
+  },
+  {
+   "bytes": 1943,
+   "requestedUtc": "2026-11-16T04:34:35.842181+00:00",
+   "sha256": "012f648d8d6925bfe68fc1d2839c65edabd3c09bc6c943b135fa658f7e647141",
+   "status": 200,
+   "url": "https://ccmc.gsfc.nasa.gov/DONKI-API/get/SEP?startDate=2017-09-10&endDate=2017-09-11"
+  },
+  {
+   "bytes": 14265,
+   "requestedUtc": "2026-11-16T04:34:38.396886+00:00",
+   "sha256": "28e1d1d13d1fdc054bef9102959e567aed604f14232c8231f4d18bcd18492bb4",
+   "status": 200,
+   "url": "https://ccmc.gsfc.nasa.gov/DONKI-API/get/notifications?startDate=2017-09-10&endDate=2017-09-11&type=SEP"
+  },
+  {
+   "bytes": 6955,
+   "requestedUtc": "2026-11-16T04:34:54.875892+00:00",
+   "sha256": "5bc5eab57a60cb9e12ffd7609db02809aa3aa6fdc2edc505e059c72456d24f11",
+   "status": 200,
+   "url": "https://ccmc.gsfc.nasa.gov/DONKI-API/get/notifications?startDate=2017-09-10&endDate=2017-09-10&type=FLR"
+  },
+  {
+   "bytes": 7659,
+   "requestedUtc": "2026-11-16T04:34:57.411110+00:00",
+   "sha256": "0f53196fa56b3ed8ff955ed25f9f4c42e28aaa1038159c9bb80500d5928a7106",
+   "status": 200,
+   "url": "https://ccmc.gsfc.nasa.gov/DONKI-API/get/notifications?startDate=2017-09-12&endDate=2017-09-12&type=SEP"
+  }
+ ],
+ "retrievedUtc": "2026-11-16T04:34:57Z",
+ "schemaVersion": 1,
+ "sha256": "ad3b540d6f9379f8d3c4321798e661a9452ae4f57ab06c617901280ab4da39a1",
+ "source": "https://ccmc.gsfc.nasa.gov/DONKI-API (no API key; OpenAPI at https://ccmc.gsfc.nasa.gov/DONKI/api/openapi/)"
+}
